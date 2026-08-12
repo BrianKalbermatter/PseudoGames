@@ -52,11 +52,22 @@ scripts/       launcher, empaquetado y release
 ## Dependencia con PAED
 
 El verificador de soluciones ejecuta el intérprete de PAED sobre lo que escribió
-el jugador y compara la salida. Se apoya en que `paed` esté **instalado**:
+el jugador y compara la salida. Se apoya en que `paed` esté **instalado y
+alcanzable por PATH** — lo llama por nombre, no por ruta:
+
+```bash
+cd ../paed && sudo make install          # /usr/local/bin, que ya está en el PATH
+```
+
+o sin sudo, agregando el directorio al PATH una sola vez:
 
 ```bash
 cd ../paed && make install PREFIX=$HOME/.local
+echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.bashrc
 ```
+
+Comprobalo con `command -v paed`. Si no está, el verificador no se cuelga: la
+shell responde `command not found`, el caso da NO SUPERADO y listo.
 
 ## Desde VimMon
 

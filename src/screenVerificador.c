@@ -4,7 +4,29 @@
 #include <stdlib.h>
 
 #define TMP_PAED  "/tmp/sol_verificar.paed"
-#define PAED_CMD  "./Frankly/paed " TMP_PAED " 2>&1"
+
+/* El interprete de PAED, INSTALADO en el sistema.
+ *
+ * Antes esto era "./Frankly/paed": el interprete escrito en bash, buscado por
+ * una ruta relativa a esta carpeta. Dejo de funcionar cuando PAED paso a ser un
+ * proyecto aparte y Frankly/ se fue con el. Ahora se llama al binario, que se
+ * resuelve por PATH:
+ *
+ *     cd ../paed && make install PREFIX=$HOME/.local
+ *
+ * Si no esta instalado, la shell responde "command not found" con codigo 127 y
+ * la verificacion da NO SUPERADO — no se cuelga.
+ *
+ * El "< /dev/null" NO es decoracion. El interprete en C ejecuta LEER de verdad,
+ * y LEER lee de stdin. Sin esta redireccion, una solucion con LEER dejaria al
+ * interprete esperando que alguien tipee... en el stdin de una ventana SDL, que
+ * nadie esta mirando: el editor se colgaria sin decir por que. Con /dev/null la
+ * entrada llega vacia y LEER falla al instante con "la entrada se termino".
+ *
+ * El "2>&1" queda: los errores del interprete son parte de lo que se juzga, y
+ * ademas su codigo de salida distinto de cero ya marca el caso como fallado.
+ */
+#define PAED_CMD  "paed " TMP_PAED " < /dev/null 2>&1"
 
 /* Parsea "C=100, R=0.04" y genera lineas "    C := 100;\n" */
 static void
