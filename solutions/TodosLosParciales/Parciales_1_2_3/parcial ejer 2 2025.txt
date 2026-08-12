@@ -1,0 +1,78 @@
+accion ejer2 (arch:archivo de novedad ordenado por clave, tipo_novedades y f_novedades,reg:novedades,diff(x,y:real(4:2):real(4:2)),costos:arreglo [1..6] de real(4:2)) es
+ambiente
+    usuarios=registro
+        id_usuario:N(4)
+        dni:N(8)
+        sexo:{"f","m"}
+        nom:AN(50)
+        origen:{1..4}
+        edad:N(2)
+    fin registro
+
+    index:archivo de usuarios indexado por 
+    reg_index:usuarios
+    info:arreglo [1..5,1..7] de real(8:2) //arreglo de origenes X circuitos, mas los totales de cada uno
+    monto_ingresado:real(8:2)
+    origen:AN(25)
+
+    procedimiento inicio() es:
+        abrir e/(arch)
+        leer(arch,reg)
+        esc("ingrese el monto para verificar espectativas de recaudo totales por origen")
+        leer(monto_ingresado)
+        monto_ingresado:=0
+        para i:=1 hasta 5 ahcer
+            para j:=1 hasta 7 hacer
+                info[i,j]:=0
+            fin para
+        fin para
+    fin procedimiento
+
+    procedimiento convertir(x:N(1)) es:
+        segun x hacer
+            1:origen:="chaco"
+            2:origen:="otra provincia argentina"
+            3:origen:="pais limitrofe"
+            4:origen:="otro pais"
+        fin segun
+    fin procedimiento
+
+    procedimiento carga() es:
+        mientras NFDA(arch) hacer
+            si reg.tipo_novedad <> 3 entonces
+                leer(index,reg.id_usuario)
+                si existe:
+                    info[reg_index.origen,reg.nro_circuito]:=info[reg_index.origen,reg.nro_circuito] + (diff(reg.h_inicio,reg.h_fin) * costos[reg.nro_circuito])
+                    info[5,reg.nro_circuito]:=info[5,reg.nro_circuito] + info[reg_index.origen,reg.nro_circuito] + (diff(reg.h_inicio,reg.h_fin) * costos[reg.nro_circuito])
+                    info[reg_index.origen,7]:=info[reg_index.origen,7] + info[reg_index.origen,reg.nro_circuito] + (diff(reg.h_inicio,reg.h_fin) * costos[reg.nro_circuito])
+                sino
+                    esc("no existe el usuario")
+            fin si
+            leer(arch,reg)
+        fin mientras
+    fin procedimiento
+ALGORITMO
+abrir e/ (arch)
+abrir e/ (index)
+inicio()
+esc("importes totales discriminados por origen y circuito")
+para i:=1 hasta 4 hacer
+    convertir(i)
+    esc("lugar de origen: ", origen)
+    para j:=1 hasta 6 hacer
+        esc("recuado del circuito N°:",j," es = ",info[i,j])
+    fin para
+    esc("lo total recuadado bajo el origen", origen," es igual a: ",info[i,7])
+    si info[i,7] > monto_ingresado entonces
+        esc("el origen ", origen," a superado las espectativas de recuados")
+    fin si
+fin para
+para j=1 hasta 6 hacer
+    esc("lo total recaudado por el circuito N°",j," es igual a: ",info[5,j])
+fin para
+
+cerrar (arch)
+cerrar(index)
+fin accion
+
+

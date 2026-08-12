@@ -1,0 +1,17 @@
+# Salida de compilacion
+build/
+build_o/
+aed
+PseudoGames.exe
+screenPJ/screenPJ
+lib/
+win-libs/
+
+# Progreso y configuracion del jugador: es de cada maquina, no del proyecto.
+# Los archivos de ejemplo, si hacen falta, van con otro nombre.
+saves/progreso.json
+saves/config.json
+saves/highlights.json
+
+# Metadata de Windows
+*:Zone.Identifier

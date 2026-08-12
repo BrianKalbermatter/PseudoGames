@@ -1,0 +1,1356 @@
+WIKI - AED (Algoritmos y Estructuras de Datos) - UTN
+Creditos: shulker - alias (devkbtj)
+
+Para mas informacion oficial: https://aed-frre.github.io/
+
+
+══════════════════════════════════════════════════════
+TABLA DE CONTENIDOS
+══════════════════════════════════════════════════════
+
+  FUNDAMENTOS
+  ──────────────────────────────────────────────────
+  01. Hardware que Ejecuta el Codigo
+  02. Analisis Previo: Entrada / Salida / Ambiente / Proceso
+  03. Pseudocodigo vs Lenguajes de Programacion
+  04. Tipos de Datos
+  05. Acumuladores
+  06. Acciones: Simples y Complejas
+
+  PRIMEROS PASOS
+  ──────────────────────────────────────────────────
+  07. Estructura de un Algoritmo
+  08. AMBIENTE — Declaracion de Variables
+  09. PROCESO — Logica del Algoritmo
+  10. Asignacion (:=)
+  11. Comentarios (//)
+  12. Identacion
+
+  FUNCIONES Y PROCEDIMIENTOS
+  ──────────────────────────────────────────────────
+  13. FUNCION
+  14. PROCEDIMIENTO
+  15. Parametros: E / S / ES
+  16. Pasaje por Valor vs por Referencia
+
+  SECUENCIAS DE DATOS
+  ──────────────────────────────────────────────────
+  17. Secuencias — Concepto y Caracteristicas
+  18. La Ventana
+  19. ARR, AVZ, CREAR, ESCRIBIR, CERRAR
+  20. FDS y NFDS
+  21. Subsecuencias Enlazadas
+  22. Subsecuencias Jerarquicas
+  23. Secuencias Definidas vs Indefinidas
+  24. Secuencias Puras vs Impuras
+  25. Las 3 Combinaciones Validas
+  26. Recorrido Indefinida — EOF (NFDS)
+  27. Recorrido Indefinida — Centinela (marca de fin)
+  28. Recorrido Definida — Contador (PARA)
+  29. Generar una Secuencia de Salida
+  30. Conjuntos y el Operador EN
+
+  REFERENCIA RAPIDA
+  ──────────────────────────────────────────────────
+  31. Mapa de Decision — Que herramienta usar y cuando
+
+
+══════════════════════════════════════════════════════
+01. HARDWARE QUE EJECUTA EL CODIGO
+══════════════════════════════════════════════════════
+
+Antes de escribir una sola linea de codigo, hay que entender donde
+corre ese codigo y como lo maneja la maquina.
+
+CPU — El Procesador:
+  Es el cerebro de la computadora. Ejecuta instrucciones una por una,
+  a velocidades altisimas. Cuando escribis un algoritmo, basicamente le
+  estas dando ordenes al procesador en un lenguaje que el pueda entender.
+
+RAM — Memoria Interna:
+  La RAM es la memoria de trabajo. Cuando ejecutas un programa, todo lo
+  que ese programa necesita (variables, resultados parciales, instrucciones)
+  se carga en la RAM. Es rapida pero temporal: cuando el programa termina
+  o apagas la computadora, todo lo que habia ahi desaparece.
+
+  Analogia: es el escritorio de tu cuarto. Es el espacio donde trabajas,
+  pero no guardas las cosas ahi para siempre.
+
+Disco (HDD/SSD) — Memoria Externa:
+  Es donde se guardan los archivos de forma permanente. Mas lenta que
+  la RAM, pero persiste aunque apagues todo.
+
+  Analogia: es el cajon donde guardas las cosas cuando terminas de trabajar.
+
+Donde vive una variable?
+  Cuando en el AMBIENTE escribis  salario : ENTERO
+  lo que haces es reservar un espacio en la RAM con el nombre "salario".
+  Ese espacio existe SOLO mientras el programa corre.
+
+Donde viven los archivos?
+  En la memoria externa (disco). Hay que pedirle explicitamente al
+  programa que los abra, los lea o los escriba.
+
+
+══════════════════════════════════════════════════════
+02. ANALISIS PREVIO: ENTRADA / SALIDA / AMBIENTE / PROCESO
+══════════════════════════════════════════════════════
+
+Antes de escribir pseudocodigo, SIEMPRE hay que pensar.
+Este analisis se hace a mano, en papel si hace falta, y SIEMPRE en este orden:
+
+  1. ENTRADA  → Que datos le llegan al algoritmo desde afuera?
+                Que le pide el usuario? Que archivos necesita?
+
+  2. SALIDA   → Que resultado tiene que mostrar o producir el algoritmo?
+
+  3. AMBIENTE → Que variables internas vamos a necesitar?
+                Que espacio en la RAM vamos a reservar?
+
+  4. PROCESO  → Como transformamos la entrada en la salida?
+                Aca describes los pasos del algoritmo.
+
+Ejemplo aplicado (calcular salario):
+  Entrada:  horas trabajadas y valor de la hora
+  Salida:   salario total calculado, mostrado por pantalla
+  Ambiente: horas, valorHora, salario
+  Proceso:  salario := horas * valorHora
+
+Nota:
+  ESTE ORDEN NO ES OPCIONAL. Si lo saltas, vas a terminar escribiendo
+  algoritmos que no tienen sentido o a los que les falta algo a mitad
+  de camino.
+
+
+══════════════════════════════════════════════════════
+03. PSEUDOCODIGO VS LENGUAJES DE PROGRAMACION
+══════════════════════════════════════════════════════
+
+Cada lenguaje tiene su lugar:
+  No existe un lenguaje que sea "el mejor". Cada uno esta pensado para
+  resolver algo especifico:
+
+    Paginas web         → HTML, JavaScript, frameworks, APIs
+    Bajo nivel          → C, Assembly
+    Ciencia de datos    → Python
+    Aplicaciones movil  → Swift, Kotlin
+
+El pseudocodigo:
+  Es un lenguaje CONCEPTUAL. No lo ejecuta ninguna computadora directamente,
+  pero te permite disenar cualquier algoritmo de la vida real: calculos,
+  busquedas, ordenamientos, recursividad, complejidad.
+
+  Las palabras clave van en MAYUSCULAS para distinguirlas del resto del codigo.
+
+Nota:
+  Los algoritmos se aprenden USANDOLOS. No hay un libro que te prepare
+  para todo. La experiencia de aplicarlos en el dia a dia es lo que te
+  lleva a entenderlos de verdad.
+
+
+══════════════════════════════════════════════════════
+04. TIPOS DE DATOS
+══════════════════════════════════════════════════════
+
+Tipos de Datos
+  ├── Simples
+  │   ├── Numericos
+  │   │   ├── Enteros       (1, 2, -5, 100)
+  │   │   └── Reales        (3.14, -0.5, 1000.99)
+  │   ├── Alfanumericos
+  │   │   └── Caracteres / Cadena de texto   ("Hola", 'A')
+  │   │       Atencion: en pseudocodigo AED NO existe la cadena de texto
+  │   │       porque no se puede concatenar.
+  │   └── Booleanos
+  │       └── Solo dos valores posibles: Verdadero (V) o Falso (F)
+  └── Estructurados
+      (se veran mas adelante en la materia)
+
+Palabras reservadas en pseudocodigo:
+  Son palabras que el lenguaje ya usa para sus propias instrucciones.
+  No podes usarlas como nombres de variables.
+  Ejemplos: SI, MIENTRAS, PARA, FIN, INICIO, etc.
+
+Funciones comunes:
+
+  ESCRIBIR("texto")  → muestra algo por pantalla.
+    Todo va entre comillas dobles "".
+    Si queres mostrar comillas en pantalla, usas simples adentro:
+    ESCRIBIR("El nombre es 'Juan'");
+
+  LEER(variable)     → recibe un valor del usuario y lo guarda en RAM.
+    Desde ese momento podes usar esa variable en el resto del algoritmo.
+
+Nota:
+  Todo en la computadora, en el fondo, es un BOOLEANO. El procesador
+  solo entiende V o F, 1 o 0. Cada condicion y cada bucle evalua un
+  booleano internamente.
+
+
+══════════════════════════════════════════════════════
+05. ACUMULADORES
+══════════════════════════════════════════════════════
+
+Definicion:
+  Un acumulador es una variable que SE MODIFICA A SI MISMA con cada
+  operacion. Va acumulando un valor a medida que el algoritmo avanza.
+
+Ejemplo paso a paso:
+  Salario := 10000         // le asigno un valor inicial
+  Salario := Salario + 3   // ahora vale 10003
+  Salario := Salario / 2   // ahora vale 5001.5
+
+Regla clave:
+  El valor final depende COMPLETAMENTE del valor inicial.
+  El acumulador no "recuerda" el historial, solo opera sobre lo que
+  tiene en ese momento.
+
+Nota:
+  Fundamental para entender bucles: el acumulador se va modificando
+  en cada iteracion. Si no lo inicializas antes del bucle, la RAM
+  contiene "basura" y el resultado sera incorrecto.
+
+
+══════════════════════════════════════════════════════
+06. ACCIONES: SIMPLES Y COMPLEJAS
+══════════════════════════════════════════════════════
+
+Acciones
+  ├── Simples
+  │   ├── Elementales     → instrucciones basicas como ESCRIBIR o LEER
+  │   └── Asignaciones
+  │       ├── Puras       → le das un valor fijo:   Salario := 10000
+  │       └── De expresion→ el valor viene de calc: Salario := Salario + 3
+  └── Complejas
+      ├── Con nombres     → procedimientos o funciones reutilizables
+      ├── Condiciones     → SI (condicion) ENTONCES ... FIN_SI
+      └── Repetitivas     → MIENTRAS, PARA, REPETIR
+
+Nota:
+  Las condiciones y los bucles son BOOLEANOS. Cada vez que escribis un
+  SI o un MIENTRAS, el algoritmo evalua una condicion que da V o F.
+  Si es Verdadero entra al bloque, si es Falso lo saltea o termina.
+  El procesador no entiende "tal vez".
+
+
+══════════════════════════════════════════════════════
+07. ESTRUCTURA DE UN ALGORITMO
+══════════════════════════════════════════════════════
+
+Definicion:
+  Un algoritmo es una lista de pasos ORDENADOS para resolver un problema.
+  Tiene inicio, proceso y fin. Como una receta: si saltas un paso, el
+  resultado no va a ser el esperado.
+
+Sintaxis:
+  ACCION nombre_del_algoritmo ES
+      AMBIENTE
+          // declaracion de variables
+      PROCESO
+          // logica del algoritmo
+  FIN_ACCION
+
+  El nombre va en minuscula_con_guiones (convencion de la catedra).
+
+Ejemplo completo — hallar B en la formula A = 2B + C:
+  Dado: A = 23, C = 7
+  Despejando: B = (A - C) / 2 = (23 - 7) / 2 = 8
+
+  ACCION ejercicio_0_1_1 ES
+      AMBIENTE
+          a: ENTERO;   // valor inicial conocido: 23
+          b: ENTERO;   // valor a calcular
+          c: ENTERO;   // valor inicial conocido: 7
+      PROCESO
+          a := 23;
+          c := 7;
+          b := (a - c) / 2;
+          ESCRIBIR(b);  // resultado: 8
+  FIN_ACCION
+
+Nota:
+  Nunca te olvides de cerrar con FIN_ACCION. Y siempre hace el analisis
+  previo en papel antes de codear.
+
+
+══════════════════════════════════════════════════════
+08. AMBIENTE — DECLARACION DE VARIABLES
+══════════════════════════════════════════════════════
+
+Definicion:
+  El AMBIENTE es la seccion dentro de ACCION donde declaras todas las
+  variables y constantes que vas a usar. Va ANTES del PROCESO.
+
+Tipos disponibles:
+  a      : ENTERO;      // numero entero, sin decimales
+  b      : REAL;        // numero con decimales
+  c      : BOOLEANO;    // Verdadero o Falso
+  nombre : AN(20);      // ALFANUMERICO: texto de hasta 20 caracteres
+  codigo : N(5);        // NUMERICO: numero entero de hasta 5 cifras
+  MAX    = 100;         // CONSTANTE: valor fijo, no cambia nunca
+
+Reglas:
+  - Los nombres de variables siempre en minuscula (convencion de catedra).
+  - Las CONSTANTES se asignan con = (sin dos puntos).
+  - Las VARIABLES se declaran con : TIPO (sin asignar valor).
+
+Nota:
+  Declarar una variable solo RESERVA el espacio en RAM.
+  El valor se le asigna en el PROCESO con :=, nunca en el AMBIENTE.
+
+
+══════════════════════════════════════════════════════
+09. PROCESO — LOGICA DEL ALGORITMO
+══════════════════════════════════════════════════════
+
+Definicion:
+  El PROCESO es donde va toda la logica: asignaciones, operaciones,
+  lecturas, escrituras. Viene DESPUES del AMBIENTE.
+  No tiene palabra de cierre propia: termina con FIN_ACCION.
+
+Ejemplo:
+  ACCION mi_primer_algoritmo ES
+      AMBIENTE
+          a: ENTERO;
+          b: ENTERO;
+      PROCESO
+          LEER(a);
+          b := a * 2;
+          ESCRIBIR(b);
+  FIN_ACCION
+
+Nota:
+  El AMBIENTE declara (crea). El PROCESO asigna (da valor) y opera.
+  Nunca mezcles las responsabilidades de uno en el otro.
+
+
+══════════════════════════════════════════════════════
+10. ASIGNACION (:=)
+══════════════════════════════════════════════════════
+
+Definicion:
+  La asignacion es darle un valor a una variable. Se usa el operador :=
+  y SOLO puede usarse dentro del PROCESO, nunca en el AMBIENTE.
+
+Sintaxis:
+  variable := expresion
+
+Como leerlo:
+  b := a + 5;   →   "b recibe el valor de a + 5"
+
+Ejemplos:
+  a := 23;             // a ahora vale 23
+  b := a + 5;          // b ahora vale 28
+  c := (a - b) / 2;    // c recibe el resultado de esa operacion
+
+Error comun:
+  b = a + 5;    // INCORRECTO en pseudocodigo AED — eso es comparacion
+  b := a + 5;   // CORRECTO
+
+
+══════════════════════════════════════════════════════
+11. COMENTARIOS (//)
+══════════════════════════════════════════════════════
+
+Definicion:
+  Los comentarios son notas para el lector humano. La computadora los
+  ignora completamente. Se escriben con doble barra //.
+
+Sintaxis:
+  // comentario de linea entera
+  a: ENTERO;   // comentario al final de una linea de codigo
+
+Para que sirven:
+  Documentar el codigo para que vos mismo (o alguien mas) entienda
+  que hace cada parte sin tener que releerla entera.
+
+Nota:
+  No abuses de los comentarios. Un buen nombre de variable ya explica
+  muchas cosas. Comenta solo lo que no es obvio.
+
+
+══════════════════════════════════════════════════════
+12. IDENTACION
+══════════════════════════════════════════════════════
+
+Definicion:
+  La identacion es el sangrado del texto: mover el codigo hacia adentro
+  con TAB o 4 espacios para mostrar jerarquia visual.
+
+Regla:
+  Cada vez que "entras" a una estructura, identas un nivel (4 espacios).
+
+Ejemplo:
+  ACCION ejemplo ES            ← nivel 0
+      AMBIENTE                 ← nivel 1 (4 espacios)
+          a: ENTERO;           ← nivel 2 (8 espacios)
+      PROCESO                  ← nivel 1
+          LEER(a);             ← nivel 2
+          SI (a > 0) ENTONCES  ← nivel 2
+              ESCRIBIR(a);     ← nivel 3 (12 espacios)
+          FIN_SI               ← nivel 2
+  FIN_ACCION                   ← nivel 0
+
+Nota:
+  La identacion no cambia lo que hace el codigo, pero hace la
+  JERARQUIA visible de un vistazo. Sin ella, el codigo es ilegible.
+
+
+══════════════════════════════════════════════════════
+13. FUNCION
+══════════════════════════════════════════════════════
+
+Definicion:
+  Una FUNCION es una subaccion que realiza un calculo y RETORNA un valor.
+  Se usa cuando necesitas que el resultado vuelva al que la llamo.
+
+Sintaxis:
+  FUNCION nombre_funcion(param1: TIPO; param2: TIPO): TIPO_RETORNO
+      AMBIENTE
+          // variables locales de esta funcion
+      PROCESO
+          // logica
+          nombre_funcion := valor_a_retornar;   // asi se retorna
+  FIN_FUNCION
+
+Ejemplo:
+  FUNCION sumar(a: ENTERO; b: ENTERO): ENTERO
+      PROCESO
+          sumar := a + b;
+  FIN_FUNCION
+
+  // llamada desde el PROCESO principal:
+  resultado := sumar(3, 5);   // resultado = 8
+
+Parametros vs Argumentos:
+  Parametros → los nombres definidos en la declaracion de la funcion.
+               Son "cajitas vacias" que esperan recibir algo.
+  Argumentos → los valores reales que le pasas cuando la llamas.
+               Son los que llenan esas cajitas.
+
+Cuando termina:
+  La FUNCION termina cuando llega a FIN_FUNCION. El control vuelve
+  al punto exacto donde fue llamada.
+
+
+══════════════════════════════════════════════════════
+14. PROCEDIMIENTO
+══════════════════════════════════════════════════════
+
+Definicion:
+  Un PROCEDIMIENTO es una subaccion que ejecuta acciones pero NO retorna
+  un valor. Se usa para agrupar pasos que se repiten o para organizar
+  el codigo en partes mas pequenas.
+
+Sintaxis:
+  PROCEDIMIENTO nombre_proc(param1: TIPO; param2: TIPO)
+      AMBIENTE
+          // variables locales
+      PROCESO
+          // logica, acciones
+  FIN_PROCEDIMIENTO
+
+Ejemplo:
+  PROCEDIMIENTO saludar(E nombre: AN(20))
+      PROCESO
+          ESCRIBIR("Hola, ");
+          ESCRIBIR(nombre);
+  FIN_PROCEDIMIENTO
+
+  // llamada desde el PROCESO principal:
+  ACCION principal ES
+      AMBIENTE
+          n: AN(20);
+      PROCESO
+          n := "Carlos";
+          saludar(n);   // imprime "Hola, Carlos"
+  FIN_ACCION
+
+Funcion vs Procedimiento:
+  Retorna valor?       FUNCION → SI      PROCEDIMIENTO → NO
+  Tiene tipo retorno?  FUNCION → SI      PROCEDIMIENTO → NO
+  Como retorna?        nombre := valor   no retorna
+  Cierre               FIN_FUNCION       FIN_PROCEDIMIENTO
+
+Regla practica:
+  Si necesitas usar el resultado en una expresion → FUNCION
+  Si solo queres que "haga algo"                 → PROCEDIMIENTO
+
+
+══════════════════════════════════════════════════════
+15. PARAMETROS: E / S / ES
+══════════════════════════════════════════════════════
+
+Definicion:
+  Cada parametro de una funcion o procedimiento tiene un MODO que indica
+  como se usa ese dato dentro de la subaccion.
+
+Modos:
+  E  (Entrada)        → el dato entra a la subaccion, no se modifica afuera.
+  S  (Salida)         → la subaccion devuelve un dato por ese parametro.
+  ES (Entrada/Salida) → entra con un valor y puede salir modificado.
+
+Sintaxis:
+  FUNCION calcular(E base: ENTERO; E altura: ENTERO): ENTERO
+      PROCESO
+          calcular := (base * altura) / 2;
+  FIN_FUNCION
+
+Ejemplo completo (area de rectangulo y mostrado):
+  FUNCION area_rectangulo(E base: ENTERO; E altura: ENTERO): ENTERO
+      PROCESO
+          area_rectangulo := base * altura;
+  FIN_FUNCION
+
+  PROCEDIMIENTO mostrar_area(E area: ENTERO)
+      PROCESO
+          ESCRIBIR("El area es: ");
+          ESCRIBIR(area);
+  FIN_PROCEDIMIENTO
+
+  ACCION principal ES
+      AMBIENTE
+          b, h, resultado: ENTERO;
+      PROCESO
+          LEER(b);
+          LEER(h);
+          resultado := area_rectangulo(b, h);
+          mostrar_area(resultado);
+  FIN_ACCION
+
+
+══════════════════════════════════════════════════════
+16. PASAJE POR VALOR VS POR REFERENCIA
+══════════════════════════════════════════════════════
+
+Definicion:
+  Cuando llamas a una subaccion y le pasas una variable, el dato puede
+  viajar de dos formas: como COPIA (por valor) o como ORIGINAL (por referencia).
+
+Por Valor (copia):
+  La subaccion recibe una FOTOCOPIA del dato. Si lo modifica adentro,
+  el original afuera NO cambia. Es el comportamiento por defecto.
+
+  PROCEDIMIENTO sumar_uno(n: ENTERO) ES
+      PROCESO
+          n := n + 1;     // modifica la COPIA, no el original
+  FIN_PROCEDIMIENTO
+
+  x := 5;
+  sumar_uno(x);
+  // x sigue siendo 5 — la copia fue modificada, no x
+
+Por Referencia (original):
+  La subaccion recibe la variable ORIGINAL. Cualquier cambio adentro
+  se refleja afuera. Se indica con VAR antes del parametro.
+
+  PROCEDIMIENTO sumar_uno(VAR n: ENTERO) ES
+      PROCESO
+          n := n + 1;     // modifica el ORIGINAL
+  FIN_PROCEDIMIENTO
+
+  x := 5;
+  sumar_uno(x);
+  // x ahora vale 6 — el original fue modificado
+
+Cuando usar cada uno:
+  Por valor     → cuando la subaccion solo necesita LEER el dato.
+  Por referencia→ cuando la subaccion necesita MODIFICAR el dato y
+                  que ese cambio persista afuera.
+
+Nota:
+  En C esto se implementa con punteros (int *n). La idea es exactamente
+  la misma, solo cambia la sintaxis.
+
+
+══════════════════════════════════════════════════════
+17. SECUENCIAS — CONCEPTO Y CARACTERISTICAS
+══════════════════════════════════════════════════════
+
+Definicion:
+  Una SECUENCIA es una estructura de datos que vive en MEMORIA EXTERNA
+  (disco) y guarda elementos uno detras de otro, en orden. Es un conjunto
+  de datos relacionados entre si, almacenados en memoria externa.
+
+Acceso secuencial:
+  Para llegar al elemento N tenes que pasar primero por el 1, 2, 3... N-1.
+  No podes saltearte ninguno.
+
+  Analogia: las ciudades en una ruta. Tenes que ir pasando por cada una
+  segun el camino que elegiste. No podes teletransportarte.
+
+Caracteristicas principales:
+  - El primer elemento da acceso a todos los siguientes (sucesores).
+  - Vive en MEMORIA EXTERNA (disco), no en RAM.
+  - Acceso SECUENCIAL: un elemento a la vez, en orden.
+  - Tiene FUNCIONES RESERVADAS para operarla.
+  - Contiene UN SOLO tipo de dato por secuencia (caracteres o enteros).
+
+Relacion de sucesion:
+  Todo elemento (excepto el ultimo) esta antes que otro.
+  Todo elemento (excepto el primero) le sigue a otro.
+
+  Ejemplo:  | 23 | 18 | 17 | ... | 100 |
+               El 18 sucede al 23.
+               El 17 procede al 18.
+               El 100 es el ultimo.
+
+Declaracion en el AMBIENTE:
+  sec     : SECUENCIA DE CARACTER;    // secuencia de caracteres
+  numeros : SECUENCIA DE ENTERO;      // secuencia de enteros
+
+Nota:
+  Las secuencias son la base conceptual de los ARCHIVOS. Un archivo es,
+  en esencia, una secuencia de registros. Por eso primero estudiamos
+  secuencias y despues archivos.
+
+
+══════════════════════════════════════════════════════
+18. LA VENTANA
+══════════════════════════════════════════════════════
+
+Definicion:
+  Como el acceso es secuencial, en cada momento solo podes "ver" UN
+  elemento a la vez. Ese elemento actual se llama VENTANA.
+
+La ventana NO es un tipo especial:
+  Es una VARIABLE COMUN del AMBIENTE, del MISMO TIPO que los elementos
+  de la secuencia. Es donde se carga el elemento actual cada vez que
+  haces AVZ.
+
+Declaracion en el AMBIENTE:
+  sec : secuencia de caracter
+  v   : caracter                  // ventana — mismo tipo que la secuencia
+
+Analogia:
+  La secuencia es un tren con muchos vagones. La ventana es la ventanilla
+  por la que te asomas. Solo ves el vagon que tenes enfrente. Para ver
+  el siguiente, el tren tiene que avanzar un lugar (eso lo hace AVZ).
+
+Nota:
+  El nombre "v" es convencion de la catedra para la variable de ventana,
+  pero podes usar cualquier nombre valido.
+
+
+══════════════════════════════════════════════════════
+19. ARR, AVZ, CREAR, ESCRIBIR, CERRAR
+══════════════════════════════════════════════════════
+
+El pseudocodigo da funciones RESERVADAS para trabajar con secuencias.
+Son las UNICAS formas legales de operarlas. Se escriben en MAYUSCULAS.
+
+ARR(sec):
+  Posiciona la secuencia en su INICIO en MODO LECTURA. NO carga todavia
+  la primera ventana — solo deja la secuencia lista para que el primer
+  AVZ traiga el primer elemento.
+
+AVZ(sec, v):
+  Avanza la ventanilla un lugar y carga el siguiente elemento en la
+  variable v. Si lo llamas justo despues de ARR, trae el primer elemento.
+  AVZ es la UNICA forma de leer una secuencia (NO existe LEER para secuencias).
+
+CREAR(sec):
+  Inicializa una secuencia completamente nueva y vacia, lista para escritura.
+
+ESCRIBIR(sec, valor):
+  Guarda un dato nuevo al final de la secuencia de salida.
+  (Segun la catedra puede ser GRABAR — son equivalentes.)
+
+CERRAR(sec):
+  Cierra la secuencia. Es OBLIGATORIO cerrar todo lo que se abrio con ARR
+  o se creo con CREAR — sino se pueden perder datos en disco.
+
+Regla de oro:
+  NO SE LEE Y SE ESCRIBE A LA VEZ sobre la misma secuencia.
+  O se lee con ARR + AVZ, o se escribe con CREAR + ESCRIBIR/GRABAR.
+  Esto no es un capricho: es como funcionan los archivos secuenciales
+  en disco. La cabeza lectora/escritora va en una sola direccion.
+
+
+══════════════════════════════════════════════════════
+20. FDS Y NFDS
+══════════════════════════════════════════════════════
+
+FDS(sec) — Fin De Secuencia:
+  Funcion BOOLEANA. Devuelve VERDADERO si ya se llego al final de la
+  secuencia (no quedan mas elementos), y FALSO si todavia quedan.
+
+NFDS(sec) — No Fin De Secuencia:
+  Lo contrario de FDS. Devuelve VERDADERO mientras TODAVIA queden
+  elementos por leer, y FALSO cuando ya no hay mas.
+
+  NFDS(sec)  ⟺  NO FDS(sec)
+
+Por que se usa mas NFDS?
+  Porque queremos seguir recorriendo MIENTRAS HAYA elementos. La
+  condicion natural del bucle es "seguir mientras NO sea fin" → NFDS.
+
+  Mientras NFDS(sec) Hacer        // se usa siempre
+  Mientras NO FDS(sec) Hacer      // valido pero mas largo — redundante
+
+Nota:
+  En algunos enunciados de parcial vas a ver dibujada la secuencia con
+  "FDS" en la ultima celda. Eso es la representacion GRAFICA del fin
+  de archivo, no un valor de la secuencia ni la funcion FDS(sec).
+
+  [ a ][ b ][ c ][ FDS ]   ← marca grafica de EOF en el enunciado
+  FDS(sec)                  ← la funcion que usas en tu pseudocodigo
+
+
+══════════════════════════════════════════════════════
+21. SUBSECUENCIAS ENLAZADAS
+══════════════════════════════════════════════════════
+
+Definicion:
+  Son grupos de elementos consecutivos donde SE SABE DE ANTEMANO la
+  cantidad de elementos que tiene cada grupo. Un vagon termina donde
+  empieza el otro — continuidad horizontal, sin contenedores.
+
+Cuando se usan:
+  Cuando la consigna te dice exactamente cuantos elementos forman cada
+  grupo: "codigos de 4 digitos", "bloques de 3 caracteres", etc.
+  → se usa PARA.
+
+Estructura tipica:
+  Mientras NFDS(sec) Hacer
+      Mientras (v = ' ') Hacer   // limpiar blancos si hay separadores
+          AVZ(sec, v);
+      Fin_Mientras
+      Para i := 1 Hasta N Hacer  // N = cantidad conocida por grupo
+          // procesar v
+          AVZ(sec, v);
+      Fin_Para
+  Fin_Mientras
+
+Ejemplo — contar cuantos '0' hay en codigos de 4 cifras separados por espacio:
+  Datos: |1|3|2|5| |4|8|9|0| |8|9|7|6| |3|4|5|2| |*|
+
+  ACCION enlazada ES
+      AMBIENTE
+          s: SECUENCIA DE CARACTERES;
+          v: CARACTER;
+          cont, i: ENTERO;
+      PROCESO
+          ARR(s);
+          AVZ(s, v);
+          cont := 0;
+          Mientras (NFDS(s)) Hacer
+              Mientras (v = ' ') Hacer
+                  AVZ(s, v);
+              Fin_Mientras
+              Para (i := 1 Hasta 4) Hacer
+                  Si (v = '0') Entonces
+                      cont := cont + 1;
+                  Fin_Si
+                  AVZ(s, v);
+              Fin_Para
+          Fin_Mientras
+          Escribir('Cantidad de 0 encontrados: ', cont);
+  FIN_ACCION
+
+Nota:
+  El PARA de 4 es lo que define que es ENLAZADA: se sabe cuantos
+  elementos tiene cada grupo. Si no se sabe la cantidad → JERARQUICA.
+
+
+══════════════════════════════════════════════════════
+22. SUBSECUENCIAS JERARQUICAS
+══════════════════════════════════════════════════════
+
+Definicion:
+  Son grupos dentro de grupos — relacion de inclusion (contenedores
+  dentro de contenedores). NO se sabe cuantos elementos tiene cada
+  nivel → se usa MIENTRAS con marca para cada nivel.
+  Se tratan de MAYOR a MENOR jerarquia (afuera → adentro).
+
+Cuando se usan:
+  Cuando los grupos tienen cantidad VARIABLE de elementos y cada nivel
+  esta delimitado por una marca distinta.
+
+Estructura tipica:
+  Mientras (condicion_nivel_1) Hacer         // nivel mas externo
+      Mientras (condicion_nivel_2) Hacer     // nivel intermedio
+          Mientras (condicion_nivel_3) Hacer // nivel mas interno
+              // procesar elemento
+              AVZ(s, v);
+          Fin_Mientras
+          // tratar fin nivel 3
+          AVZ(s, v);
+      Fin_Mientras
+      // tratar fin nivel 2
+      AVZ(s, v);
+  Fin_Mientras
+
+Ejemplo — texto con parrafos, oraciones y letras:
+  Mostrar cantidad de 'a', cantidad de oraciones y de parrafos.
+  Marcas: '.' termina oracion, '#' termina parrafo, '*' termina texto.
+
+  ACCION jerarquica ES
+      AMBIENTE
+          s: SECUENCIA DE CARACTERES;
+          v: CARACTER;
+          cont_a, cont_oracion, cont_parrafo: ENTERO;
+      PROCESO
+          ARR(s);
+          AVZ(s, v);
+          cont_a := 0;
+          cont_oracion := 0;
+          cont_parrafo := 0;
+          Mientras (v <> '*') Hacer          // TEXTO
+              Mientras (v <> '#') Hacer      // PARRAFO
+                  Mientras (v <> '.') Hacer  // ORACION
+                      Si (v = 'a') Entonces
+                          cont_a := cont_a + 1;
+                      Fin_Si
+                      AVZ(s, v);
+                  Fin_Mientras
+                  cont_oracion := cont_oracion + 1;
+                  AVZ(s, v);
+              Fin_Mientras
+              cont_parrafo := cont_parrafo + 1;
+              AVZ(s, v);
+          Fin_Mientras
+          Escribir('Total letras a: ', cont_a);
+          Escribir('Total oraciones: ', cont_oracion);
+          Escribir('Total parrafos: ', cont_parrafo);
+          CERRAR(s);
+  FIN_ACCION
+
+Metodologia para el parcial (antes de codear):
+  1. Dibuja 10 bloques con ejemplos extremos o casos limite.
+  2. Determina el tipo: cantidad conocida → ENLAZADA / PARA.
+                       marca, cantidad desconocida → JERARQUICA / MIENTRAS.
+  3. Identifica los separadores de cada nivel.
+  4. Define contadores, acumuladores y flags necesarios.
+  5. Escribe el pseudocodigo de AFUERA HACIA ADENTRO.
+
+Nota:
+  El AVZ es el motor base — es el que te dice en que posicion esta
+  el cabezal en cada momento. Nunca lo pierdas de vista.
+
+
+══════════════════════════════════════════════════════
+23. SECUENCIAS DEFINIDAS VS INDEFINIDAS
+══════════════════════════════════════════════════════
+
+DEFINIDA:
+  Se conoce PREVIAMENTE la cantidad de elementos.
+  NO usa marca de fin: el bucle termina cuando el CONTADOR llego a N.
+  Estructura → PARA...HACER o REPETIR con contador.
+
+  Ejemplo: "los promedios de lluvia de los 4 primeros meses del ano"
+           (sabes que son 4, no necesitas marca).
+
+  Para i := 1 Hasta N Hacer
+      AVZ(sec, v)
+      // procesar v
+  Fin Para
+
+INDEFINIDA:
+  NO se conoce la cantidad de elementos.
+  Puede terminar de DOS formas:
+
+  a) Por EOF → cuando el archivo se acabo.
+     Se detecta con NFDS:
+     Mientras NFDS(sec) Hacer ...
+
+  b) Por MARCA CENTINELA → un valor conocido dentro de los datos
+     que indica "aca termino": "*", "%", -1, 1900, 999, etc.
+     Se detecta comparando la ventana con la marca:
+     Mientras v <> "*" Hacer ...
+
+Regla para detectar el tipo:
+  El enunciado dice un numero ("4 meses", "30 alumnos") → DEFINIDA
+  El enunciado NO dice numero pero hay marca               → INDEFINIDA con marca
+  El enunciado NO dice numero ni hay marca                 → INDEFINIDA por EOF
+
+Nota:
+  La marca de fin pertenece a las INDEFINIDAS. Si hay marca, no sabes
+  cuantos elementos vas a leer hasta encontrarla → es indefinida.
+
+
+══════════════════════════════════════════════════════
+24. SECUENCIAS PURAS VS IMPURAS
+══════════════════════════════════════════════════════
+
+PURA:
+  Cada elemento es un DATO UNITARIO COMPLETO en si mismo.
+  La unidad logica coincide con la celda de la secuencia.
+  El ultimo elemento se trata IGUAL que los demas.
+
+  Ejemplos:
+    Secuencia de enteros con anos de nacimiento, terminada en 1900.
+    Secuencia de enteros con cantidad de errores, terminada en -1.
+
+IMPURA:
+  Los datos logicos estan AGRUPADOS: varios elementos de la secuencia
+  forman UNA unidad logica. Suele haber separadores entre grupos.
+  El ultimo elemento NO se trata igual al resto.
+  Estructura → PRE-TEST (Mientras).
+
+  Ejemplos:
+    Secuencia de caracteres con patentes, terminada en %.
+    (varias letras y numeros forman UNA patente)
+    Secuencia de caracteres con codigos de barra separados por espacio,
+    terminada en *.
+    (varios caracteres forman UN codigo)
+
+Las preguntas para clasificar:
+  → Todos los elementos se pueden operar individualmente de la misma forma?
+  → Conozco la cantidad de elementos de la secuencia?
+  → El ultimo elemento tiene relacion con el resto del conjunto?
+
+Ejemplos de clasificacion rapida:
+  | 1990 | 2005 | 2009 | 1900 |   → INDEFINIDA, PURA  (termina en 1900)
+  | 10.5 | 20.7 | 32   | 28   |   → DEFINIDA, PURA    (4 meses conocidos)
+  | A|C|2|5|6| |X|E|A|F|3| |% |   → INDEFINIDA, IMPURA (patentes, termina en %)
+
+
+══════════════════════════════════════════════════════
+25. LAS 3 COMBINACIONES VALIDAS
+══════════════════════════════════════════════════════
+
+Cruzando los dos criterios (Definida/Indefinida x Pura/Impura) salen
+TRES combinaciones reales, no cuatro:
+
+  Definida  + Pura   → SI EXISTE ✓
+    Cantidad conocida. Cada elemento es dato unitario. Contador (PARA).
+    Ejemplo: promedios de lluvia de 4 meses.
+
+  Definida  + Impura → NO EXISTE ✗
+    Si conoces la cantidad no necesitas marca, y como cada elemento se
+    procesa igual, no hay agrupacion. Las DEFINIDAS siempre son PURAS.
+
+  Indefinida + Pura  → SI EXISTE ✓
+    Cantidad desconocida. Cada elemento es dato unitario.
+    Termina por EOF (NFDS) o por marca del mismo tipo.
+    Ejemplo: anos de nacimiento terminados en 1900.
+
+  Indefinida + Impura → SI EXISTE ✓
+    Cantidad desconocida. Datos agrupados en unidades logicas.
+    Termina por marca de fin. Estructura PRE-TEST.
+    Ejemplo: patentes terminadas en %, codigos separados por espacio.
+
+Nota:
+  Si te preguntan en el parcial si una combinacion existe o no,
+  "Definida Impura" es la que NO existe — siempre.
+
+
+══════════════════════════════════════════════════════
+26. RECORRIDO INDEFINIDA — EOF (NFDS)
+══════════════════════════════════════════════════════
+
+Definicion:
+  Esquema clasico para recorrer una secuencia INDEFINIDA que termina
+  por EOF (fin de archivo), sin marca centinela dentro de los datos.
+
+Esquema:
+  ARR(sec)
+  AVZ(sec, v)              // lectura adelantada (priming read)
+  cant := 0
+  Mientras NFDS(sec) Hacer
+      cant := cant + 1
+      AVZ(sec, v)          // traer la siguiente ventana
+  Fin_Mientras
+  Escribir("Total: ", cant)
+  CERRAR(sec)
+
+Por que hay DOS AVZ?
+  El Mientras evalua su condicion ANTES de entrar al cuerpo. Si la
+  primera vez que llega al Mientras la ventana esta vacia (ARR no carga
+  nada todavia), la condicion no tiene sentido.
+
+  Por eso se hace una LECTURA ADELANTADA (priming read) ANTES del bucle:
+  para que cuando el Mientras evalue por primera vez, la ventana ya tenga
+  el primer elemento cargado.
+
+  ARR          → posiciona la secuencia (ventana vacia)
+  AVZ inicial  → carga la PRIMERA ventana
+  Mientras     → evalua si hay algo para procesar
+  Procesar     → uso la ventana actual
+  AVZ al final → trae la SIGUIENTE ventana antes de re-evaluar
+
+Nota:
+  Si pusieras un solo AVZ al principio del cuerpo del Mientras,
+  procesarias la ventana ANTERIOR a la que acabas de leer y se te
+  escaparia el primer (o el ultimo) elemento. Error clasico.
+
+
+══════════════════════════════════════════════════════
+27. RECORRIDO INDEFINIDA — CENTINELA (MARCA DE FIN)
+══════════════════════════════════════════════════════
+
+Definicion:
+  Variante de la secuencia INDEFINIDA donde el fin no es el EOF sino
+  una MARCA CENTINELA conocida dentro de los datos (por ejemplo el
+  caracter "*", el numero -1, etc.).
+
+Esquema:
+  ARR(sec)
+  AVZ(sec, v)              // lectura adelantada
+  cant_a := 0
+  Mientras v <> "*" Hacer
+      Si v = "A" Entonces
+          cant_a := cant_a + 1
+      Fin_Si
+      AVZ(sec, v)          // traer la siguiente
+  Fin_Mientras
+  Escribir("Hay ", cant_a, " letras A.")
+  CERRAR(sec)
+
+Por que NO usar NFDS en este caso?
+  Porque la MARCA forma parte de la secuencia. Si usaras NFDS, leerias
+  la marca con AVZ, la procesarias como un elemento mas (mal!), y recien
+  en la vuelta siguiente NFDS daria FALSO. Demasiado tarde.
+  Comparando la ventana contra la marca, el bucle corta JUSTO cuando
+  la marca llega a la ventana, sin procesarla.
+
+Resumen de las DOS variantes de INDEFINIDA:
+  Con marca centinela → Mientras v <> "*"   Hacer
+  Por EOF             → Mientras NFDS(sec)  Hacer
+
+Variante con Repetir/Hasta que:
+  Repetir
+      // procesar v
+      AVZ(sec, v)
+  Hasta que v = "*"
+
+  Diferencia: Repetir/Hasta que SIEMPRE entra al cuerpo al menos una vez
+  (post-condicion). Mientras puede no entrar nunca si la primera ventana
+  ya es la marca (pre-condicion).
+
+Regla practica:
+  Secuencia tiene marca centinela → compara la ventana con la marca.
+  Secuencia NO tiene marca        → usa NFDS.
+
+
+══════════════════════════════════════════════════════
+28. RECORRIDO DEFINIDA — CONTADOR (PARA)
+══════════════════════════════════════════════════════
+
+Definicion:
+  Cuando la consigna te dice la cantidad de elementos DE ANTEMANO,
+  la secuencia es DEFINIDA. No hay marca de fin: vos sabes cuantos
+  son y los contas vos con un CONTADOR.
+
+Esquema con PARA:
+  ARR(sec)
+  AVZ(sec, v)              // primer elemento
+  max := v
+  mes_max := 1
+  Para i := 2 Hasta N Hacer
+      AVZ(sec, v)
+      Si v > max Entonces
+          max := v
+          mes_max := i
+      Fin_Si
+  Fin_Para
+  Escribir("Mes mas lluvioso: ", mes_max, " con ", max, "mm.")
+  CERRAR(sec)
+
+Ejemplo — mes mas lluvioso en 4 meses (N = 4 conocido de antemano):
+  Accion mes_mas_lluvioso ES
+  Ambiente
+      sec: secuencia de real
+      v, max: real
+      i, mes_max: entero
+      N: entero = 4
+  Proceso
+      ARR(sec)
+      AVZ(sec, v)
+      max := v
+      mes_max := 1
+      Para i := 2 Hasta N Hacer
+          AVZ(sec, v)
+          Si v > max Entonces
+              max := v
+              mes_max := i
+          Fin_Si
+      Fin_Para
+      Escribir("Mes mas lluvioso:", mes_max, " con ", max, "mm.")
+      CERRAR(sec)
+  Fin_Accion
+
+Variante con Repetir/Hasta que:
+  ARR(sec)
+  i := 0
+  Repetir
+      AVZ(sec, v)
+      i := i + 1
+      // procesar v
+  Hasta que i = N
+  CERRAR(sec)
+
+Por que no hay NFDS ni marca?
+  Porque ya sabes que son N elementos. El bucle corre exactamente N veces.
+  Cuando el contador llega a N, terminaste.
+
+
+══════════════════════════════════════════════════════
+29. GENERAR UNA SECUENCIA DE SALIDA
+══════════════════════════════════════════════════════
+
+Definicion:
+  Para generar una secuencia NUEVA (de salida) se usa CREAR seguido de
+  ESCRIBIR o GRABAR. El esquema clasico es leer de una secuencia de
+  ENTRADA, transformar los datos, y grabarlos en una de SALIDA.
+
+Regla:
+  NO se puede leer y escribir sobre la MISMA secuencia.
+  Por eso siempre se necesitan DOS secuencias distintas.
+  ARR para entrada → CREAR para salida.
+
+Esquema:
+  ARR(sec_ent)
+  AVZ(sec_ent, v_ent)         // priming sobre la entrada
+  CREAR(sec_sal)              // abrimos la salida para escritura
+  Mientras NFDS(sec_ent) Hacer
+      Si v_ent <> "$" Entonces
+          ESCRIBIR(sec_sal, v_ent);    // copio el dato si no es "$"
+      Fin_Si
+      AVZ(sec_ent, v_ent)
+  Fin_Mientras
+  CERRAR(sec_ent)
+  CERRAR(sec_sal)             // CERRAR LAS DOS
+
+Ejemplo completo — copiar secuencia quitando los simbolos "$":
+  Accion quitar_pesos ES
+  Ambiente
+      sec_ent, sec_sal: secuencia de caracter
+      v_ent: caracter
+  Proceso
+      ARR(sec_ent)
+      AVZ(sec_ent, v_ent)
+      CREAR(sec_sal)
+      Mientras NFDS(sec_ent) Hacer
+          Si v_ent <> "$" Entonces
+              ESCRIBIR(sec_sal, v_ent);
+          Fin_Si
+          AVZ(sec_ent, v_ent)
+      Fin_Mientras
+      CERRAR(sec_ent)
+      CERRAR(sec_sal)
+  Fin_Accion
+
+Regla a recordar:
+  ARR para entrada, CREAR para salida → siempre DOS secuencias distintas.
+  Un AVZ adelantado antes del Mientras, otro AVZ al final del cuerpo.
+  CERRAR las DOS secuencias al final del Proceso — sin excepcion.
+
+
+══════════════════════════════════════════════════════
+30. CONJUNTOS Y EL OPERADOR EN
+══════════════════════════════════════════════════════
+
+Definicion:
+  Un CONJUNTO es una coleccion de valores definidos como CONSTANTE en
+  el AMBIENTE. Sirve para agrupar valores que tienen el mismo significado
+  dentro del algoritmo.
+
+Declaracion en el AMBIENTE:
+  vocales     = ('a','e','i','o','u');
+  separadores = (' ','.',',',';');
+  digitos     = ('0','1','2','3','4','5','6','7','8','9');
+  rango_chico = (1..4);              // subrango numerico de 1 a 4
+
+Regla:
+  Todos los elementos del conjunto deben ser del MISMO TIPO.
+  Un conjunto de caracteres no puede mezclar numeros.
+
+El operador EN:
+  Responde a UNA sola pregunta: "este valor, esta dentro del conjunto?"
+  Devuelve VERDADERO o FALSO.
+
+  Si v EN vocales Entonces ...
+  Si v EN separadores Entonces ...
+
+Error de tipos (clasico):
+  cuatro = (1..4);
+  Si v_caracter EN cuatro Entonces ...   // ERROR — caracter vs numeros
+
+Patron de lectura por palabras (dos MIENTRAS anidados):
+  Cuando el problema te pide procesar PALABRAS dentro de una secuencia
+  de caracteres, el patron es siempre el mismo:
+
+  Mientras NFDS(sec) Hacer
+      // FASE 1: saltar separadores
+      Mientras NFDS(sec) Y (v EN separadores) Hacer
+          AVZ(sec, v)
+      Fin_Mientras
+      // FASE 2: leer UNA palabra
+      cant_letras := 0
+      Mientras NFDS(sec) Y NO (v EN separadores) Hacer
+          cant_letras := cant_letras + 1
+          AVZ(sec, v)
+      Fin_Mientras
+      // FASE 3: decidir sobre esa palabra
+      Si cant_letras = 4 Entonces
+          cant_pal := cant_pal + 1
+      Fin_Si
+  Fin_Mientras
+
+Por que dos MIENTRAS y no uno solo?
+  El MIENTRAS externo recorre PALABRAS.
+  El MIENTRAS interno recorre las LETRAS de la palabra actual.
+  Sin el interno, no tenes forma limpia de saber cuando una palabra termino.
+
+Por que cant_letras se reinicia dentro del MIENTRAS externo?
+  Porque cuenta letras de UNA palabra, no del total. Cada vuelta del
+  externo es una palabra nueva → contador en cero.
+
+Regla practica:
+  El problema habla de PALABRAS, BLOQUES o GRUPOS → dos MIENTRAS anidados.
+  El problema habla de elementos SUELTOS              → un solo MIENTRAS.
+  EN sirve para preguntar pertenencia a un conjunto del MISMO TIPO.
+
+
+══════════════════════════════════════════════════════
+31. MAPA DE DECISION — QUE HERRAMIENTA USAR Y CUANDO
+══════════════════════════════════════════════════════
+
+Cuando el parcial te describe una situacion, hacete estas preguntas
+en orden. Cada respuesta te lleva directo a la herramienta correcta.
+
+
+¿CUANTAS VECES TENGO QUE REPETIR?
+  ──────────────────────────────────────────────────
+  ¿Sabes cuantas veces?
+    SI  → PARA (ciclo por contador)
+
+    NO  → ¿Hay un valor especial que marca el fin?
+            SI  → MIENTRAS con centinela    (v <> "*")
+            NO  → MIENTRAS con NFDS         (fin de archivo)
+
+  ¿Necesito ejecutar el bloque al menos una vez si o si?
+            → REPETIR...HASTA (post-test)
+
+  Resumen:
+    Cantidad CONOCIDA de antemano          → PARA
+    Cantidad DESCONOCIDA + centinela       → MIENTRAS  (v <> marca)
+    Cantidad DESCONOCIDA + fin de archivo  → MIENTRAS  (NFDS)
+    Minimo una ejecucion garantizada       → REPETIR...HASTA
+
+
+¿NECESITO TOMAR UNA DECISION?
+  ──────────────────────────────────────────────────
+  ¿Solo actuo si algo es verdadero (sin caso contrario)?
+    → SI simple
+
+  ¿Tengo dos caminos: si pasa / si no pasa?
+    → SI...SINO
+
+  ¿Tengo muchos casos sobre la misma variable?
+    → SEGUN...HACER
+
+
+¿DONDE VIVEN LOS DATOS?
+  ──────────────────────────────────────────────────
+  Temporales — existen solo mientras corre el programa
+    → RAM → Variables
+
+  Permanentes — persisten aunque el programa termine
+    → Disco → Archivos / Secuencias
+
+
+¿QUE TIPO DE SECUENCIA ES?
+  ──────────────────────────────────────────────────
+  ¿La cantidad de elementos se conoce antes de procesar?
+    SI  → Definida    → recorrer con PARA
+    NO  → Indefinida  → recorrer con MIENTRAS
+
+  ¿Todos los elementos son del mismo tipo logico?
+    SI  → Pura
+    NO  → Impura  → siempre pre-test (MIENTRAS)
+
+  Las 3 combinaciones validas:
+    Definida   + Pura   → PARA
+    Indefinida + Pura   → MIENTRAS / REPETIR
+    Indefinida + Impura → MIENTRAS (pre-test obligatorio)
+    Definida   + Impura → NO EXISTE
+
+
+¿COMO ESTA ORGANIZADO EL ARCHIVO?
+  ──────────────────────────────────────────────────
+  Registros almacenados uno tras otro en orden
+    → Organizacion SECUENCIAL
+
+  Acceso por numero de posicion del registro
+    → Organizacion RELATIVA
+
+  Tiene un indice separado que mapea claves a posiciones
+    → Organizacion INDEXADA
+
+  Ojo: organizacion (como se GUARDA) es distinto de
+       acceso (como se LEE). No son sinonimos.
+
+
+¿NECESITO AGRUPAR DATOS DE UN ARCHIVO?
+  ──────────────────────────────────────────────────
+  Un solo campo de agrupacion (ej: por vendedor)
+    → Corte de control SIMPLE
+
+  Multiples niveles anidados (ej: pais → provincia → ciudad)
+    → Corte de control JERARQUICO
+      Cada nivel tiene sus propios acumuladores.
+      Al cambiar la clave, se procesan los totales del nivel
+      que termino y se reinician sus acumuladores.
+
+
+¿NECESITO UNA SUBACCION?
+  ──────────────────────────────────────────────────
+  ¿El resultado se usa en una expresion?
+    SI  → FUNCION     (retorna un valor, tiene tipo de retorno)
+    NO  → PROCEDIMIENTO (ejecuta acciones, no retorna nada)
+
+  ¿Como paso el dato?
+    Solo necesito leerlo dentro de la subaccion
+      → Por VALOR      (recibe una copia — el original no cambia)
+
+    Necesito que la subaccion modifique el original
+      → Por REFERENCIA (recibe el original — VAR en pseudocodigo,
+                        puntero * en C)
+
+
+¿QUE VARIABLE NECESITO DENTRO DEL BUCLE?
+  ──────────────────────────────────────────────────
+  Contar cuantas veces ocurre algo
+    → CONTADOR     (siempre incrementa en 1 exacto)
+      cont := cont + 1
+
+  Sumar valores que cambian en cada iteracion
+    → ACUMULADOR   (suma lo que corresponda)
+      total := total + valor
+
+  Registrar si algo ocurrio o no en algun momento
+    → BANDERA / FLAG  (booleano: V o F)
+      encontrado := Verdadero
+
+  Diferencia clave:
+    Contador  → siempre +1
+    Acumulador → +variable
+    Bandera   → cambia de estado (no suma)
+
+
+COMO LEER LAS PREGUNTAS TRAMPA DEL PARCIAL
+  ──────────────────────────────────────────────────
+  El parcial no siempre usa las palabras exactas de la teoria.
+  Aprende a mapear las descripciones a los conceptos:
+
+  "valor especial que indica el fin"     → centinela
+  "ejecuta al menos una vez"             → post-test (REPETIR)
+  "puede no ejecutarse nunca"            → pre-test (MIENTRAS)
+  "cantidad conocida de antemano"        → definida → PARA
+  "termina cuando encuentra X"           → centinela
+  "agrupa por un campo"                  → corte de control simple
+  "agrupa por niveles"                   → corte de control jerarquico
+  "retorna un valor"                     → FUNCION
+  "no retorna nada"                      → PROCEDIMIENTO
+  "modifica el original"                 → por referencia
+  "no modifica el original"              → por valor
+
+  Cuidado con las palabras absolutas:
+    SIEMPRE / NUNCA / SOLO / OBLIGATORIAMENTE
+    → si ves una de estas en una opcion, verificala con cuidado.
+      Suelen ser la trampa.
+
+

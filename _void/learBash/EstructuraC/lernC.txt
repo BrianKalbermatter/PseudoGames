@@ -1,0 +1,220 @@
+=============================================================
+  AED → C: Traer todo tu conocimiento de pseudocódigo a C
+=============================================================
+
+-------------------------------------------------------------
+1. TIPOS DE DATOS
+-------------------------------------------------------------
+
+  AED (Pseudocódigo)     C
+  ------------------     ----------------------------
+  entero                 int
+  real                   float / double
+  caracter               char
+  booleano               int (0=falso, 1=verdadero) o _Bool
+  texto / cadena         NO EXISTE → char[] o char*
+
+  DIFERENCIA CLAVE:
+  En AED "texto" es un tipo.
+  En C no existe. Un string ES un array de char terminado en '\0'.
+
+-------------------------------------------------------------
+2. VARIABLES
+-------------------------------------------------------------
+
+  AED:    entero x <- 5
+  C:      int x = 5;
+
+  AED:    caracter letra <- 'A'
+  C:      char letra = 'A';
+
+  AED:    texto nombre <- "Juan"
+  C:      char nombre[50] = "Juan";
+          // o como puntero (solo lectura):
+          char *nombre = "Juan";
+
+-------------------------------------------------------------
+3. CONCATENAR STRING + ENTERO  (la gran trampa)
+-------------------------------------------------------------
+
+  En AED y en C: NO se puede directamente.
+
+  AED:
+      texto resultado <- "Edad: " + 25   // ERROR conceptual
+
+  En C es peor, porque:
+      char *resultado = "Edad: " + 25;   // NO concatena
+      // esto es ARITMÉTICA DE PUNTEROS → mueve la dirección
+
+  LA SOLUCIÓN en C es sprintf() o snprintf():
+
+      char resultado[50];
+      int edad = 25;
+      sprintf(resultado, "Edad: %d", edad);
+      // resultado ahora contiene "Edad: 25"
+
+  sprintf es como printf pero escribe en un buffer (array de char)
+  en vez de imprimir en pantalla.
+
+-------------------------------------------------------------
+4. SECUENCIAS / ARREGLOS
+-------------------------------------------------------------
+
+  AED:    arreglo numeros[5] de entero
+  C:      int numeros[5];
+
+  AED:    numeros[0] <- 10
+  C:      numeros[0] = 10;
+
+  DIFERENCIA CRÍTICA:
+  En C los arreglos NO saben su tamaño. Vos tenés que guardarlo:
+
+      int numeros[5];
+      int tam = 5;    // llevarlo a mano
+
+  Array de caracteres (string):
+
+      char nombre[10] = "Juan";
+      // En memoria: ['J','u','a','n','\0', ?, ?, ?, ?, ?]
+      //                                ↑ terminador OBLIGATORIO
+
+  El '\0' (null terminator) le dice a C "acá termina el string".
+  Si no está, las funciones de string leen basura.
+
+-------------------------------------------------------------
+5. FUNCIONES Y PROCEDIMIENTOS
+-------------------------------------------------------------
+
+  AED:
+      funcion sumar(entero a, entero b): entero
+          retornar a + b
+
+  C:
+      int sumar(int a, int b) {
+          return a + b;
+      }
+
+  ---
+
+  AED:
+      procedimiento mostrar(texto msg)
+          escribir(msg)
+
+  C:
+      void mostrar(char *msg) {
+          printf("%s\n", msg);
+      }
+
+  void = procedimiento (no retorna nada)
+
+-------------------------------------------------------------
+6. ESTRUCTURAS (REGISTROS)
+-------------------------------------------------------------
+
+  AED:
+      tipo Alumno es registro
+          nombre: texto
+          edad:   entero
+          nota:   real
+
+  C:
+      typedef struct {
+          char  nombre[50];
+          int   edad;
+          float nota;
+      } Alumno;
+
+  Usar:
+      Alumno a;
+      a.edad = 20;
+      strcpy(a.nombre, "Juan");
+      // NO podés hacer: a.nombre = "Juan"  ← error de compilación
+
+  strcpy() porque los strings en C no se asignan con = una vez
+  declarados como array.
+
+-------------------------------------------------------------
+7. PUNTEROS  (lo nuevo de C)
+-------------------------------------------------------------
+
+  En AED trabajabas con listas enlazadas conceptualmente.
+  En C eso SON punteros.
+
+  AED:    referencia a un nodo (abstracto)
+  C:      int *p;    // puntero a entero
+
+  Ejemplo básico:
+
+      int x = 5;
+      int *p = &x;       // p apunta a x (& = dirección de)
+      printf("%d", *p);  // imprime 5   (* = desreferenciar)
+      *p = 10;           // cambia x a 10
+
+  Para listas enlazadas:
+
+      typedef struct Nodo {
+          int dato;
+          struct Nodo *siguiente;   // puntero al próximo
+      } Nodo;
+
+-------------------------------------------------------------
+8. MEMORIA DINÁMICA  (malloc / free)
+-------------------------------------------------------------
+
+  En AED crear un nodo era abstracto. En C:
+
+      // Crear nodo en heap (memoria dinámica)
+      Nodo *nuevo = malloc(sizeof(Nodo));
+      nuevo->dato = 5;
+      nuevo->siguiente = NULL;
+
+      // Al terminar, liberar:
+      free(nuevo);
+
+  ->  acceder al campo de un struct A TRAVÉS DE UN PUNTERO
+  .   acceder al campo de un struct DIRECTAMENTE (variable normal)
+
+-------------------------------------------------------------
+9. CONTROL DE FLUJO
+-------------------------------------------------------------
+
+  AED                          C
+  --------------------------   ---------------------------
+  si ... entonces              if (...) {
+  sino                         } else {
+  mientras ... hacer           while (...) {
+  para i desde 0 hasta n       for (int i = 0; i < n; i++) {
+  retornar                     return
+
+-------------------------------------------------------------
+10. FUNCIONES DE STRING  (reemplazan al "+")
+-------------------------------------------------------------
+
+  Como no podés concatenar con +, en C usás <string.h>:
+
+  Operación                    Función C
+  ---------------------------  --------------------------
+  Longitud de string           strlen(s)
+  Copiar string                strcpy(dest, src)
+  Concatenar dos strings       strcat(dest, src)
+  Comparar strings             strcmp(s1, s2)  → 0 si iguales
+  String + número → string     sprintf(buf, "%s%d", s, n)
+
+-------------------------------------------------------------
+RESUMEN MENTAL RÁPIDO
+-------------------------------------------------------------
+
+  AED texto        →  char[] en C  (array + '\0')
+  AED entero       →  int
+  AED real         →  float / double
+  AED booleano     →  int  (0 o 1)
+  AED registro     →  struct
+  AED arreglo[]    →  tipo arr[N]
+  AED referencia   →  puntero *
+  AED "crear nodo" →  malloc()
+  AED "liberar"    →  free()
+  AED concatenar   →  sprintf() / strcat()
+  AED escribir()   →  printf()
+  AED leer()       →  scanf()
+
+=============================================================

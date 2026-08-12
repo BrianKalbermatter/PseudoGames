@@ -1,0 +1,64 @@
+DOCUMENTACION — LAUNCHER Y AUTO-UPDATE
+=======================================
+
+PARA EL TESTER (primera vez)
+------------------------------
+1. Descargar launcher.sh desde el release en GitHub:
+   https://github.com/BrianKalbermatter/VimMon/releases/latest
+
+2. Darle permisos y ejecutar:
+   chmod +x launcher.sh
+   ./launcher.sh
+
+   El launcher descarga todo automaticamente (binario + assets + data)
+   y arranca el juego.
+
+3. Las proximas veces, solo ejecutar:
+   ./launcher.sh
+
+   Si hay una version nueva en GitHub la descarga sola.
+   Si no hay internet, arranca con la version que ya tiene.
+
+
+PARA EL TESTER (que ya tiene el juego)
+----------------------------------------
+Cada vez que quieras jugar, ejecuta desde la carpeta del juego:
+   ./launcher.sh
+
+El launcher compara tu version local (.version) con la ultima
+en GitHub. Si son distintas, descarga y actualiza automaticamente.
+
+
+PARA EL DESARROLLADOR (subir nueva version)
+---------------------------------------------
+1. Compilar:
+   make
+
+2. Empaquetar:
+   bash scripts/pack.sh
+
+3. Crear el release en GitHub y subir el paquete:
+   gh release create vX.XX --target aed_pseudo --title "PseudoGames vX.XX" --notes "..."
+   gh release upload vX.XX ../pseudogames-linux.tar.gz --clobber
+
+4. Pushear los cambios:
+   git push origin aed_pseudo
+
+   Los testers recibiran la actualizacion automaticamente
+   la proxima vez que ejecuten launcher.sh.
+
+
+ARCHIVOS INVOLUCRADOS
+----------------------
+scripts/launcher.sh       — script que usan los testers para jugar/actualizar
+scripts/pack.sh           — script para empaquetar el release
+DOCUMENTACIONES/documentacionLauncher.txt — este archivo
+
+
+NOTAS
+------
+- La carpeta saves/ NUNCA se sobreescribe en una actualizacion.
+  El progreso del jugador siempre se preserva.
+- El archivo .version guarda la version instalada localmente.
+  Si se borra, el launcher descarga todo de nuevo desde cero.
+- Requiere curl y tar instalados en el sistema del tester.

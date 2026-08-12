@@ -1,0 +1,110 @@
+[
+  {
+    "numero": 1,
+    "dificultad": "★",
+    "titulo": "Precio con Inflacion",
+    "enunciado": "Dado el costo actual C, la tasa de inflacion anual R (decimal),\nel anio actual A y el anio futuro N, calcular el precio futuro P:\n\n  P := C * (1 + R) ^ (N - A)\n\nUsá ESCRIBIR(P) al final.",
+    "pista": "anios := N - A;\nP := C * (1 + R) ^ anios;",
+    "casos_prueba": [
+      { "datos": "C=100, R=0.04, A=2024, N=2027", "tipo_salida": "real" },
+      { "datos": "C=250, R=0.10, A=2024, N=2026", "tipo_salida": "real" }
+    ]
+  },
+  {
+    "numero": 2,
+    "dificultad": "★",
+    "titulo": "Discriminante",
+    "enunciado": "Dados los coeficientes a, b, c de ax^2 + bx + c = 0,\ncalcular el discriminante D = b^2 - 4*a*c\nUsá ESCRIBIR(D) al final.",
+    "pista": "D := b^2 - 4*a*c;",
+    "casos_prueba": [
+      { "datos": "a=1, b=5, c=6", "tipo_salida": "real" },
+      { "datos": "a=2, b=1, c=3", "tipo_salida": "real" }
+    ]
+  },
+  {
+    "numero": 3,
+    "dificultad": "★",
+    "titulo": "Intercambio de Variables",
+    "enunciado": "C vale 18. D vale la mitad de C (9).\nIntercambiar sus valores usando una variable auxiliar.\nMostrar C y D con ESCRIBIR al final.",
+    "pista": "AUX := C;\nC := D;\nD := AUX;",
+    "casos_prueba": [
+      { "datos": "C=18, D=9", "tipo_salida": "entero" },
+      { "datos": "C=50, D=25", "tipo_salida": "entero" }
+    ]
+  },
+  {
+    "numero": 4,
+    "dificultad": "★",
+    "titulo": "Conversion de Moneda",
+    "enunciado": "Convertir dolares a pesos.\n\n  pesos := dolares * tipo_cambio\n\nUsá ESCRIBIR(pesos) al final.",
+    "pista": "pesos := dolares * tipo_cambio;",
+    "casos_prueba": [
+      { "datos": "dolares=100, tipo_cambio=1200", "tipo_salida": "real" },
+      { "datos": "dolares=50, tipo_cambio=1350",  "tipo_salida": "real" }
+    ]
+  },
+  {
+    "numero": 5,
+    "dificultad": "★★",
+    "titulo": "Expresiones con Funciones",
+    "enunciado": "K=4, Q=7, DOS=10. Calcular y mostrar:\n  TOT := K * (DOS - Q)\n  D   := DOS / K + Q * 2\nUsá ESCRIBIR(TOT) y ESCRIBIR(D).",
+    "pista": "TOT := K * (DOS - Q);\nD := DOS / K + Q * 2;",
+    "casos_prueba": [
+      { "datos": "K=4, Q=7, DOS=10", "tipo_salida": "real" }
+    ]
+  },
+  {
+    "numero": 6,
+    "dificultad": "★★",
+    "titulo": "Precio PC + Impresora",
+    "enunciado": "PCs a $500, impresoras a $200.\nDescuento PCs: 1-4 sin desc, 5-9 → 5%, 10+ → 10%.\nSi cp>=1 la impresora tiene 50% desc.\nCalcular total. ESCRIBIR(total).",
+    "pista": "Usa SI/SINO para el rango de cp.\nSI cp >= 1 ENTONCES precio_imp := 100 SINO precio_imp := 200;",
+    "casos_prueba": [
+      { "datos": "cp=3, ci=2", "tipo_salida": "real" },
+      { "datos": "cp=6, ci=1", "tipo_salida": "real" },
+      { "datos": "cp=0, ci=3", "tipo_salida": "real" }
+    ]
+  },
+  {
+    "numero": 7,
+    "dificultad": "★★",
+    "titulo": "Salario Neto",
+    "enunciado": "Descuentos sobre el bruto:\n  Jubilacion 11%, Obra social 3%, Sindicato 2%.\n\nneto := bruto - bruto*0.16\nUsá ESCRIBIR(neto).",
+    "pista": "total_desc := bruto * 0.16;\nneto := bruto - total_desc;",
+    "casos_prueba": [
+      { "datos": "bruto=10000", "tipo_salida": "real" },
+      { "datos": "bruto=50000", "tipo_salida": "real" }
+    ]
+  },
+  {
+    "numero": 8,
+    "dificultad": "★★",
+    "titulo": "Notas del Alumno",
+    "enunciado": "Leer 3 notas. Calcular promedio.\nSI promedio >= 6 → APROBADO\nSI promedio entre 4 y 5.99 → RECUPERATORIO\nSINO → DESAPROBADO\nUSA ESCRIBIR(promedio).",
+    "pista": "promedio := (nota1 + nota2 + nota3) / 3;",
+    "casos_prueba": [
+      { "datos": "nota1=7, nota2=8, nota3=9", "tipo_salida": "real" },
+      { "datos": "nota1=2, nota2=3, nota3=1", "tipo_salida": "real" }
+    ]
+  },
+  {
+    "numero": 9,
+    "dificultad": "★★★",
+    "titulo": "Funcion EsPar",
+    "enunciado": "Escribi una FUNCION EsPar que reciba un entero\ny devuelva si es par (1) o impar (0).\n\nEn el PROCESO: leer 10 numeros, contar pares/impares.\nUSA ESCRIBIR(contPar) y ESCRIBIR(contImpar).",
+    "pista": "contPar := 0; contImpar := 0;\nSI num MOD 2 = 0 ENTONCES contPar := contPar + 1;",
+    "casos_prueba": [
+      { "datos": "num=4", "tipo_salida": "entero" }
+    ]
+  },
+  {
+    "numero": 10,
+    "dificultad": "★★★★",
+    "titulo": "BOSS: Registro de Notas",
+    "enunciado": "-- BOSS DEL PARCIAL --\n\nLeer notas hasta -1 (FDS). Calcular:\n  a) Aprobados (nota >= 6) y Desaprobados\n  b) Promedio general\n  c) Nota maxima\n\nUsá MIENTRAS con FDS = -1.\nESCRIBIR(aprobados), ESCRIBIR(promedio), ESCRIBIR(maximo).",
+    "pista": "MIENTRAS nota <> -1 HACER\n  suma := suma + nota;\n  SI nota >= 6 ENTONCES aprobados := aprobados + 1;",
+    "casos_prueba": [
+      { "datos": "nota=7", "tipo_salida": "real" }
+    ]
+  }
+]

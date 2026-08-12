@@ -1,0 +1,862 @@
+----Secuencias de datos elementales-----
+
+# Ejercicio 2.1.1
+-------------------------------------------------------------------------------------
+Dada una secuencia de letras del alfabeto que finaliza con una marca '*', contar cuantas letras "A" hay en la secuencia.
+
+PSEUDOCODIGO
+##############################################################################
+
+# Base!:
+ARR(sec)
+  AVZ(sec, v)
+  MIENTRAS v <> FDS HACER
+      <procesar v>
+      AVZ(sec, v)
+  FIN_MIENTRAS
+##############################################################################
+
+
+# Ejercicio 2.1.2
+------------------------------------------------------------------------------------
+Dada una secuencia de letras del alfabeto que finaliza con la letra "Z", contar cuantas consonantes hay en la secuencia.
+
+###############################################################################
+
+# Ejercicio 2.1.3
+
+Se dispone de una secuencia de caracteres y se desea obtener una secuencia de salida que resulte de copiar la secuencia de entrada, descartando el caracter "$".
+
+
+# Ejercicio 2.1.4
+
+Se dispone de una secuencia de números de socios, y se desea saber la cantidad de socios que están registrados.
+
+# Ejercicio 2.1.5
+
+La secuencia de socios del problema anterior tiene el inconveniente de que los números están ordenados pero no son correlativos. Se desea generar una secuencia que contenga los números de socios que no figuran en la secuencia de socios.
+# Ejercicio 2.1.6
+
+Dada una secuencia de enteros que almacena la cantidad de habitantes de las ciudades capitales de las 23 provincias de la República Argentina, discriminados 4 categorías: menores de 18 años (varones y mujeres) y mayores de 18 años (varones y mujeres). Se pide determinar la población total y los siguientes porcentajes: masculinos, femeninos, mayores de 18 y menores de 18.
+Ejercicio 2.1.7¶
+
+Se tiene una secuencia de enteros que contiene todos los CUIT de los empleados de una empresa, la misma termina con el CUIT 0. Para evitar largas esperas en los días de pago, la empresa necesita organizarlos de acuerdo al último dígito de su documento, generar una secuencia con los CUIT de las personas que su número de documento termine con 0, 1, 2 o 3.
+Ejercicio 2.1.8¶
+
+Teniendo en cuenta el ejercicio anterior, se solicita que la secuencia de salida sea una secuencia de caracteres y los CUIT se separen unos de otros con el caracter "-".
+Ejercicio 2.1.9¶
+
+Se dispone de una secuencia de caracteres. Se desea determinar la cantidad de palabras que comienzan con la letra 'I'.
+Ejercicio 2.1.10¶
+
+Se dispone de una secuencia de caracteres. Se desea permita contar la cantidad de palabras que comienzan con una letra dada.
+Ejercicio 2.1.11¶
+
+Dada una secuencia de caracteres, determinar la cantidad de palabras de 4 caracteres (letras)
+Ejercicio 2.1.12¶
+
+Se dispone de una secuencia de caracteres. Se desea listar las palabras que comiencen con "ALG".
+Ejercicio 2.1.13¶
+
+A partir del ejercicio anterior, determinar el porcentaje que representan las palabras que comienzan con "ALG" sobre todas las palabras de la secuencia.
+Ejercicio 2.1.14¶
+
+Se dispone de una secuencia de caracteres y se desea saber la cantidad de caracteres (incluidos los espacios) que existen entre una coma y la siguiente. Se debe considerar que puede haber más de un par de comas, y que las subsecuencias inicial y final deben descartarse por no cumplir la condición enunciada. Supóngase que las comas son siempre contiguas al último caracter de la palabra.
+Ejercicio 2.1.15¶
+
+Se desea saber la cantidad promedio de palabras que contienen las oraciones de una secuencia de caracteres. Supóngase que los puntos son siempre contiguos al último caracter de la palabra. La secuencia finaliza con una marca.
+Ejercicio 2.1.16¶
+
+Se dispone de una secuencia de números de DNI asignados a un circuito electoral, generar otra secuencia de números que contenga los DNI múltiplos de 3.
+Ejercicio 2.1.17¶
+
+Se desea calcular el costo de un telegrama, que se determina en función del número de palabras (que vale V1 cada una), salvo que el promedio de letras por palabra supere las cinco letras, caso en que cada palabra vale V2.
+Ejercicio 2.1.18¶
+
+Escribir un algoritmo que produzca una secuencia de salida que contenga una oración formada por por las palabras en posición par de cada oración de una secuencia texto de entrada, que además comienzan con la letra 'M'.
+Ejercicio 2.1.19¶
+
+Dada una secuencia de caracteres, generar otra secuencia con todas las palabras de tres caracteres. Informar el porcentaje de las mismas, sobre el total de palabras de la secuencia de entrada. Considerar que puede haber más de un blanco entre palabras.
+Ejercicio 2.1.20¶
+
+Se dispone de dos secuencias texto formadas por oraciones bimembres (sujeto y predicado, separados por comas ‘,’). Se desea una secuencia texto de salida formada por oraciones bimembres, de la siguiente forma:
+
+El sujeto, de la secuencia 1, y el predicado, de la secuencia 2.
+
+Al finalizar informar cuantas oraciones tiene cada secuencia.
+Ejercicio 2.1.21¶
+
+Se dispone de dos secuencias texto formadas por oraciones bimembres (sujeto y predicado, separados por comas ‘,’). Se desea una secuencia texto de salida formada por oraciones bimembres, de la siguiente forma:
+
+El sujeto, de la secuencia 2, y el predicado, de la secuencia 1.
+
+Al finalizar informar cuantas oraciones tiene cada secuencia.
+Ejercicio 2.1.22¶
+
+La empresa Ideas Argentinas S.A. posee datos de sus empleados en dos secuencias de caracteres; la primera secuencia (Sec1) formada por los nombres (uno por persona) de los empleados separados por blancos y la segunda secuencia (Sec2) posee los números de documento de cada uno de los empleados (palabras de 8 dígitos numéricos). Ambas secuencias poseen la misma cantidad de datos, es decir al primer nombre de la primera secuencia le corresponde el primer número de documento de la segunda secuencia y así sucesivamente. La secuencia de números de documentos no posee espacios en blanco ni ningún otro tipo de caracter que separe un número de documento de otro.
+A la empresa le interesa tener en una nueva secuencia (Sec3) los datos de todas aquellas personas que cumplan la condición de que el nombre se encuentre en una posición impar. La nueva secuencia debe generarse de la siguiente manera: el número de documento seguido (sin espacios) por una coma y luego (sin espacios) por el nombre y seguido al nombre un #.
+Ejercicio 2.1.23¶
+
+Realice un algoritmo para el enunciado del ejercicio 1.22, pero considerando que los datos que se deben copiar en la Sec3 son los de aquellas personas que cumplan la condición de que: el número de documento comienza con un número impar.
+Ejercicio 2.1.24¶
+
+Realice un algoritmo para el enunciado del ejercicio 1.22, pero considerando que los datos que se deben copiar en la Sec3 son los de aquellas personas que cumplan la condición de que: el nombre no comienza con una vocal.
+Ejercicio 2.1.25¶
+
+Dada una secuencia texto de entrada que contiene palabras alfanuméricas, escribir un algoritmo que genere dos secuencias de salida. Una de ellas contendrá solo las palabras de la secuencia original que comienzan con vocal, en las cuales se reemplazarán todas las vocales por ‘#’, por ejemplo: entrada 'avión1', salida '#v##n1' y la otra será una secuencia numérica en la que se almacenarán las cantidades de vocales que se encontraron en cada una de las palabras que cumplieron la condición. Por final de proceso se deberá informar el promedio de palabras por oración.
+Ejercicio 2.1.26¶
+
+Se posee 2 secuencias (S1 y S2) con las cuales se desea generar una nueva secuencia (SAL) donde se intercalen las palabras de las secuencias de entrada, de la siguiente manera: copiar de S1 aquellas palabras que empiezan y terminan con la misma letra y de S2 aquellas palabras que posean al menos un digito numérico y además estén en posición par.
+Ejercicio 2.1.27¶
+
+Elaborar un procedimiento que dada una secuencia de caracteres como entrada genere otra del mismo tipo como salida.
+La secuencia de caracteres que se recibe incluye números de tarjetas de crédito, donde cada número tiene 16 dígitos. Se desea obtener como resultado una nueva secuencia de salida con los números de tarjetas válidos.
+El algoritmo para la validación de números de tarjetas de crédito es el siguiente: Para entender mejor el método usaremos un número correcto: 4013-7001-0977-4812, al que nos referiremos en el texto. Nos centramos en los caracteres que ocupan posiciones impares.
+
+4 0 1 3 7 0 0 1 0 9 7 7 4 8 1 2
+
+Por cada uno de ellos obtenemos el doble del valor que representan. Si el número resultante es menor que 9, se deja tal cual, en caso contrario, se le resta 9. En nuestro ejemplo: 4 * 2 = 8; 1 * 2 = 2; 7 * 2 = 14, mayor que nueve, se le resta 9. 14 - 9 = 5; y así sucesivamente. Si el número resultante de la suma de las multiplicaciones y de los dígitos en posición par, es múltiplo de 10, y a la vez menor o igual a 150, es un número de tarjeta válido.
+
+Para nuestro ejemplo: 8+0+2+3+5+0+0+1+0+9+5+7+8+8+2+2 = 60; por lo tanto el número es válido.
+Ejercicio 2.1.28¶
+
+La galería de pintura y arte nacional, PINTA DE ARGENTINA, almacena información sobre los artistas y sus obras de arte en secuencias de caracteres. Durante todo el año, las obras de arte son expuestas en eventos de subasta y exposición, en los cuales se comercializan al público en general.
+A fin de año la Comisión Directiva de la Galería solicita que, a partir de toda esa información, se generen algunos informes. Se debe tener en cuenta lo siguiente:
+
+    En la secuencia ARTISTAS, se almacena el estilo de arte ('R' – Renacentista, 'M' – Arte Moderno, 'B' – Barroco, 'S' – Surrealismo), el nombre de cada artista, lugar de nacimiento, edad y cantidad de obras por artista.
+    Los datos de cada artista están separados entre si por el símbolo '+' y finalizan con el símbolo '?'.
+    En la secuencia OBRAS, se almacena el nombre de la obra, el año en que fue hecha, su precio, precedido siempre del signo '$' (solo 3 digitos) y su estado ('V' – Vendido, 'R' – Reservado, 'U' – Obra Única).
+    Todos los datos de las obras están separados por el símbolo ',' y finalizan con el símbolo '/'.
+    El creador de cada obra se determina de acuerdo al dato 'cantidad de obras' de la secuencia ARTISTAS, por ej.: el autor RENE BARTOL tiene 2 obras, por lo cual las primeras 2 obras de la secuencia OBRAS le pertenecen, las siguientes 6, pertenecen a JUAN B JUSTO, etc.
+
+A continuación un ejemplo de ambas secuencias:
+
+SECUENCIA ARTISTAS M+RENE BARTOL+ROSARIO+34+2?R+JUAN B JUSTO+NEUQUEN+61+5?……..
+
+SECUENCIAS OBRAS
+SOL Y PARANA,1997,$913,V/GRITO DE ESPERANZA,2003,$235,R/PENAS,1997,$781,V/………
+
+A partir de lo expuesto anteriormente, se pide:
+
+    Generar una secuencia de salida con información de los artistas Renacentistas. La secuencia debe contener el nombre del artista, su estilo de arte, seguido de sus obras (nombre y año de creación). Los datos correspondientes al mismo artista deben separarse entre sí con el signo '+' y finalizar con el signo '?'.
+    Al final del proceso informar:
+        la mayor cantidad de obras vendidas por un artista.
+        el porcentaje de obras de artistas "renacentistas" sobre el total de obras.
+
+Ejercicio 2.1.29¶
+
+Dado el ejercicio anterior, pensar: cómo cambia el algoritmo solución en caso de que el 'estilo de arte' se indique al principio de los datos de cada artista en la secuencia de artistas? Por qué? Hacer el algoritmo.
+Ejercicio 2.1.30¶
+
+El siguiente es un ejercicio del primer recuperatorio del primer parcial del año 2017:
+
+La AFIP dispone de dos secuencias de caracteres:
+
+    PERSONAS Contiene los siguientes datos de personas físicas o Empresas: nombre completo y fecha (de nacimiento o de creación, respectivamente), agrupadas por provincias. No existe carácter separador entre personas, el fin de cada provincia se indica con el carácter &.
+    Ejemplo: María Góm-14021977Carlos Alberto Rodriguez-20061990....&Lionel Messi-24061987....&....{fin} nombre-ddmmaaaanombre-ddmmaa....&
+
+    CUIT: contiene la Clave Unica de Identificación Tributaria de las personas de la secuencia PERSONAS (existiendo una correspondencia una a una, es decir la primer persona con el primer cuit, la segunda con el segundo y asi sucesivamente) Cada número de CUIT se almacena por medio de 11 caracteres: los 2 primeros indican el tipo, los 6 siguientes el número de DNI (en caso de personas físicas) o de sociedad (en caso de Empresas) y el último es un digito verificador.
+    Ejemplo: **20123456786**23134567823**30712434445**
+
+Los tipos pueden ser:20, 23, 24 y 27 para Personas Físicas y 30, 33 y 34 para Empresas.
+
+Se solicita.
+
+    Generar una secuencia de salida que contenga DNI, y el nombre completo de todas las personas físicas cuyo nombre comience con vocal.
+    Para cada Provincia calcular el total de personas físicas y el porcentaje sobre el total de la provincia.
+
+Ejercicio 2.1.31¶
+
+El siguiente es un ejercicio del primer parcial del año 2017: La empresa TICKET-TEC ha generado una secuencia de caracteres con información de sus ventas para los eventos de los últimos 3 meses, cuya estructura se describe a continuación. Inicialmente existe el nombre del local de los eventos, cuya longitud se desconoce, termina con un #; a continuación se tiene la información de todos los tickets vendidos para ese local, separado cada ticket del siguiente con el caracter !, y al final de todas las ventas para ese local, el caracter &. Por último la marca de fin de secuencia. También en el caso de butaca se desconoce la longitud del número, termina con un guión.
+
+EJEMPLO
+Teatro Opera#270520171A45-2030!270520173D120-2230!280520172C233-2030!&Galpon de las Luces#070720171C5-2030!301020172A233-2230!&{fin}
+
+local de eventos#Fecha del evento[ddmmaaaa] codigo del evento[1..3] butaca [sector [A,C o D], número] - horario evento [hhmm]!
+
+Solo hay dos horarios 20:30 y 22:30.
+
+La empresa solicita un algoritmo que cumpla con las siguientes consignas:
+
+    Generar una nueva secuencia de salida con el mismo formato, que contenga los tickets correspondientes a un mes ingresado por el usuario.
+
+    Informar total general de tickets vendidos, total de tickets por evento y porcentaje de cada uno sobre el total general.
+
+Ejercicio 2.1.32¶
+
+Se posee una secuencia con los mensajes internos enviados entre los empleados de una empresa, la secuencia está formada de la siguiente manera: 3 caracteres para el destino, 3 caracteres para el origen, 3 caracteres que indican la cantidad de caracteres que tiene el mensaje y el mensaje. No existe ningún carácter que separe un mensaje de otro. se pide:
+
+    Escribir una secuencia de salida con todos los mensajes (incluyendo origen y destino) que van hacia el área de Mantenimiento (que destino comience con 1).
+    Contar la cantidad de mensajes que se dirigen hacia el área de sistemas (que destino comience con 23).
+
+
+
+
+
+
+
+
+
+
+
+2.2. Secuencias de datos elementales EXTRAS¶
+Ejercicio 2.2.1¶
+
+Dada una secuencia de caracteres de entrada, desarrollar un algoritmo que produzca una secuencia de salida de caracteres; la que contendrá solo los caracteres “numéricos” correspondientes a dígitos impares encontrados en la secuencia de entrada.
+
+Ejemplo: Si en la entrada viniera A125EB% en la salida debería ir 15.
+
+Al final del proceso informar:
+
+    Cuantos dígitos impares encontró
+    Cuantos dígitos pares
+    Total de caracteres “numéricos” (dígitos) y porcentaje de pares e impares
+
+Ejercicio 2.2.2¶
+
+Dada una secuencia de caracteres de entrada, desarrollar un algoritmo que produzca 2 secuencias de salida, una con los caracteres "numéricos" y otra con los que no lo son.
+
+Informar al final, cantidad de caracteres de cada secuencia de salida
+
+Ejemplo: Si en la secuencia de entrada viniera A125EB% en la salida debería ir
+
+salida1 --> 125
+
+salida2 --> AEB%
+Ejercicio 2.1.3¶
+
+Escribir un algoritmo que permita desglosar una secuencia de enteros que contiene monotonías crecientes (series de elementos consecutivos ordenados crecientemente; cada serie está constituida por un elemento como mínimo), en dos secuencias de salida, de tal modo que tales monotonías sean copiadas alternativamente en una de las secuencias resultado o en otra.
+
+Ejemplo secuencia de entrada.
+
+2, 5, 8, 11, 14, 17,15, 10,11,20, 44,12,14,16….
+
+Secuencia de salida 1
+
+2,5,8, 11, 14, 17, 10,11,20, 44…
+
+Secuencia de salida 2
+
+15, 12,14,16
+
+y si te animas...: además de lo solicitado anteriormente, se pide: obtener la suma de los valores de cada secuencia y al final informar el mayor valor (de esas sumas).
+Ejercicio 2.1.4¶
+
+Se dispone de 2 secuencias de caracteres, una contiene caracteres, incluidos espacios y otra contiene caracteres “numéricos”. Se pide crear una nueva secuencia de salida de caracteres donde se copien los caracteres de ambas secuencias en forma alternada, o sea un carácter, un digito, un carácter, un digito, etc.
+
+Ejemplo:
+
+Sec1: Para habilitar la función de Salas para grupos pequeños para su uso*
+
+Sec2: 13481460918460846161334868461086*
+
+Salida: P1a3r4a8 1h4….
+
+    Analice y responda: Que pasaría en el caso de que una secuencia de entrada termine antes que la otra? se podría cumplir con la consigna?
+    Como modificaría el algoritmo en el caso de que solicite contar la cantidad de caracteres de cada secuencia y mostrar por pantalla al final del proceso?
+
+
+2.2. Archivos Secuenciales¶
+Ejercicio 2.2.1¶
+
+Se dispone de una secuencia con los datos de los alumnos de la facultad:
+
+    Apellido y Nombre
+    Carrera (ISI - IEM - IQ)
+    Nº de Legajo
+    Fecha de Nacimiento
+    Fecha de Ingreso
+    D.N.I.
+    Sexo (M o F)
+    Fecha de último examen aprobado
+    Nota
+
+Se desea un listado de los mismos, con el siguiente formato:
+
+    Nro_Legajo Apellido_Nombre Documento Carrera 
+
+Ejercicio 2.2.2¶
+
+Se dispone de una secuencia de facturas con los siguientes datos:
+
+    Nº de Factura
+    Fecha
+    Total
+
+Se desea un listado de las facturas cuyas fechas sean posteriores a una fecha dada, y cuyos importes totales no alcancen los $1000, con el siguiente formato:
+
+    Nro_Factura Fecha Importe_Total 
+
+Ejercicio 2.2.3¶
+
+Dada la siguiente secuencia de datos con el siguiente formato:
+
+    Nº de socio
+    Nº de teléfono
+    Apellido y Nombre
+    Carrera (ISI - IEM - IQ - LAR)
+    Domicilio
+    Cantidad de unidades prestadas
+
+Correspondiente a los alumnos socios de la Biblioteca, generar la secuencia de los alumnos de “ISI” que tengan prestadas más de 4 unidades bibliográficas.
+Ejercicio 2.2.4¶
+
+A partir de la secuencia del ejercicio 2.01 se desea generar otra secuencia con los alumnos de una carrera dada que aprobaron alguna materia este año, con nota mayor a 7 (siete).
+Ejercicio 2.2.5¶
+
+A partir de la secuencia del ejercicio 2.01 se desea generar un listado con los alumnos que aprobaron la última materia rendida con nota superior a 7, e ingresaron el año pasado, con el siguiente formato:
+
+    Nro_Legajo Apellido_Nombre Carrera 
+
+Ejercicio 2.2.6¶
+
+Se cuenta con una secuencia que contiene el Apellido y Nombre y Promedio General de los Graduados de una Facultad, y se solicita generar un listado con diversas recomendaciones para cubrir vacantes en una importante Empresa. Las mencionadas recomendaciones serán establecidas del siguiente modo: si el promedio es menor que 7, la recomendación será negativa ("NO"); por el contrario, si el promedio es menor que 8, la recomendación será positiva ("SI"); de lo contrario, si el promedio es menor que 9, la recomendación será favorable ("F"); por último, si el promedio supera los 9 puntos, la recomendación será muy favorable("MF"). El listado deber respetar el siguiente formato:
+
+    Apellido_Nombre Promedio Recomendación 
+
+Además, se solicita la impresión del total de graduados que recibieron cada una de las recomendaciones, y el promedio global de los mismos.
+Ejercicio 2.2.7¶
+
+Se dispone de un archivo con los datos de un padrón electoral con la siguiente información:
+
+    Nombre y apellido
+    Clase
+    DNI
+    Dirección
+    Nº de Mesa
+    Observaciones
+    Nº de Circuito
+    Partido (0= independiente, 1=‘A’, 2=‘B’, 3=‘C’)
+
+Generar:
+a) Una secuencia de salida con nombre y apellido, DNI, y dirección de todas las personas afiliadas al partido “C”.
+b) Una secuencia de salida con nombre y apellido, DNI, y dirección de todas las personas no afiliadas a ningún partido y de clase posterior a 1940.
+Ejercicio 2.2.8¶
+
+De los datos del siguiente ejercicio:
+
+COMPRAS Ordenado por Nro_Cliente
+
+    Nro_Cliente Fecha_Ultima_Compra Monto 
+
+CLIENTES Ordenado por Nro_Cliente
+
+    Nro_Cliente Apellido_Nombre Domicilio Teléfono DNI 
+
+Ambos archivos están ordenados por Nro. de Cliente en forma ascendente. Listar los nombres fecha y monto de última compra, de todos aquellos clientes cuya última compra sea posterior a una fecha dada y el monto supere un monto dado.
+Ejercicio 2.2.9¶
+
+Una casa deportiva dispone de un archivo de productos, ordenado por código de producto, que contiene los siguientes datos:
+
+PRODUCTOS Ordenado por Cod_Producto
+
+    Cod_Producto Tipo (1,2,3) Marca Modelo Descripción Cantidad_Existente Precio_Unitario 
+
+Se ha registrado en el mercado un aumento de precios, el cual no es uniforme para todos los artículos, sino que varía según el tipo de los mismos de la siguiente manera: tipo 1- Calzados: 10%, tipo 2 – Indumentaria: 25%, tipo 3 - Accesorios (pelotas, raquetas, etc.): 50%. Por este motivo el gerente de la empresa solicitó al Departamento de Informática que modifique los precios de acuerdo a los porcentajes antes mencionados.
+Generar un nuevo fichero de productos para cumplir con la solicitud del gerente.
+Al terminar el proceso informar cantidad total de artículos de cada tipo hay y total general.
+Corte de Control¶
+Ejercicio 2.2.10¶
+
+Del archivo general de alumnos de la U.T.N. - Facultad Regional Resistencia, ordenado por carrera, se desea emitir la cantidad de alumnos correspondientes a cada carrera y el total general.
+Ejercicio 2.2.11¶
+
+Se dispone de un archivo con datos de los alumnos de la U.T.N. con la siguiente información para cada alumno:
+
+PRODUCTOS Ordenado por Sexo, Carrera, Nro_Legajo
+
+    Sexo Carrera Nro_Legajo Fecha_Ingreso Total_Materias_Aprobadas 
+
+Se desea un listado con el siguiente detalle por sexo, carrera y total general
+
+    Total de alumnos que ingresaron en el año 2009 con más de 20 materias aprobadas.
+
+    Total de alumnos que ingresaron en el año 2009 con menos de 20 materias aprobadas
+
+Ejercicio 2.2.12¶
+
+Dada una secuencia con información de población de un PAIS:
+
+POBLACION Ordenado por Provincia, Departamento, Ciudad, Barrio, ID_Casa
+
+    Provincia Departamento Ciudad Barrio ID_Casa Cantidad_Habitantes 
+
+Generar una secuencia con información de los departamentos de esa provincia, cuyo registro tenga el siguiente formato:
+
+POBLACION_SALIDA
+
+    Provincia Departamento Cantidad_Habitantes 
+
+Ejercicio 2.2.13¶
+
+Un Casino de la región ha notado un incremento en los costos de las reparaciones de tragamonedas en sus sucursales. Por ello solicitó un informe con la cantidad de reparaciones y sus costos, discriminados según tragamonedas, modelo, marca, sucursal y total general.
+
+Se dispone de un archivo REPARACIONES, con el siguiente formato. Cada registro representa la reparación de un tragamonedas, tener en cuenta que puede existir más de una reparación por tragamonedas.
+
+REPARACIONES Ordenado por Cod_Sucursal, Marca, Modelo, Cod_Tragamonedas
+
+    Cod_Sucursal Marca Modelo Cod_Tragamonedas Fecha_Reparacion Costo_Reparacion 
+
+Realice el algoritmo para emitir el informe con los totales solicitados
+Ejercicio 2.2.14¶
+
+Dados el siguiente fichero con datos de un censo de la ciudad de Resistencia:
+
+CENSO Ordenado por Radio, Manzana, Nro_Vivienda
+
+    Radio Manzana Nro_Vivienda Condicion_Vivienda Cantidad_Habitantes 
+
+Condición puede ser : Muy Buena, Buena o Mala. Obtener los siguientes totales de personas que habitan en viviendas cuya condición es muy buena: total en la ciudad y totales por Radio y Manzana).
+Ejercicio 2.2.15¶
+
+El organismo del cual dependen las escuelas de un distrito lleva un archivo con los registros para todos los alumnos de nivel secundario de ese distrito:
+
+ALUMNOS Ordenado por Escuela, Año, División
+
+    Escuela Año División Nombre Cant_Inasistencias 
+
+Se introduce como dato el número de distrito y la cantidad de días de clase dictados en el año. El archivo está ordenado por número de escuela, año y división. Los alumnos que superan el 20% de las inasistencias están en situación de LIBRES, de lo contrario son REGULARES.
+
+Se desea conocer:
+Para cada división:
+- Cantidad de alumnos
+Para cada año:
+- Cantidad total de alumnos libres
+- Cantidad de alumnos regulares
+- Cantidad total de alumnos
+Todas las escuelas:
+- Cantidad total de alumnos
+- Porcentaje de alumnos libres. - Promedio de inasistencias por alumnos.
+Mezcla¶
+Ejercicio 2.2.16¶
+
+Construir un algoritmo que a partir de un fichero de películas nuevas conteniendo:
+
+PELICULAS_NUEVAS Ordenado por Nro_Pelicula
+
+    Nro_Pelicula Titulo Genero Cant_Copias Fecha_Estreno 
+
+y otro fichero de peliculas existentes, ambos ordenados por película,
+
+PELICULAS Ordenado por Nro_Pelicula
+
+    Nro_Pelicula Titulo Genero Cant_Copias Fecha_Estreno 
+
+Genere un único archivo (con el mismo formato de los ficheros de entrada) que contenga todas las peliculas. Considerar que hay un solo registro por película y no se repiten entre ficheros.
+Ejercicio 2.2.17¶
+
+La Secretaria Academica de la Facultad lanza un proyecto para incentivar a aquellos alumnos que realizaron el Cursillo de Ingreso a la Universidad y no lograron aprobarlo en los turnos de Agosto y Febrero, de manera de brindarles apoyo Academico con el fin de que, en el Cursillo del año siguiente puedan aprobar los examenes necesarios e ingresar a la Universidad.
+
+Para esto, dicha Secretaria­necesita crear un archivo donde se encuentren todos los aspirantes que realizaron el Cursillo de Ingreso en ambos turnos, y no lograron aprobarlo.
+
+Los datos correspondientes a cada uno de los turnos del Cursillo dictado están almacenados en dos archivos (uno para cada turno), los cuales presentan el siguiente formato:
+
+ASPIRANTES Ordenado por DNI
+
+    DNI ApeyNom Carrera F_Nac Email ColegioSec FechaInscripcion Aprobado (Si/No) 
+
+UD debe realizar un algoritmo que permita mezclar los archivos Aspirantes (de Agosto y Febrero) y generar un archivo SEGUIMIENTO con el siguiente formato:
+
+SEGUIMIENTO Ordenado por DNI
+
+    DNI ApeyNom Email ColegioSec 
+
+Al finalizar el proceso informar la cantidad de aspirantes que se grabaron en el archivo SEGUIMIENTO.
+Ejercicio 2.2.18¶
+
+Un supermercado desea conocer la totalidad de unidades existentes de cada artículo a fin de hacer un control de stock y decidir si se deben comprar nuevas unidades o redistribuir la mercadería existente.
+
+El supermercado posee dos sucursales, cada una de las cuales envió su información en un fichero con el siguiente formato:
+
+ARTICULOS
+
+    Cod_Prod Tipo Marca Descripción Cant_Unidades 
+
+Escribir un algortimo que permita obtener un único fichero de salida, con el mismo formato, que contenga la información solicitada y además, emita un listado con los siguientes datos:
+Cod_Prod 	Tipo 	Marca 	Descripción 	Cant_Suc_1 	Cant_Suc_2 	Total_Unidades
+						
+Actualizacion¶
+Ejercicio 2.2.19¶
+
+En una Empresa Farmacéutica se posee un archivo MAE_REMEDIOS (ordenado por Clave: Farmacia + Medicamento), el que se actualiza semanalmente, a traves de la información que se encuentra cargada en un archivo de MOVIMIENTOS (ordenado por Clavem: Farmacia + Medicamento, y Cod_Mov), de la siguiente forma:
+
+    Si Clave (MAE_REMEDIOS) es menor que Clavem (MOVIMIENTOS), simplemente se transfieren los datos del Maestro a la salida y se graban.
+
+    Si Clave (MAE_REMEDIOS) es igual a Clavem (MOVIMIENTOS) y el Codmov es 1, se considera error y se lista un mensaje indicando el tipo de error; pero si el Codmov es 2, entonces es un remedio que deja de fabricarse y se transfiere el registro al archivo de Remedios vencidos (REM_VENC) ; pero si el Cod_Mov es 3, se modifica la cantidad actual con la cantidad recibida.
+
+    Si Clave (MAE_REMEDIOS) es mayor que Clavem (MOVIMIENTOS) y el Codmov es 1, se incorpora el remedio a nuestro Vademecum, considerando que la cantidad recibida configura la cantidad actual y la Fecha_Vencimiento es 30 días posterior a la fecha actual; pero si el Codmov es 2 o 3 se considera error y se deben producir los correspondientes mensajes de error.
+
+Se considera que solo existe un registro de movimiento para cada registro del maestro.
+
+MAE_REMEDIOS Ordenado por Farmacia y Medicamento
+
+    Farmacia Medicamento Cant_Actual Fecha_Vencimiento 
+
+MOVIMIENTOS Ordenado por Farmacia, Medicamento y Cod_Mov
+
+    Farmacia Medicamento Cod_Mov Cant_Recibida 
+
+REM_VENC Ordenado por Medicamento
+
+    Medicamento Cant_Vencida 
+
+Ejercicio 2.2.20¶
+
+Se desea generar una secuencia, a partir de la secuencia del problema 2.01, donde se actualice la fecha de aprobación del último exámen, para ello se cuenta con información del último turno de exámen, según el siguiente detalle:
+
+EXAMENES Ordenado por Nro_Legajo
+
+    Nro_Legajo Carrera Cod_Materia Fecha_Examen Nota 
+
+Se debe considerar que no necesariamente todos los alumnos se presentan en cada turno de exámen, y que un alumno puede presentarse a rendir más de una materia en un mismo turno. Supónganse ambas secuencias ordenadas por Número de Legajo.
+Ejercicio 2.2.21¶
+
+En un práctico para la Facultad un grupo de alumnos debe implementar una Red Social llamada UTNBook. Para lo cual debe utilizar los siguientes archivos:
+
+AMIGOS Ordenado por Cod_Usuario y Cod_Amigo
+
+    Cod_Usuario Cod_Amigo Fecha_Amistad Mensaje_Muro 
+
+Cada registro indica la fecha desde que los usuarios son amigos y el último mensaje que un amigo ha escrito en el muro del usuario.
+
+NOTIFICACIONES Ordenado por Cod_Usuario y Cod_Amigo
+
+    Cod_Usuario Cod_Amigo Cod_Movimiento Fecha_Amistad Mensaje_Muro 
+
+Periódicamente se debe actualizar el archivo Amigos, con el fin de que refleje las amistades que posee cada usuario. En el archivo notificaciones pueden existir tres tipos de acciones: la solicitud de una amistad (Cod_mov = 'A'); la eliminación de una amistad (Cod_mov = 'B'); o la información de un mensaje que un amigo ha escrito en el muro del usuario (Cod_mov = 'M'). Considerar que la eliminación de una amistad implica la baja física de un registro y que hay un solo registro de Notificaciones por cada registro de Amigo.
+Ejercicio 2.2.22¶
+
+IDEM ejercicio 2.21 pero agregando al enunciado: “Al finalizar el proceso se desea conocer: el usuario que posee más amigos.”
+Ejercicio 2.2.23¶
+
+Una empresa de distribución de energía eléctrica posee un archivo maestro con los siguientes datos de sus clientes (la fecha de última lectura son las mediciones realizadas hasta el mes de mayo del 2014):
+
+CLIENTE Ordenado por Id_Casa
+
+    Id_Casa Fecha_Ult_Lectura Cant_Lecturas Prom_Lecturas Tipo_Consumidor 
+
+El campo tipo de consumidor puede ser:
+
+    A (cuando el promedio de lectura es menor a 20K)
+    B (cuando el promedio de lectura es menor a 40K)
+    C (cuando el promedio de lectura es igual o supera los 40K)
+
+Cuenta además con el siguiente archivo con datos de las mediciones realizadas en los dos últimos años (desde junio del 2014 hasta junio del 2016)
+
+Mediciones Ordenado por Id_Casa
+
+    Id_Casa Fecha_Medicion Consumo 
+
+Se pide actualizar el archivo maestro con la información de las lecturas hasta el mes de enero del año 2015 inclusive. Los campos que se deben actualizar son: la fecha de ultima lectura, cantidad de lecturas, el promedio y modificar (en caso de ser necesario) el tipo de consumidor. En caso en que no exista el ID casa (una conexión nueva) se tiene que crear en el maestro y actualizar los otros campos.
+Ejercicio 2.2.24¶
+
+Una obra social lleva el control de los costos que le insume cada afiliado. Considerando como costos, los pagos que la misma debe realizar (en conceptos de honorarios, pagos a farmacias, etc) por los distintos servicios que el afiliado utiliza. Para esto la empresa cuenta con un archivo COSTOS_POR_AFILIADO, en el cual se registran la cantidad de atenciones y/o servicios que solicita el empleado y el costo total (en pesos) que la empresa debe pagar por estos. Este archivo está conformado por registros con el siguiente formato, y está ordenado Cod_Afiliado
+
+COSTOS_POR_AFILIADO Ordenado por Cod_Afiliado
+
+    Cod_Afiliado Fecha_Alta Fecha_Baja Cant_Servicios Costo 
+
+Cada viernes en la organización, se lleva a cabo un proceso de actualización del archivo COSTOS_POR_AFILIADO. Para poder realizarlo se cuenta con un archivo SERVICIOS_SEMANALES, ordenado por cod_afiliado y fecha_at, en el cual se registran los servicios que solicitaron los afiliados durante cada semana. Cada registro de este archivo presenta el siguiente formato,
+
+SERVICIOS_SEMANALES Ordenado por Cod_Afiliado
+
+    Cod_Afiliado Fecha_At Cod_Servicio Costo 
+
+En el archivo SERVICIOS_SEMANALES puede existir más de un registro por cada afiliado.
+
+Para realizar el proceso de actualización se deben tener en cuenta las siguientes consideraciones.
+
+    Si algún Cod_Afiliado de serviciosSemanales, no se encuentra en ningún registro del archivo COSTOS_POR_AFILIADO, y el primer Cod_Servicio asociado al mismo es igual a 001 entonces se trata de un nuevo afiliado que fue dado de alta.
+
+    Si Cod_Afiliado de serviciosSemanales es igual al de COSTOS_POR_AFILIADO y el Cod_Servicio es igual a 000 se trata de un afiliado que fue dado de baja y se considera como fecha de baja el valor que reside en Fecha_At. Si en cambio, el Cod_Servicio tiene algún otro valor este representa un servicio o atención que solicitó el afiliado; por lo tanto deben contabilizarse la cantidad de servicios que solicitó; como así también los costos que estos insumen.
+
+    Si algún Cod_Afiliado de COSTOS_POR_AFILIADO no se encuentra en el archivo SERVICIOS_SEMANALES, se trata de un afiliado que no utilizó los servicios en la semana que se realiza la actualización.
+
+    Cualquier otro caso distinto a los considerados anteriormente se toma como un error, y deben ser informados por pantalla; indicando claramente el motivo del error.
+
+Ejercicio 2.2.25¶
+
+IDEM 2.21 pero suponiendo que hay mas de un registro de notificaciones por cada registro de amigos.
+
+
+2.3. Archivos Indexados¶
+Ejercicio 2.3.1.a¶
+
+Dado un fichero secuencial de Facturas, ordenado por Nro. de Cliente y Nro. de Factura, con la siguiente estructura:
+
+FACTURAS Ordenado por Nro_Cliente, Nro_Factura
+
+    Nro_Cliente Nro_Factura Fecha Importe 
+
+Se desea un listado con el siguiente detalle:
+Nro. Cliente 	Nombre Cliente 	Numero Factura
+		
+
+Los datos del cliente se encuentran en un fichero indexado por Nro. de Cliente, que tiene la siguiente estructura:
+
+CLIENTES Indexado por Nro_Cliente
+
+    Nro_Cliente Nombre DNI CUIT Domicilio 
+
+Ejercicio 2.3.1.b¶
+
+Dado un fichero secuencial de Facturas, ordenado por Nro. de Cliente y Nro. de Factura, con la siguiente estructura:
+
+FACTURAS Ordenado por Nro_Cliente, Nro_Factura
+
+    Nro_Cliente Nro_Factura Fecha Importe 
+
+Se desea un listado con el siguiente detalle:
+Nro. Cliente 	Nombre Cliente 	Total Facturado 	Cantidad de Facturas
+			
+
+Los datos del cliente se encuentran en un fichero indexado por Nro. de Cliente, que tiene la siguiente estructura:
+
+CLIENTES Indexado por Nro_Cliente
+
+    Nro_Cliente Nombre DNI CUIT Domicilio 
+
+Ejercicio 2.3.2¶
+
+Una empresa dispone de un fichero secuencial con datos de sus empleados, ordenado por número de sucursal, y categoría, con los siguientes datos:
+
+EMPLEADOS Ordenado por Nro_Sucursal, Categoria
+
+    Nro_Sucursal Categoria (A,B,C) Nombre_Empleado Cod_Curso Tecnico (si,no) 
+
+Y un fichero con datos de cursos, indexado por código de curso:
+
+CURSO Indexado por Cod_Curso
+
+    Cod_Curso Nombre Fecha Cant_Horas 
+
+Emitir un listado informando:
+
+    Para cada empleado: sucursal, categoría, nombre del empleado y nombre del curso que debe realizar.
+    Por sucursal, categoría y toda la empresa:
+        Total empleados técnicos
+        Total empleados no técnicos
+        Total empleados
+
+Ejercicio 2.3.3¶
+
+Los automovilistas pasan por el peaje del Puente Gral. Belgrano y deben pagar según su categoría, pero además, si ya han pasado previamente dentro del día tienen pase libre.
+Teniendo en cuenta el archivo siguiente, construya el algoritmo que realice lo que corresponda: genere el comprobante, indicando el importe a pagar o emita un mensaje indicando que ya pasó anteriormente. Además indique cuales deberían ser los datos de entrada.
+
+PEAJE Indexado por Patente, Fecha
+
+    Patente XXX-NNN Fecha N(8) Ult_Hora N(4) Costo XXX,XX 
+
+Costo por categoria
+Categoria 	Costo
+1 	1,20
+2 	2,50
+3 	4,00
+4 	5,00
+Ejercicio 2.3.4¶
+
+Crear un algoritmo que simule el trabajo de una caja de supermercado. El algoritmo debe permitir imprimir el ticket de compra y realizar el descuento de stock del producto. Al generar el comprobante del ticket debe guardar los datos en los archivos TICKET y DETALLE_TICKET (el cliente es: "consumidor final" y el NroTicket se genera automáticamente, mediante la función OBTENER_TICKET). Archivos:
+
+PRODUCTOS Indexado por Cod_Prod
+
+    Cod_Prod Nombre Stock Precio 
+
+TICKET Indexado por Nro_Ticket
+
+    Nro_Ticket Fecha Cliente 
+
+DETALLE_TICKET Indexado por Nro_Ticket
+
+    Nro_Ticket Nro_Linea Cod_Prod Cantidad 
+
+Comprobante:
+Empresa: 	...................................... 	CUIT: 	.... - ............ - ... 	Fecha: 	... / ... / ...
+Cliente 	.................................................................................................................................
+Producto 	Cantidad 	Subtotal
+.............................. 	.............................. 	..............................
+.............................. 	.............................. 	..............................
+.............................. 	.............................. 	..............................
+	Total 	..............................
+Ejercicio 2.3.5¶
+
+Para poder comprar dólares en una entidad bancaria al precio oficial ($9,40), el beneficiario, debe tener un ingreso promedio en los últimos 12 meses equivalente a dos veces el sueldo mínimo vital y móvil (el cual en la actualidad es de $5000 por mes). Luego, con el sueldo del mes actual, solo se permite comprar por un importe no superior al 30% del mismo.
+Por ej.: si una persona tiene un sueldo de $10.000, desde septiembre del año pasado, al dia de hoy esa persona cumple la condición para comprar y puede comprar dólares por un monto máximo de $3.000 (equivalente a U$S 319).
+Para ello se cuenta con dos archivos indexados:
+
+CABECERA_SUELDO Indexado por DNI, Periodo, Nro_Recibo
+
+    DNI N(8) Periodo N(6) Nro_Recibo N(15) ApyNom AN(50) Empresa AN(50) 
+
+El periodo está representado por 6 caracteres numéricos dispuestos de forma de año/mes (aaaamm). El número de recibo (Nro_Recibo) es único. Una persona puede tener varios recibos de sueldo. La clave de este archivo es DNI, Periodo y Nro_Recibo.
+
+RECIBO Indexado por Nro_Recibo
+
+    Nro_Recibo N(15) Concepto N(8) Tipo (0..2) Monto N(15,2) 
+
+El campo tipo puede contener los siguientes valores: 0 - Sueldo básico, 1 – Otros Ingresos, 2 – Descuentos. Para calcular el sueldo mínimo se suman el sueldo (tipo 0), y los otros ingresos (tipo 1), NO se restan los descuentos. La clave es Nro_Recibo.
+
+Dado el escenario descripto, se pide escribir dos algoritmos:
+
+        Que el empleado del Banco ingrese un número de documento de algún interesado en comprar dólares, y le devuelva si está habilitado o no para comprar y, en caso positivo, cuál es el monto máximo en pesos que se le autoriza.
+
+        Si el interesado desea comprar, solicite el monto en pesos que destinará a la compra, el cual deberá ser descontado de su cuenta. Los datos de la cuenta están en un archivo indexado con la siguiente estructura (indexado por DNI):
+
+            DNI N(8) Nro_Cuenta N(25) Saldo N(15,2) 
+
+        Los puntos a) y b) se repiten hasta que el operador (empleado del Banco) indique que desea finalizar.
+
+        Procesar peticiones de compra, de acuerdo a un archivo de entrada de peticiones, evaluando si es posible realizar la operación o no. Si no es posible, indicar cual es el motivo: 1 – No tiene el ingreso promedio suficiente, o 2 – Pide más del 30 % de su sueldo actual.
+
+        PETICIONES
+            DNI N(8) Cant_Soli N(15,2) 
+
+        El resultado de la evaluación se debe grabar en un nuevo archivo de salida con el siguiente formato:
+
+        SALIDA
+            DNI N(8) Cant_Soli N(15,2) Pudo (si,no) Error 1..2 
+
+Ejercicio 2.3.6¶
+
+Una Municipalidad debe liquidar las patentes de su parque automotor para el cuarto trimestre del año e imprimir un padrón de cobros y deudas, con cortes de importe por grupo, categoría y año de fabricación.
+
+Los archivos son:
+
+AUTOS Ordenado por CLAVE
+
+    Grupo N(2) Categoria 1..50 Anio_Fab N(4) Nro_Patente N(8) DNI AN(8) ApyNom AN(25) Domicilio AN(30) 
+
+DEUDAS Indexado por CLAVED
+
+    Nro_Patente N(8) Anio_Deuda N(4) Trimestre N(1) Importe N(5,2) 
+
+Para el trimestre actual, la cuota a abonar viene en el siguiente archivo:
+
+CUOTAS Indexado por CLAVEC
+
+    Grupo N(2) Categoria 1..50 Anio_Fab N(4) Importe N(5,2) 
+
+Antes de imprimir el renglón correspondiente a cada nro de patente se debe verificar si existen deudas pendientes, en cuyo caso se sumaran todos los importes adeudados y se consignarán en la columna de deudas.
+
+PADRON
+CLAVE 	DNI 	APYNOM 	DOMIC 	DEUDA 	4to TRIMESTRE
+..... 	... 	...... 	..... 	$ XXX,XX 	$ XXX,XX
+			TOTAL 	$ XXX,XX 	$ XXX,XX
+Ejercicio 2.3.7¶
+
+Crear un algoritmo que imprima un reporte como el que se indica, incluyendo totales por Obra Social y Clínica de liquidaciones a médicos. Los archivos que intervienen son:
+
+LIQUIDACIONES Ordenado por O.S. y Clinica
+
+    O.S. Clinica Nro_Leg Mes Anio Bruto Descuento_AFIP Descuento_DGR 
+
+Neto = Bruto – (Desc_AFIP + Desc_DGR)
+
+OBRAS_SOCIALES Indexado por Cod_Os
+
+    Cod_OS Nombre 
+
+CLÍNICAS Indexado por Cod_Cli
+
+    Cod_Cli Nombre 
+
+MÉDICOS Indexado por Nro_Leg
+
+    Nro_Leg ApyNom Especialidad DNI 
+
+Reporte:
+Obra Social: 	
+	Clinica: 	
+	Médicos 	
+	Nro Legajo 	Nombre 	Neto
+	............................ 	................... 	...................
+	............................ 	................... 	...................
+	Total Clínica 		...................
+Total Obra Social 			...................
+Ejercicio 2.3.8¶
+
+Los alumnos que desarrollaban el proyecto UTNBook (ejercicio 2.23) han decidido modificar parte de la aplicación para que esta tenga mayor interacción con el usuario. Es así que decidieron eliminar el archivo de Notificaciones, provocando así que la inserción nuevos amigos, la eliminación de amistades y la escritura en los muros de otras personas esté a cargo del usuario.
+
+Con estas consideraciones trabajaron con el siguiente archivo:
+
+AMIGOS Indexado por Cod_Usuario y Cod_Amigo
+
+    Cod_Usuario Cod_Amigo Fecha_Amistad Mensaje_Muro 
+
+El proceso para agregar o eliminar amigos y escribir en los muros de estos es ahora el siguiente:
+El usuario, al iniciar la sesión, ingresa su Código de Usuario y el Código del amigo. Luego, puede seleccionar tres opciones distintas: Agregar Amigo; Eliminar Amigo y Escribir en el Muro.
+
+Si selecciona Agregar Amigo se realizan las acciones necesarias para incorporar esta nueva amistad al usuario, y en caso de no poder realizarse, se muestra un mensaje por pantalla explicando el motivo que imposibilita la amistad. (por ej. Cod_Usuario inexistente, Amistad entre Usuario y Amigo ya existente, etc.). En cambio, si selecciona Eliminar Amigo el algoritmo deberá eliminar la amistad en caso de existir, en caso contrario informar el error por pantalla.
+
+Por último, al seleccionar Escribir en el Muro el usuario debe ingresar el mensaje que desea escribir a su amigo y luego el algoritmo deberá registrar este mensaje. De ser necesario informar algún error que pueda ocurrir (por ej. Amistad entre el Usuario y Amigo inexistente, etc).
+Ejercicio 2.3.9¶
+
+Pepsico S.A.I.C. desea que Ud. realice el algoritmo para poner al corriente los saldos de sus clientes y el stock de la empresa. Para ello cuentan con:
+
+CLIENTES Indexado por ClienteID
+
+    ClienteID Cliente_Nombre Cliente_CUIT Cliente_Saldo 
+
+DETALLE_CLIENTES Indexado por Nro_Operacion
+
+    Nro_Operacion Fecha_Operacion ClienteID Importe Factura_Numero 
+
+VENTAS Ordenado por Venta_Numero
+
+    Venta_Numero Venta_Fecha Factura_Numero ProductoID Cantidad_Vendida ClienteID 
+
+PRODUCTOS Indexado por ProductoID
+
+    ProductoID Stock Producto_Detalle Costo_Unitario 
+
+Se debe actualizar el saldo del cliente y además agregar el detalle de la compra que figura en el archivo de Ventas al archivo Detalle_Clientes, por cada venta realizada se deberá descontar la cantidad vendida del stock.
+Por final del proceso se desea saber el total de productos vendidos, y un listado de los clientes con su saldo actualizado.
+Ejercicio 2.3.10¶
+
+Una empresa dedicada a la venta de combustibles para automotores anunció una promoción mediante la cual los clientes pueden acceder a descuentos importantes. En cada carga los clientes suman 10 puntos por cada $100 de combustible, y una vez que el cliente llega a los 100 puntos, este los puede canjear por un descuento de $100 en el importe total. La cantidad de puntos que tiene cada cliente está almacenado en el archivo indexado PUNTOS el cual tiene el siguiente formato:
+
+PUNTOS Indexado por DNI
+
+    DNI Cant_Puntos Ult_Carga 
+
+Los datos de cada cliente se encuentran almacenados en el archivo CLIENTE también indexado con el siguiente formato
+
+CLIENTE Indexado por DNI
+
+    DNI Ape_Nom Edad Ciudad 
+
+Se pide realizar el algoritmo que permita:
+
+    Realizar la carga interactiva de las cargas de combustible (ingresando monto), actualizando la cantidad de Puntos y la Fecha de Última Carga en el archivo PUNTOS. Si no existe el Cliente, se lo debe inicializar en ambos archivos con los datos correspondientes.
+    Permitir al cliente aplicar descuentos a las cargas realizadas siempre y cuando tenga puntos suficientes (sólo se puede canjear 100 puntos por carga).
+    Determinar la cantidad de cargas realizadas de usuarios no existentes.
+
+Ejercicio 2.3.11¶
+
+Una empresa dedicada a la venta de combustibles para automotores anunció una promoción mediante la cual los clientes pueden acceder a beneficios importantes. En cada carga los clientes suman 10 puntos por cada $100 de combustible y dependiendo del medio de pago se le aplica un factor multiplicador, el cual se encuentra en un arreglo (ya está cargado). Los medios de pago posible son: Efectivo, Debito o Credito La cantidad de puntos que tiene cada cliente están almacenados en el archivo indexado PUNTOS el cual tiene el siguiente formato:
+
+PUNTOS Indexado por DNI
+
+    DNI Cant_Puntos Ult_Carga 
+
+Los datos de cada cliente se encuentran almacenados en el archivo CLIENTE también indexado con el siguiente formato
+
+CLIENTE Indexado por DNI
+
+    DNI Ape_Nom Edad Ciudad 
+
+Se pide realizar el algoritmo que permita:
+
+    Actualizar el archivo PUNTOS a partir del siguiente archivo secuencial (puede haber más de una carga por cliente), agregando los clientes que no existen en los archivos anteriores cuando sea necesario
+
+CARGAS Indexado por DNI
+
+    DNI Medio_Pago Ape_Nom Fecha Ciudad 
+
+    Determinar la cantidad de cargas mayor a $1000
+    Informar la cantidad de Clientes nuevos cargados
+
+
+
+
+
+

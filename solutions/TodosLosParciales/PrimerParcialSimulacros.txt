@@ -1,0 +1,398 @@
+================================================================================
+  SIMULACROS — PRIMER PARCIAL AED
+  UTN Facultad Regional Resistencia
+  Temas: Secuenciales · Condicionales · Repetitivas · Funciones · Procedimientos
+================================================================================
+
+INSTRUCCIONES:
+  - Resolvé en papel, sin computadora. Igual que el examen real.
+  - Antes de escribir sintaxis: ENTRA → SALE → PROCESO → AMBIENTE → código
+  - Tiempo estimado: 90 minutos por simulacro
+  - Las soluciones están al final de cada simulacro (¡no las mires antes!)
+
+================================================================================
+  SIMULACRO #1
+================================================================================
+
+EJERCICIO 1 — Secuencial con fórmula  (15 puntos)
+--------------------------------------------------
+Una empresa calcula el salario neto de sus empleados.
+El salario bruto se ingresa por teclado.
+Se aplican descuentos fijos:
+  - Jubilación : 11% del bruto
+  - Obra social:  3% del bruto
+  - Sindicato  :  2% del bruto
+
+Se pide: mostrar salario bruto, total de descuentos y salario neto.
+
+
+EJERCICIO 2 — Condicional  (20 puntos)
+---------------------------------------
+Se ingresan tres notas de 0 a 10 de un alumno.
+
+Se pide:
+  a) Calcular el promedio.
+  b) Mostrar:
+       "APROBADO"      si promedio >= 6
+       "RECUPERATORIO" si promedio entre 4 y 5.99
+       "DESAPROBADO"   si promedio < 4
+  c) Si aprobó y el promedio es >= 9, mostrar además "FELICITACIONES".
+
+
+EJERCICIO 3 — Repetitiva con acumuladores  (30 puntos)
+-------------------------------------------------------
+Se ingresan notas de alumnos de a una, hasta ingresar -1 (FDS).
+
+Se pide:
+  a) Contar aprobados (nota >= 6) y desaprobados (nota < 6).
+  b) Mostrar el promedio general de todas las notas.
+  c) Mostrar la nota más alta registrada.
+
+
+EJERCICIO 4 — Función  (35 puntos)
+------------------------------------
+Escribir una FUNCION llamada EsPar que reciba un entero y devuelva
+VERDADERO si es par, FALSO si es impar.
+
+En el programa principal:
+  - Leer 10 números con un PARA.
+  - Usar EsPar para contar pares e impares.
+  - Mostrar ambos contadores al final.
+
+--------------------------------------------------------------------------------
+  SOLUCIONES — SIMULACRO #1  (no mirar antes de resolver)
+--------------------------------------------------------------------------------
+
+-- EJ 1 --
+Ambiente
+  bruto, neto, desc_jub, desc_os, desc_sind, total_desc: real
+Proceso
+  Esc("Ingrese salario bruto"); Leer(bruto)
+  desc_jub  := bruto * 0.11
+  desc_os   := bruto * 0.03
+  desc_sind := bruto * 0.02
+  total_desc := desc_jub + desc_os + desc_sind
+  neto := bruto - total_desc
+  Esc("Bruto:", bruto)
+  Esc("Descuentos:", total_desc)
+  Esc("Neto:", neto)
+
+-- EJ 2 --
+Ambiente
+  n1, n2, n3, prom: real
+Proceso
+  Esc("Ingrese 3 notas"); Leer(n1); Leer(n2); Leer(n3)
+  prom := (n1 + n2 + n3) / 3
+  Si prom >= 6 entonces
+   Esc("APROBADO")
+   Si prom >= 9 entonces Esc("FELICITACIONES") FinSi
+  Sino
+   Si prom >= 4 entonces
+    Esc("RECUPERATORIO")
+   Sino
+    Esc("DESAPROBADO")
+   FinSi
+  FinSi
+
+-- EJ 3 --
+Ambiente
+  nota, prom, mayor: real
+  aprobados, desaprobados, cant, suma: entero
+Proceso
+  aprobados:=0; desaprobados:=0; cant:=0; suma:=0; mayor:=0
+  Esc("Ingrese nota (-1 para terminar)"); Leer(nota)
+  Mientras nota <> -1 hacer
+   cant := cant + 1
+   suma := suma + nota
+   Si nota >= 6 entonces
+    aprobados := aprobados + 1
+   Sino
+    desaprobados := desaprobados + 1
+   FinSi
+   Si nota > mayor entonces mayor := nota FinSi
+   Esc("Ingrese nota (-1 para terminar)"); Leer(nota)
+  FinMientras
+  Si cant > 0 entonces
+   prom := suma / cant
+   Esc("Aprobados:", aprobados)
+   Esc("Desaprobados:", desaprobados)
+   Esc("Promedio:", prom)
+   Esc("Nota más alta:", mayor)
+  Sino
+   Esc("No se ingresaron notas")
+  FinSi
+
+-- EJ 4 --
+Ambiente
+  Funcion EsPar(n: entero): booleano
+   Si n MOD 2 = 0 entonces
+    EsPar := verdadero
+   Sino
+    EsPar := falso
+   FinSi
+  FinFuncion
+  num, pares, impares: entero
+Proceso
+  pares:=0; impares:=0
+  Para i:= 1 a 10 hacer
+   Esc("Ingrese número"); Leer(num)
+   Si EsPar(num) entonces
+    pares := pares + 1
+   Sino
+    impares := impares + 1
+   FinSi
+  FinPara
+  Esc("Pares:", pares)
+  Esc("Impares:", impares)
+
+
+================================================================================
+  SIMULACRO #2
+================================================================================
+
+EJERCICIO 1 — Secuencial  (15 puntos)
+---------------------------------------
+Un comercio vende un producto con precio base.
+Ingresar: precio base y cantidad comprada.
+Reglas de descuento por cantidad (fijas, no acumulables):
+  - 1 a 5 unidades  : sin descuento
+  - 6 a 10 unidades : 10% de descuento
+  - más de 10       : 20% de descuento
+
+Se pide: mostrar precio unitario final y total a pagar.
+
+
+EJERCICIO 2 — Condicional con SEGUN  (20 puntos)
+--------------------------------------------------
+Ingresar un número entero del 1 al 7.
+Mostrar el día de la semana correspondiente (1=Lunes ... 7=Domingo).
+Si el número está fuera del rango, mostrar "Número inválido".
+Además, informar si es día hábil o fin de semana.
+
+
+EJERCICIO 3 — Repetitiva FOR  (30 puntos)
+-------------------------------------------
+Se conoce de antemano que hay exactamente 20 empleados.
+Para cada empleado se ingresa su salario.
+
+Se pide:
+  a) Mostrar cuántos ganan más que el promedio general.
+     (Nota: necesitás dos pasadas — calculá el promedio primero)
+  b) Mostrar el salario máximo y mínimo.
+
+
+EJERCICIO 4 — Procedimiento  (35 puntos)
+------------------------------------------
+Escribir un PROCEDIMIENTO llamado MostrarTabla que reciba un número N
+y muestre su tabla de multiplicar del 1 al 10.
+
+Ejemplo para N=3:
+  3 x 1 = 3
+  3 x 2 = 6
+  ...
+  3 x 10 = 30
+
+En el programa principal, pedir al usuario un número y llamar al procedimiento.
+
+--------------------------------------------------------------------------------
+  SOLUCIONES — SIMULACRO #2
+--------------------------------------------------------------------------------
+
+-- EJ 1 --
+Ambiente
+  precio_base, precio_final, total, descuento: real
+  cantidad: entero
+Proceso
+  Esc("Precio base"); Leer(precio_base)
+  Esc("Cantidad"); Leer(cantidad)
+  Si cantidad <= 5 entonces
+   descuento := 0
+  Sino
+   Si cantidad <= 10 entonces
+    descuento := 0.10
+   Sino
+    descuento := 0.20
+   FinSi
+  FinSi
+  precio_final := precio_base * (1 - descuento)
+  total := precio_final * cantidad
+  Esc("Precio unitario:", precio_final)
+  Esc("Total:", total)
+
+-- EJ 2 --
+Ambiente
+  dia: entero
+Proceso
+  Esc("Ingrese número (1-7)"); Leer(dia)
+  Segun dia hacer
+   1: Esc("Lunes")   ; Esc("Día hábil")
+   2: Esc("Martes")  ; Esc("Día hábil")
+   3: Esc("Miércoles"); Esc("Día hábil")
+   4: Esc("Jueves")  ; Esc("Día hábil")
+   5: Esc("Viernes") ; Esc("Día hábil")
+   6: Esc("Sábado")  ; Esc("Fin de semana")
+   7: Esc("Domingo") ; Esc("Fin de semana")
+  FinSegun
+  Si (dia < 1) O (dia > 7) entonces Esc("Número inválido") FinSi
+
+-- EJ 3 --
+Ambiente
+  salarios: arreglo[1..20] de real
+  suma, prom, maximo, minimo: real
+  superan: entero
+Proceso
+  suma:=0; maximo:=0; minimo:=9999999
+  Para i:= 1 a 20 hacer
+   Esc("Salario empleado", i); Leer(salarios[i])
+   suma := suma + salarios[i]
+   Si salarios[i] > maximo entonces maximo := salarios[i] FinSi
+   Si salarios[i] < minimo entonces minimo := salarios[i] FinSi
+  FinPara
+  prom := suma / 20
+  superan := 0
+  Para i:= 1 a 20 hacer
+   Si salarios[i] > prom entonces superan := superan + 1 FinSi
+  FinPara
+  Esc("Promedio:", prom)
+  Esc("Superan el promedio:", superan)
+  Esc("Máximo:", maximo)
+  Esc("Mínimo:", minimo)
+
+-- EJ 4 --
+Ambiente
+  Procedimiento MostrarTabla(n: entero) es
+   Para i:= 1 a 10 hacer
+    Esc(n, "x", i, "=", n*i)
+   FinPara
+  FinProcedimiento
+  num: entero
+Proceso
+  Esc("Ingrese un número"); Leer(num)
+  MostrarTabla(num)
+
+
+================================================================================
+  SIMULACRO #3  (más difícil — integrador)
+================================================================================
+
+EJERCICIO 1 — Secuencial + Condicional  (20 puntos)
+-----------------------------------------------------
+Una empresa de energía cobra según el consumo mensual en kWh:
+
+  Tramo 1: hasta 100 kWh       → $50 fijos + $2.50 por kWh
+  Tramo 2: 101 a 300 kWh       → $50 fijos + $2.50 los primeros 100
+                                          + $3.80 el resto
+  Tramo 3: más de 300 kWh      → $50 fijos + $2.50 los primeros 100
+                                          + $3.80 los siguientes 200
+                                          + $5.20 el resto
+
+Se pide: ingresar consumo y mostrar monto total a pagar.
+
+
+EJERCICIO 2 — Repetitiva MIENTRAS con FDS  (35 puntos)
+-------------------------------------------------------
+Se ingresan datos de ventas hasta ingresar 0 (FDS).
+Cada venta tiene: importe y código de vendedor (1, 2 o 3).
+
+Se pide:
+  a) Total vendido por cada vendedor (3 acumuladores).
+  b) Vendedor con mayor venta total.
+  c) Cantidad de ventas que superaron el promedio general.
+
+
+EJERCICIO 3 — Función recursiva  (45 puntos)
+----------------------------------------------
+Escribir una FUNCION RECURSIVA llamada Factorial que reciba N
+y devuelva N! (factorial).
+  Caso base: Factorial(0) = 1
+  Caso recursivo: Factorial(N) = N * Factorial(N-1)
+
+En el programa principal:
+  - Leer un número N (garantizado N >= 0)
+  - Mostrar N! usando la función
+
+--------------------------------------------------------------------------------
+  SOLUCIONES — SIMULACRO #3
+--------------------------------------------------------------------------------
+
+-- EJ 1 --
+Ambiente
+  consumo, monto: real
+Proceso
+  Esc("Ingrese consumo en kWh"); Leer(consumo)
+  Si consumo <= 100 entonces
+   monto := 50 + (consumo * 2.50)
+  Sino
+   Si consumo <= 300 entonces
+    monto := 50 + (100 * 2.50) + ((consumo - 100) * 3.80)
+   Sino
+    monto := 50 + (100 * 2.50) + (200 * 3.80) + ((consumo - 300) * 5.20)
+   FinSi
+  FinSi
+  Esc("Total a pagar: $", monto)
+
+-- EJ 2 --
+Ambiente
+  importe, prom, suma_total: real
+  cod, v1, v2, v3, cant, superan: entero
+  total1, total2, total3: real
+  importes: arreglo[1..1000] de real   // para segunda pasada
+Proceso
+  total1:=0; total2:=0; total3:=0; cant:=0; suma_total:=0
+  Esc("Importe (0 para terminar)"); Leer(importe)
+  Mientras importe <> 0 hacer
+   Esc("Código vendedor (1-3)"); Leer(cod)
+   cant := cant + 1
+   suma_total := suma_total + importe
+   importes[cant] := importe
+   Segun cod hacer
+    1: total1 := total1 + importe
+    2: total2 := total2 + importe
+    3: total3 := total3 + importe
+   FinSegun
+   Esc("Importe (0 para terminar)"); Leer(importe)
+  FinMientras
+  prom := suma_total / cant
+  superan := 0
+  Para i:= 1 a cant hacer
+   Si importes[i] > prom entonces superan := superan + 1 FinSi
+  FinPara
+  Esc("Vendedor 1:", total1)
+  Esc("Vendedor 2:", total2)
+  Esc("Vendedor 3:", total3)
+  Si (total1 >= total2) Y (total1 >= total3) entonces
+   Esc("Mayor vendedor: 1")
+  Sino
+   Si total2 >= total3 entonces
+    Esc("Mayor vendedor: 2")
+   Sino
+    Esc("Mayor vendedor: 3")
+   FinSi
+  FinSi
+  Esc("Ventas sobre el promedio:", superan)
+
+-- EJ 3 --
+Ambiente
+  Funcion Factorial(n: entero): entero
+   Si n = 0 entonces
+    Factorial := 1
+   Sino
+    Factorial := n * Factorial(n - 1)
+   FinSi
+  FinFuncion
+  num, result: entero
+Proceso
+  Esc("Ingrese N"); Leer(num)
+  result := Factorial(num)
+  Esc(num, "! =", result)
+
+
+================================================================================
+  RESUMEN — TEMAS DEL PRIMER PARCIAL
+================================================================================
+  Secuencial   → fórmulas, conversiones, cálculos directos
+  Condicional  → Si/Sino anidado, Segun/Hacer
+  Repetitiva   → Para (cantidad conocida), Mientras (FDS), Repetir/Hasta
+  Funciones    → devuelven un valor (EsPar, Factorial, etc.)
+  Procedimientos → no devuelven valor, pueden modificar parámetros con ES
+  Arreglos     → cuando necesitás guardar datos para segunda pasada

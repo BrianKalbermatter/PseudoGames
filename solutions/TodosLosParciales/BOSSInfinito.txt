@@ -1,0 +1,772 @@
+================================================================================
+  BOSS INFINITO — TODOS LOS PARCIALES Y FINALES AED
+  UTN Facultad Regional Resistencia — Ingeniería en Sistemas de Información
+  Compilado de exámenes reales de la cátedra
+================================================================================
+
+CÓMO USARLO:
+  Cada ejercicio es un "BOSS". Resolvelo en papel como si fuera el examen.
+  Dificultad aproximada indicada con estrellas: ★ fácil → ★★★★ muy difícil.
+  Los temas que más se repiten están marcados con [FRECUENTE].
+
+
+================================================================================
+  PARCIALES — 3er PARCIAL (LISTAS + ARCHIVOS)
+================================================================================
+
+--------------------------------------------------------------------------------
+BOSS-P01 ★★★  [FRECUENTE]
+3er Parcial — Dic 2025 — Tema A — HackaTec 2025
+--------------------------------------------------------------------------------
+Contexto:
+  La Universidad llevó adelante el hackathon "HackaTec 2025". Equipos de
+  estudiantes desarrollaron soluciones tecnológicas. Tecnologías disponibles:
+  robótica (ro), mecatrónica (mc), inteligencia artificial (ia),
+  programación (pr), ciencia de datos (cd).
+
+  Criterios de puntuación del jurado:
+    1. Innovación y creatividad (ic): 0 a 35
+    2. Impacto y aplicabilidad (ia): 0 a 25
+    3. Calidad del prototipo (cp): 0 a 40
+  Punto extra por cada tecnología usada.
+  Puntaje_final = Σ(puntos_por_criterio) + Σ(puntos_por_tecnologia)
+  El líder recibe puntaje de 1 a 10.
+
+ARCHIVO SECUENCIAL de Inscripciones (ordenado por id_equipo):
+  | id_equipo | nombre_equipo | fecha_inscripcion | tecnologias_utilizadas[ro,mc,ia,pr,cd] |
+  (tecnologias_utilizadas: vector de 5 elementos, indica si se usó o no cada una)
+
+ARCHIVO INDEXADO de Puntajes (indexado por id_equipo):
+  | id_equipo | puntaje_por_criterio[ic,ia,cp] | puntaje_lider |
+
+Se pide:
+  1. Crear una lista doblemente enlazada con: nombre_equipo, puntaje_total,
+     puntaje_lider. Ordenada por puntaje_total de forma ASCENDENTE.
+  2. Informar cuántos equipos usaron 3 o más tecnologías.
+  3. Mostrar los datos de los equipos ganadores de 1°, 2° y 3° puesto.
+     En caso de empate, desempatar por puntaje_lider.
+
+Ejercicio 2:
+  Dada una lista simplemente encadenada de números enteros positivos, eliminar
+  todos los números cuyos dígitos NO estén en orden estrictamente creciente
+  (de izquierda a derecha).
+  Ej. mantener: 1234, 1379, 2489  |  eliminar: 11, 321, 1243
+  Se pide:
+    1. Generar una nueva lista simple con los números eliminados.
+    2. Para verificar si cumple la condición → función RECURSIVA.
+
+--------------------------------------------------------------------------------
+BOSS-P02 ★★★  [FRECUENTE]
+3er Parcial — Dic 2025 — Tema B — Inter Carrera 2025
+--------------------------------------------------------------------------------
+Contexto:
+  La Secretaría organiza los Juegos Inter Carrera 2025. Carreras: IQ, ISI,
+  IEM, TUP, LAR. Disciplinas: Fútbol(F), Básquet(B), Vóley(V),
+  Tenis de mesa(T), Ajedrez(A). Un equipo puede participar en varias.
+
+  Criterios de "chances" para sorteo de premios:
+    - Por participar en el evento: +5 chances
+    - Por cada disciplina en la que participó: +3 chances
+    - Según posición final por disciplina:
+        Campeón: +20 | Subcampeón: +12 | Tercero: +8 | Participación: +2
+
+ARCHIVO SECUENCIAL de Inscripciones (ordenado por cod_equipo):
+  | cod_equipo | nombre_equipo | carrera (IQ/ISI/IEM/TUP/LAR) |
+
+ARCHIVO INDEXADO de Resultados (indexado por cod_equipo):
+  | cod_equipo | posicion_disciplinas |
+  (posicion_disciplinas: vector de 5 elementos según disciplina;
+   valores: "Campeón", "Subcampeón", "Tercero", "Sin podio", "NP")
+
+Se pide:
+  1. Generar lista simplemente enlazada con: nombre_equipo, carrera,
+     total_chances. Ordenada de mayor a menor por total_chances.
+  2. Mostrar por pantalla para cada equipo: cantidad de disciplinas en las
+     que participó y en cuántas salió campeón.
+
+Ejercicio 2:
+  Dada una lista doblemente encadenada de números enteros positivos, eliminar
+  todos los números que NO contengan al menos un par de dígitos iguales
+  consecutivos ("dígitos gemelos").
+  Ej. mantener: 1223, 45551  |  eliminar: 1234, 71
+  Se pide:
+    1. Generar una nueva lista simple con los números eliminados.
+    2. Para verificar si cumple → función RECURSIVA.
+
+--------------------------------------------------------------------------------
+BOSS-P03 ★★★
+3er Recuperatorio — Feb 2026 — Tema A — Supermercado sorteo
+--------------------------------------------------------------------------------
+Contexto:
+  Una cadena de supermercados realiza un sorteo por su aniversario.
+  Cuantas más compras realizan los clientes, más chances suman.
+
+ARCHIVO SECUENCIAL de Compras (ordenado por fecha_compra):
+  | fecha_compra | dni_cliente | cantidad_articulos | importe_total |
+  | es_jubilado_anses (SI/NO) | forma_pago (QR, efectivo, débito, crédito) |
+
+ARCHIVO INDEXADO de Socios (indexado por dni_cliente):
+  | dni_cliente | apellido_y_nombre | fecha_adhesion | categoria (Regular/Black) |
+
+Teniendo en cuenta:
+  - Al agregarlo por primera vez: 5 chances
+  - Antigüedad de adhesión: >10 años → +10 | entre 3 y 10 → +5 | <3 → +2
+  - Por cada compra: +1 chance cada $100 completos del importe_total
+  - Si categoría Black: sumar cantidad extra usando función Tirar()
+    (retorna entero entre 1 y 55, indica posición del arreglo cuyo valor
+    se suma como chances extra)
+
+Se solicita (a):
+  Crear lista simplemente enlazada (ordenada por apellido_y_nombre) con
+  info solo de personas del programa de socios:
+  | apellido_y_nombre | chances_total |
+
+Se solicita (b):
+  Por cada compra procesada emitir orden de descuento:
+  - Mostrar DNI, fecha, si es socio, porcentaje de descuento e importe.
+  - Descuentos: Jubilados/ANSES: 15% | Compras con QR: 20%
+    (si cumple ambas, se acumulan)
+
+Ejercicio 2:
+  Dada una lista doblemente enlazada de números enteros positivos y un
+  número N (entero de un solo dígito) ingresado por el usuario:
+  a) Eliminar de la lista todos los nodos cuyo número tenga al dígito N
+     como dígito más significativo (primer dígito de izquierda a derecha).
+  b) Para verificar → función RECURSIVA.
+  Ej: pmasS(2, 2345) = verdadero | pmasS(6, 5604) = falso
+
+
+================================================================================
+  FINALES — PRÁCTICA
+================================================================================
+
+--------------------------------------------------------------------------------
+BOSS-F01 ★★★★  [FRECUENTE]
+Examen Final — 27/02/2026 — Banco NESA
+--------------------------------------------------------------------------------
+Contexto:
+  El Banco NESA analiza el ejercicio 2025: evolución mensual del volumen
+  operado, comportamiento financiero neto de clientes, operaciones en moneda
+  extranjera, extracciones recurrentemente superiores a depósitos.
+  Monedas: Pesos (P), USD (U), Euro (E) — comparar en pesos usando
+  función convertir_a_pesos(monto, moneda).
+
+ARCHIVO SECUENCIAL MOVIM (ordenado por MES, CLIENTE, COD_TRAN):
+  | Mes N(2) | Cliente N(13) | Cod_Tran (D=Depósito, E=Extracción, T=Transf.) |
+  | Moneda (P/U/E) | Importe N(13,2) |
+
+Se pide:
+  1. Generar un informe analítico del comportamiento mensual y anual:
+     - Totales por mes y total general anual
+     - Para cada mes:
+       * Transacción más solicitada
+       * Porcentaje de extracciones sobre total mensual
+       * Porcentaje de operaciones en moneda extranjera sobre total mensual
+  2. Elaborar ranking anual de clientes según IAF:
+     IAF = (Total Operado en Pesos) × (Cantidad de Operaciones)
+     Mostrar los 5 clientes con mayor IAF:
+     | POSICIÓN | CLIENTE | TOTAL_OPERADO | CANT_OP | IAF |
+     En empate: priorizar cliente con mayor cantidad de operaciones.
+
+Ejercicio 2:
+  La universidad desea estudiar el rendimiento académico de 3 Facultades
+  y sus 5 carreras. De cada estudiante: Nro. de Legajo, Promedio,
+  Cant. materias aprobadas, Cant. materias reprobadas,
+  Condición académica (Regular o Libre).
+  Se desarrolla un algoritmo en pseudocódigo que permita:
+  - Para cada carrera:
+    * Informar porcentaje de estudiantes en condición Regular
+    * Identificar al estudiante de mejor y peor promedio
+  - Por Universidad:
+    * Determinar cuál es la facultad con mayor promedio general
+    * Informar si alguna carrera y facultad tiene más del 30% con más
+      materias reprobadas que aprobadas
+  - Función que informe Riesgo académico: promedio < 6 Y
+    reprobadas > aprobadas
+  - Informar por carrera y facultad la cantidad en situación de riesgo.
+
+--------------------------------------------------------------------------------
+BOSS-F02 ★★★★
+Examen Final — 06/03/2026 — Empresa Logística
+--------------------------------------------------------------------------------
+Contexto:
+  Una empresa de logística gestiona el seguimiento de sus envíos mediante
+  una secuencia de caracteres (SecuenciaEnvios). Los datos de cada envío
+  se separan entre sí con el símbolo '?' y los datos de una sucursal
+  finalizan con '#'. La secuencia completa finaliza con '@'.
+
+Formato del paquete:
+  código_envio AN(10) | peso_kg N(4,2) | dirección_destino AN(50) |
+  estado ('P'endiente, 'T'en tránsito, 'E'ntregado, 'D'evuelto)
+  Función: EsEnvioRiesgoso(codigoEnvio, pesoKg) → BOOLEANO
+
+Se pide (a):
+  Generar 2 estructuras de salida:
+    i) Envíos Riesgosos: completos de aquellos cuyo estado sea 'P' o 'T'
+       (prioritarios). Objetivo: empresa priorice su atención.
+    ii) Envíos Devueltos No Riesgosos: completos de aquellos cuyo estado
+        sea 'D' y EsEnvioRiesgoso() retorne FALSO.
+
+Se pide (b):
+  - Porcentaje total de envíos riesgosos sobre el total de procesados
+  - Cantidad de envíos no riesgosos por estado ('P', 'T', 'E', 'D')
+
+Ejercicio 2:
+  La dirección de tránsito gestiona multas con 2 fuentes de datos:
+
+  Fuente 1 - Secuencia de caracteres por multa:
+    | N_identificación N(6) | patente AN(7) | tipo_multa (0..24) |
+    | monto_multa N(8,3) | motivo AN(*) |
+    (fin de cada multa: '*', fin de secuencia: '**')
+
+  Fuente 2 - Archivo indexado PagosMultas (por N_identificación):
+    | N_identificacion N(6) | Fecha | pagado_en_termino (booleano) |
+
+  Se pide un algoritmo con menú de opciones:
+  a) Todas las multas cuyo monto supera el monto promedio del total de multas
+  b) Buscar una multa por N_identificación; si pagó en término: 15%
+     de descuento; si no: 10% de recargo
+  c) Total acumulado por tipo (0..24) e informar tipo más frecuente
+     y promedio de monto a pagar para ese tipo
+  d) De los datos cargados, mostrar importe acumulado por tipo registrado
+     de cada posible tipo (0..24)
+
+--------------------------------------------------------------------------------
+BOSS-F03 ★★★★
+Examen Final — 21/02/2025 — Sistema Gestión Tráfico (Tecnópolis)
+--------------------------------------------------------------------------------
+Contexto:
+  Sistema de Gestión de Tráfico Inteligente. Secuencia ininterrumpida de
+  caracteres con múltiples vehículos. Termina con '*'.
+
+Formato del paquete de un vehículo (termina con '+'):
+  Patente: hasta '-' | Tipo (A,B,C,D) | Tiempo circulación N(1) (<10) |
+  Infracción (S/N) | Código_Zona AN(2)
+
+Ejemplo: ABC123-A3SZ1+XYZ789-C5NZ2+DEF456-A2NZ1+GH789PP-C7SZ3+*
+
+Se pide:
+  a) Generar 2 secuencias de salida con el mismo formato de entrada:
+     - Una solo con vehículos que circularon en Zona Z1
+     - Una solo con vehículos que cometieron infracción y circularon >2hs
+  Informar:
+     a. Cantidad y porcentaje de vehículos en Zona Z1
+     b. Cantidad y porcentaje de vehículos que cometieron infracción
+     c. Tipo de vehículo que más circuló
+
+--------------------------------------------------------------------------------
+BOSS-F04 ★★★
+Examen Final — 21/02/2025 — Centro Médico
+--------------------------------------------------------------------------------
+Contexto:
+  Centro Médico con datos de pacientes en secuencia de caracteres.
+  El Centro abre Lunes, Martes y Viernes.
+
+  Por cada paciente:
+    - Número historia clínica AN(4)
+    - Nombre del paciente AN(*)  (termina con '-')
+    - Número para especialidad (10-29)
+    - Tipo de cobertura (0-9)
+    - Código indicador del plan: 0=particular, 1=plan salud propio, 2=obra social
+    - Día de la semana: L, M, V
+
+Se pide un algoritmo con menú:
+  1. Separar datos por día de atención, ordenados por Nro. Historia Clínica
+  2. Buscar paciente por nombre; si lo encuentra: especialidad que se atendió
+     y qué día
+  3. Informar:
+     a. Cantidad de pacientes atendidos por especialidad y tipo de cobertura
+     b. Cuál es el tipo de cobertura menos atendido en el Centro → mínimo
+     c. Cuál es la especialidad más requerida → más
+
+Nota: puede usarse función CONCATENAR(ejemplo, v)
+
+--------------------------------------------------------------------------------
+BOSS-F05 ★★★
+Examen Final — 22/12/2023 — DigitalArt (ecommerce)
+--------------------------------------------------------------------------------
+Contexto:
+  DigitalArt: empresa de venta de cuadros. Seguimiento de preferencias de
+  clientes en categorías de productos. Secuencia de caracteres:
+
+  Formato por registro (separados por '/'):
+    TipoCte AN(1) | CodCte N(6) | Edad N(2) | CodProd AN(variable) |
+    Pref (M=máxima, D=deseable, N=nula)
+
+  Ejemplo: B23412320ABEEPP-M/B1897864329IK-D/P90876532UJHYN9-M
+
+Se pide:
+  a. Cantidad de compras por Código de Producto
+  b. Promedio de edad de clientes con preferencias tipo Nula
+  c. Información sobre productos con mayor cantidad de preferencia Nula
+     que Deseable (por CodProd)
+
+Ejercicio 2 (40 puntos):
+  Área de Control de Proyectos de Software. Archivo con resoluciones
+  de cada equipo. Ordenado por Site, Area, Versión.
+
+  Registro: | Site AN(10) | Area AN(5) | Versión (W-Web/M-Mobile) |
+  | Integrantes 3..6 | Tickets_Resueltos N(3) |
+  | Estado_Proyecto (F=Finalizado, E=En_proceso) |
+
+  Emitir informe de tickets resueltos de proyectos de equipos de más de 4
+  integrantes que NO estén Finalizados. Informar total por Site, Area,
+  Versión y Total General. Generar archivo de salida:
+  SITE - Total de Tickets Resueltos
+
+Ejercicio 3 (20 puntos):
+  Pre-orden: GEAIBMCLDFKJH  |  En-orden: IABEGLDCFMKHJ
+  A. Dibujar el árbol binario
+  B. Dar el recorrido en post-orden
+  C. Escribir una función recursiva que encuentre un valor dado en árbol binario
+
+--------------------------------------------------------------------------------
+BOSS-F06 ★★★
+Examen Final — Junio 2024 — Empresa de Noticias + Contraseñas
+--------------------------------------------------------------------------------
+Ejercicio 1:
+  Empresa de producción de noticias. Archivo cuyo registro:
+  | Codigo AN(5) | Titulo AN(30) | Costo N(4,2) |
+  | Cod_Categoria 1..10 | Segmento (0 matinal, 1 tarde, 2 noche) |
+  Nombre de categoría almacenado en vector (índice = código).
+
+  Se pide:
+  1) Procesar archivo y almacenar de forma descendente por costo aquellos
+     eventos cuyo costo supere un valor ingresado por teclado.
+     Incluir fecha y descripción (nombre categoría y segmento).
+  2) Informar:
+     a) Cantidad de eventos en segmento "Matinal" categoría "Deportivo"
+     b) Total invertido en la categoría con MENOR cantidad de eventos
+     c) Porcentaje de la categoría con MAYOR cantidad en segmento "Noche"
+
+Ejercicio 2:
+  Secuencia de caracteres con contraseñas cifradas, separadas por '+'.
+  Extraer contraseñas que empiecen y terminen con el MISMO carácter.
+  Almacenarlas en orden alfabético.
+  Calcular nivel de seguridad de cada una:
+    Nivel 1 MUY BAJO: longitud <6, solo letras o solo números
+    Nivel 2 BAJO: 6-8 caracteres, mayoría letras + algunos dígitos
+    Nivel 3 MEDIO: 8-10 caracteres, vocales+consonantes+números, más vocales
+    Nivel 4 ALTO: >10 caracteres, letras+números+símbolos especiales (/,#,$,@)
+  Además informar:
+    - El nivel con menor cantidad de contraseñas
+    - Porcentaje con repetición de >3 veces del mismo carácter consecutivo
+
+--------------------------------------------------------------------------------
+BOSS-F07 ★★★
+Examen Final — 15/04/2025 — Centro de Investigación + Números Prometidos
+--------------------------------------------------------------------------------
+Ejercicio 1:
+  Centro de investigación. Proyectos en secuencia de caracteres.
+  Cada proyecto tiene: ID (5 dígitos, termina en '&'), título (termina en '&'),
+  área (01-39), tipo (0=Incentivo, 1=De interés provincial, 2=De interés nacional),
+  estado (V=Vigente, R=Rechazado, S=Suspendido).
+  Nombres de áreas en otra estructura.
+
+  Se pide:
+  - Almacenar y separar los proyectos vigentes por tipo
+  - Informar el área con mayor cantidad de proyectos
+  - Si algún área no tiene proyectos: informar cuáles
+  - Mostrar al final por tipo los proyectos ordenados por área
+
+Ejercicio 2:
+  Dos números (a,b) son PROMETIDOS si la suma de divisores propios de cada
+  uno (sin incluir el número) es el otro más uno.
+  Ejemplo: 48 y 75 son prometidos porque:
+    Divisores propios de 48: 1+2+3+4+6+8+12+16+24 = 76 (= 75+1)
+    Divisores propios de 75: 1+3+5+15+25 = 49 (= 48+1)
+  Se solicita un algoritmo para encontrar pares prometidos en un rango.
+
+Ejercicio 3:
+  Auditoría de Equipos en una Empresa.
+  EQUIPOS (Indexado por DEPARTAMENTO, ID_EQUIPO):
+    | DEPARTAMENTO AN(30) | ID_EQUIPO N(6) | TIPO_EQUIPO AN(20) |
+    | RESPONSABLE AN(30) | FECHA_ADQUISICION (FECHA) |
+    | ULTIMO_MANTENIMIENTO (FECHA) | ESTADO (FUNCIONANDO/CON FALLAS) |
+    | COD_PROBLEMA N(2) |
+  30 tipos de problemas en vector de 60 caracteres.
+
+  Se pide: verificación del estado de un equipo.
+  El auditor ingresa departamento e ID. Se imprime una ficha.
+  Si tiene fallas: ingresar código de problema y actualizar registro.
+
+--------------------------------------------------------------------------------
+BOSS-F08 ★★★★
+Examen Final — 20/02/2026 — Ciberdefensa + Telecomunicaciones
+--------------------------------------------------------------------------------
+Ejercicio 1:
+  Central de ciberdefensa. Secuencia ininterrumpida de caracteres con
+  paquetes de información técnica. Separador entre paquetes: '-'.
+  Termina con '*'.
+
+  Por paquete:
+    - Identificador numérico: 6 dígitos
+    - Firma alfanumérica: 7 caracteres
+    - Nivel de criticidad: entero 0-9
+    - Carga de datos textuales (hasta símbolo separador '-' o '*')
+
+  Transformación de datos textuales:
+  1) Si paquete finaliza en '-': impares → cubo; pares → doble;
+     consonantes y vocales = igual; otro → carácter de error 'i'
+  2) Si paquete finaliza en '+': numéricos = igual; consonantes → ASCII;
+     vocales → vocal dos posiciones anteriores en [a,e,i,o,u];
+     otro → carácter de error 'i'
+
+  Se pide:
+  a) Datos almacenados en estructura ordenada por nivel criticidad (mayor→menor)
+     y en segunda instancia por identificador numérico
+  b) Porcentaje de caracteres de error sobre total procesado.
+     Clasificar: comprometido (errores >10% válidos) | alerta (igual) |
+     protegido (errores < mitad de válidos)
+  c) Mostrar listado completo de datos procesados y transformados
+  Requisito: uso de subacciones
+
+Ejercicio 2:
+  Empresa de telecomunicaciones. Archivo SECUENCIAL de transmisiones:
+  | ID_Terminal N(6) | Punto_Acceso (1=Web, 2=Mobile, 3=Call Center, 4=SD) |
+  | Prioridad (1..6) | Estado (EXITOSO/FALLIDO) |
+
+  Se pide:
+  - Identificar combinación Punto_Acceso + Prioridad con menor volumen total
+  - Determinar Rango de Prioridad con mayor demanda de tráfico
+  - Informar volumen total de transmisiones por Punto de Acceso
+  - Porcentaje de transmisiones "EXITOSO" sobre total de registros
+
+--------------------------------------------------------------------------------
+BOSS-F09 ★★★
+Examen Final — Agosto 2025 — Repartidores + Criptografía
+--------------------------------------------------------------------------------
+Ejercicio 1 (60 puntos):
+  Liquidación de comisiones sobre VENTAS de REPARTIDORES.
+
+  VENTAS (ordenado por CodRepartidor, CodProducto):
+    | CodRepartidor | CodProducto | Cantidad | Precio | FchVta |
+
+  COMISIONES_PRODUCTOS (indexado por CodRepartidor, CodProducto):
+    | CodRepartidor | CodProducto | Comision |
+
+  Se necesita:
+  - Acumular total de comisión de cada repartidor
+  - Si total de comisiones supera $10.000 → aplicar 10% adicional
+  - Emitir listado de comisiones a pagar por todos los repartidores
+  - Generar Ranking de Repartidores ordenado mayor→menor por comisión total
+
+Ejercicio 2 (40 puntos):
+  Criptoanálisis por SUSTITUCIÓN: tomar alfabeto ABCDEFGHIJKLMNOPQRSTUVWXYZ
+  y realizar corrimiento posicional hacia la derecha con clave K (numérica).
+  Ejemplo K=1: ATAQUEALAMANECER → BUBRVFBMBNBOFDFS
+
+  Se debe desarrollar una solución que procese el mensaje completo (todas
+  las palabras de la secuencia). Para el proceso de cada palabra, generar
+  un procedimiento que la reciba como parámetro.
+  Al finalizar mostrar mensaje original y mensaje desencriptado.
+
+--------------------------------------------------------------------------------
+BOSS-F10 ★★★
+Examen Final — 21/02/2025 — Ministerio Educación + Ciberseguridad
+--------------------------------------------------------------------------------
+Ejercicio 1:
+  Ministerio de Educación. Evaluación nacional. Archivo con:
+  | NRO_ESTUD N(6) | ESCUELA 1..12 | MATERIA (M-L-C) |
+  | CALIFICACION N(2) | FECHA | VALIDO S-N |
+
+  Solo procesar registros válidos (VALIDO = 'S').
+  Se pide:
+  - Comparación del promedio de cada escuela con el promedio nacional por materia
+  - Desempeño promedio de cada escuela y comparación con promedio nacional
+  - Cuál es la materia con mejor y peor desempeño en cada escuela
+  - Qué escuelas superan el promedio nacional en al menos 2 de las 3 materias
+
+Ejercicio 2:
+  Corporación de servicios financieros. Monitoreo de ciberseguridad.
+  Archivo SECUENCIAL (no ordenado):
+  | Pais N(2) | Amenaza N(1) | Intentos N(4) | IP_Origen AN(15) |
+  | IP_Destino AN(15) | Nivel B-M-A | Fecha | Hora N(2) |
+  País y tipos de amenaza almacenados en vectores.
+
+  Se pide:
+  - Total de intentos en un país determinado por tipo de amenaza
+  - Dirección IP con mayor cantidad de intentos como origen por tipo amenaza
+  - Porcentaje de ataques nivel Alto o Crítico sobre total en un país
+  - País con más intentos de ataque comparado con los demás procesados
+  - Tipo de amenaza más frecuente en toda la infraestructura global
+
+
+================================================================================
+  FINALES — TEORÍA (MÚLTIPLE OPCIÓN Y ÁRBOLES)
+================================================================================
+
+--------------------------------------------------------------------------------
+BOSS-T01 ★★  [FRECUENTE]
+3er Examen Parcial Teoría — Tema 3
+--------------------------------------------------------------------------------
+Pregunta 1 (múltiple opción):
+  I. ¿Con cuál estructura conviene representar (x*(y+4))-z?
+     a) Árbol binario  b) Secuencia de caracteres  c) Ambas
+
+  II. Para reconstruir un árbol binario ordenado basta tener su recorrido en
+      post-orden ¿Verdadero o Falso? Justificar.
+
+  III. En implementación recursiva de búsqueda en Lista Simple, cuando se
+       llega al caso base (puntero = NIL):
+       a) Se retorna falso/NULL   b) Se retorna que el elemento fue encontrado
+       c) Se lanza excepción
+
+  IV. Al buscar el valor 32 en un AVL ¿cuál es la estrategia correcta?
+      a) Si buscado < raíz → izquierda; si > → derecha
+      b) Comenzar en raíz y bajar siguiendo niveles secuencialmente
+      c) Comparar con todos los nodos en orden en-orden
+
+Pregunta 2 (4p):
+  PRE-ORDEN: J F B A D C E G I H K
+  EN-ORDEN:  A B C D E F G H I J K
+  Se solicita:
+  1. Construir el árbol paso a paso
+  2. Obtener la expresión POST-ORDEN
+  3. ¿Cuál es el concepto de nodo hoja a nivel técnico?
+  4. ¿Es ABB? ¿Por qué? ¿Cómo configurar ingreso de claves para que lo sea?
+
+Pregunta 3 (4p):
+  Insertar en ABB: 40, 25, 10, 5, 15, 35, 30, 50, 45, 60, 55
+  1. Construir el árbol paso a paso
+  2. Recorridos PRE-ORDEN y POST-ORDEN del árbol
+  3. ¿Es AVL? Justificar detalladamente
+  4. Dar el concepto de altura del árbol e informar la altura obtenida
+
+--------------------------------------------------------------------------------
+BOSS-T02 ★★
+Examen Final — 27/02/2026 — Teoría
+--------------------------------------------------------------------------------
+Múltiple opción (correcta +1, incorrecta -1):
+
+  1) En lista enlazada simple, eliminar el primer elemento puede realizarse
+     sin recorrer toda la estructura. ¿V o F?
+
+  2) En archivo secuencial ordenado por clave compuesta (Provincia, Ciudad),
+     si no respeta jerarquía de corte, el algoritmo puede producir totales
+     incorrectos. ¿V o F?
+
+  3) Respecto a los arreglos, indicar correctas:
+     A) Elementos en posiciones contiguas de memoria
+     B) Acceso directo por índice
+     C) Insertar en el medio no requiere desplazamientos
+     D) Tamaño fijo una vez declarado
+
+  4) Sobre listas enlazadas simples:
+     A) Cada nodo almacena dato y referencia al siguiente
+     B) El último nodo apunta a NULL
+     C) Requieren memoria contigua
+     D) Permiten crecer dinámicamente
+
+  5) En tratamiento de archivos secuenciales:
+     A) Se almacena en memoria externa
+     B) Procesamiento en memoria interna
+     C) Lectura controlada por condición de fin
+     D) Para leer registro específico puede accederse directamente
+
+  6) Arreglo estático de 1000 posiciones, se desea "eliminar" lógicamente
+     el elemento en posición 200 manteniendo el tamaño. ¿Qué es correcto?
+
+  7-10) (más preguntas sobre árboles, listas, recursividad, complejidad...)
+
+  Función contarHojas a analizar:
+    Funcion contarHojas(p: puntero a NODO): entero es
+      si p = NIL entonces contarHojas := 0;
+      sino
+        si *p.der = NIL y *p.izq = NIL entonces contarHojas := 1;
+        sino contarHojas := contarHojas(*p.izq) + contarHojas(*p.der);
+      Fin_si;
+    Fin_Funcion;
+    ¿Qué calcula? A) Total nodos B) Altura C) Nodos hoja D) Nodos internos
+
+  Función procLista a analizar:
+    Funcion procLista(p: puntero a NODO): entero es
+      si p = NIL entonces procLista := 0;
+      sino procLista := *p.dato + procLista(*p.prox);
+      Fin_si;
+    Fin_Funcion;
+    ¿Qué hace? A) Cuenta nodos B) Devuelve suma C) Retorna 0 D) Modifica lista
+
+--------------------------------------------------------------------------------
+BOSS-T03 ★★
+Árbol Binario — Ejercicio de recorridos (Examen Final 22-Dic-2023)
+--------------------------------------------------------------------------------
+  Pre-orden: GEAIBMCLDFKJH
+  En-orden:  IABEGLDCFMKHJ
+
+  A. Dibujar el árbol binario
+  B. Dar el recorrido en post-orden
+  C. Escribir una función recursiva que encuentre un valor dado en árbol binario:
+
+  Función BuscarValor(P: puntero a Nodo, Valor: Alfanumerico): booleano
+    si (P <> Nil) entonces
+      si (*P.Valor = Valor) entonces
+        BuscarValor := true
+      sino
+        BuscarValor := BuscarValor(P.Izq, Valor)
+        BuscarValor := BuscarValor(P.Der, Valor)
+      fin
+    sino
+      BuscarValor := false
+    fin
+  fin
+
+--------------------------------------------------------------------------------
+BOSS-T04 ★★
+Árbol Binario — ABB con números (examen teoría)
+--------------------------------------------------------------------------------
+  Insertar: 12, 9, 17, 6, 10, 14, 20, 3, 8, 11, 13 y 18
+
+  a. Crear árbol ABB desde el orden de ingreso
+  b. ¿Cuál es el hermano del nodo 6? ¿Y del nodo 13?
+  c. Indicar el camino que conforma la altura del nodo 18
+  d. Indicar todas las características del árbol obtenido
+  e. Si luego ingresan: 2, 15, 19 ¿se modifican las características de b?
+  f. Efectuar el recorrido EN-ORDEN y configurar un AVL
+
+  Tabla comparativa de métodos de búsqueda:
+  ┌────────────────┬───────────┬───────────┬───────────┬──────────┬──────────────┐
+  │ Método         │ Mejor caso│ Promedio  │ Peor caso │ Repetidos│ Datos orden. │
+  ├────────────────┼───────────┼───────────┼───────────┼──────────┼──────────────┤
+  │ Lineal         │ O(1)      │ O(n)      │ O(n)      │ Si       │ No           │
+  │ Lineal centinel│ O(1)      │ O(n)      │ O(n)      │ No       │ No (opcional)│
+  │ Binaria        │ O(1)      │ O(log n)  │ O(log n)  │ No       │ Si           │
+  └────────────────┴───────────┴───────────┴───────────┴──────────┴──────────────┘
+
+
+================================================================================
+  EJERCICIOS SUELTOS DE EXAMEN — ALGORITMOS ESPECÍFICOS
+================================================================================
+
+--------------------------------------------------------------------------------
+BOSS-E01 ★★★  [FRECUENTE]
+Lista doblemente encadenada — Números perfectos recursiva
+--------------------------------------------------------------------------------
+  Dada una Lista Doblemente encadenada que contiene números aleatorios,
+  eliminar aquellos que sean "PERFECTOS". Un número perfecto es aquel cuya
+  suma de divisores (sin incluir el número) es igual al número.
+  Ejemplo: 6 es perfecto porque 1+2+3 = 6.
+
+  Se pide:
+  - Un algoritmo que solucione el problema
+  - Para saber si es perfecto o no: función RECURSIVA (puede retornar
+    verdadero/falso, o bien retornar la suma de divisores)
+
+--------------------------------------------------------------------------------
+BOSS-E02 ★★★
+Lista simple — Mensajes binarios con error
+--------------------------------------------------------------------------------
+  Dada una lista simple donde cada nodo contiene un mensaje encriptado en
+  binario, identificar aquellos nodos con mensajes que contienen ERROR.
+  Hay error cuando el mensaje binario tiene cantidad IMPAR de unos (1).
+
+  Se pide:
+  - Implementar el algoritmo principal que devuelve en lista de salida
+    simple aquellos mensajes con error
+  - Función RECURSIVA para la detección de nodos con mensajes con cantidad
+    impar de unos. Recibe número binario, devuelve si contiene error o no.
+
+  Ejemplo:
+    1110010 → no tiene error (3 unos = impar... OJO verificar!)
+    1111010 → tiene error
+    1000011 → tiene error
+
+--------------------------------------------------------------------------------
+BOSS-E03 ★★★
+Lista circular + Lista doble — Fórmula 1
+--------------------------------------------------------------------------------
+Ejercicio 1:
+  Lista simple con datos de pilotos F1:
+    - Nombre escudería AN(30)
+    - Nombre piloto AN(30)
+    - Arreglo de puntos acumulados en cada una de las 24 carreras
+    - Número de victorias, podios, tiempo promedio de vuelta
+
+  Se pide:
+  a) Crear lista doblemente encadenada ordenada DESCENDENTE con:
+     nombre_escudería, nombre_piloto, total_puntos_acumulados (suma 24 carreras)
+     Solo pilotos con más de 50 puntos.
+     IMPORTANTE: cálculo de puntos acumulados → función RECURSIVA que sume
+     los puntos de cada piloto en todas las carreras.
+  b) Informar al final: nombre de escudería y piloto con MAYOR total de puntos.
+
+Ejercicio 2:
+  Suponiendo que la lista del ejercicio anterior es una lista CIRCULAR
+  simplemente encadenada:
+  a) Eliminar de la lista aquellos equipos (escudería-piloto) cuyo total de
+     puntos esté por debajo de un valor que ingresa el usuario.
+  b) Mostrar la lista de equipos que permanecen.
+
+--------------------------------------------------------------------------------
+BOSS-E04 ★★
+Palíndromo con pila/arreglo
+--------------------------------------------------------------------------------
+  Realice un algoritmo que implemente:
+  A. Ingresar una frase validando que esté compuesta por no más de 16 caracteres
+  B. Elegir una estructura de datos para almacenarla descartando los espacios en blanco
+  C. Llamar a una función palindrome(A: string) que se debe definir previamente
+  D. Informar por pantalla si la frase ingresada es palíndromo
+     Ej: "Yo hago yoga hoy"
+
+--------------------------------------------------------------------------------
+BOSS-E05 ★★
+Arreglos — Búsqueda con centinela en arreglo de 100 DNIs
+--------------------------------------------------------------------------------
+  Clasificar en un arreglo de 100 números de DNI, escrita en C la función
+  de búsqueda lineal con centinela, devolviendo verdadero o falso ante la
+  búsqueda de un DNI ingresado por el usuario.
+
+--------------------------------------------------------------------------------
+BOSS-E06 ★★★
+Ecommerce — Lista doble + archivo indexado + función bonificacion()
+--------------------------------------------------------------------------------
+  Una empresa de ecommerce quiere conocer la opinión de los clientes.
+  Lista simple de opiniones (ordenada por usuario):
+    | id_usuario | fecha_opinion | calificacion (1..5) | servicio_calificado (1..20) |
+
+  Archivo INDEXADO de usuarios (indexado por USUARIO):
+    | USUARIO | APELLIDO_NOMBRE | DNI | DIRECCIÓN | CORREO |
+    | CATEGORIA (Sin categoría/Silver/Gold) |
+
+  Lista circular simple con códigos de cupones de descuento:
+    | cod_descuento | porcentaje_descuento |
+
+  Se solicita:
+  1) Generar lista DOBLEMENTE ENLAZADA, ordenada por promedio de calificación
+     ascendente, de usuarios a los que se les debe enviar un cupón.
+     Solo si la función bonificacion(categoría, codigo_ultimo_servicio) = VERDADERO
+     El código de servicio debe ser de la opinión (fecha_opinion) más reciente.
+  2) Al finalizar: listar los ID y nombres de los 5 con mayor promedio
+     y los 5 con menor promedio.
+
+  Datos del nodo de lista doble de salida:
+    | id_usuario | ApellidoNombre | Correo | Cant_opiniones | Promedio | Descuento |
+
+  Ejercicio 2: lista doble de compras con validación de tarjeta de crédito
+  (algoritmo de Luhn) usando función RECURSIVA.
+
+
+================================================================================
+  RESUMEN — TEMAS QUE MÁS APARECEN EN EXAMEN
+================================================================================
+
+  ★ SIEMPRE aparece en práctico:
+    - Secuencia de caracteres con sub-secuencias y marcas de fin
+    - Lista enlazada (simple o doble) + función RECURSIVA
+    - Archivo indexado + archivo secuencial combinados
+
+  ★ FRECUENTE en teoría:
+    - Árbol binario: construir desde PRE-ORDEN + EN-ORDEN → sacar POST-ORDEN
+    - Verificar si es AVL (propiedad de balance por nodo)
+    - Función recursiva sobre árbol o lista (contar hojas, sumar, buscar)
+
+  ★ CONSEJO CLAVE para el examen:
+    - Definir AMBIENTE completo antes de tocar el PROCESO
+    - En secuencias: siempre ARR → AVZ → MIENTRAS v <> FDS
+    - En recursivas: definir caso base PRIMERO, luego el caso recursivo
+    - En listas: definir el NODO (estructura) antes de definir punteros
+
+
+================================================================================
+  FIN DEL DOCUMENTO — BOSS INFINITO
+================================================================================

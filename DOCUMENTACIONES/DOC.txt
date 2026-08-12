@@ -1,0 +1,830 @@
+================================================================================
+                    DOCUMENTACION DE DESARROLLO - BIM EDITOR
+                    Editor de texto tipo Vim en Bash puro
+================================================================================
+
+Proyecto:       BIM (Bash Interactive Monitor)
+Ubicacion:      ~/VimMon/PseudoGames/scripts/editorBim/bim.sh
+Autor:          [Tu nombre]
+Fecha:          2026-02-12
+Lenguaje:       Bash puro (sin dependencias externas)
+
+================================================================================
+                            DESCRIPCION GENERAL
+================================================================================
+
+BIM es un editor de texto interactivo construido desde cero en Bash, inspirado
+en Vim. El objetivo del proyecto es aprender los fundamentos de como funciona
+un editor de texto a nivel de terminal: lectura de teclas, control de pantalla,
+manejo de buffers de texto y navegacion.
+
+El editor forma parte del proyecto PseudoGames, un juego educativo sobre
+Algoritmos y Estructuras de Datos.
+
+================================================================================
+                         TECNOLOGIAS Y CONCEPTOS
+================================================================================
+
+- Bash scripting (arrays, aritmetica, condicionales, loops)
+- Terminal en modo raw (stty raw -echo)
+- Codigos de escape ANSI (posicionamiento, colores, estilos)
+- Lectura de teclas byte a byte (read -rsn1)
+- Secuencias de escape de teclado (flechas, ESC)
+- Colores RGB en terminal (true color)
+
+================================================================================
+                       REGISTRO DE DESARROLLO POR DIA
+================================================================================
+
+
+--- DIA 1: Terminal en modo raw + lectura de teclas ----------------------------
+
+Objetivo: Tomar control total del terminal y leer teclas individuales.
+
+Conceptos aprendidos:
+  - stty raw -echo: Pone el terminal en modo raw. Las teclas llegan una por
+    una sin esperar Enter. El flag -echo evita que se muestren en pantalla.
+  - stty sane: Restaura el terminal a su modo normal. Fundamental para no
+    dejar la terminal rota si el script crashea.
+  - trap cleanup EXIT: Asegura que la funcion cleanup() se ejecute siempre
+    al salir del script, sin importar como termine (normal, error, Ctrl+C).
+  - read -rsn1 char: Lee exactamente 1 byte del teclado.
+      -r: No interpreta backslashes
+      -s: Silencioso (no hace echo)
+      -n1: Lee 1 solo caracter
+
+Problema resuelto - Distinguir ESC de flechas:
+  Las teclas de flecha envian 3 bytes en secuencia rapida:
+    ESC (byte 27) + [ + letra (A=arriba, B=abajo, C=derecha, D=izquierda)
+
+  Cuando el usuario presiona ESC solo, llega unicamente 1 byte.
+
+  Solucion: Despues de detectar ESC ($'\e'), se leen 2 bytes mas con un
+  timeout de 50ms (read -rsn2 -t 0.05 rest):
+    - Si llegan bytes -> es una flecha (se evalua rest: [A, [B, [C, [D)
+    - Si no llegan (timeout) -> fue ESC solo
+
+  Error corregido: Inicialmente el read -rsn2 se ejecutaba SIEMPRE despues
+  de cada tecla, causando que teclas normales (letras, numeros) se trabaran
+  esperando 2 bytes que nunca llegaban. Se movio DENTRO del if de ESC.
+
+Codigo clave:
+  if [[ "$char" == $'\e' ]]; then
+      read -rsn2 -t 0.05 rest
+      if [[ "$rest" == "[A" ]]; then
+          # Flecha arriba
+      fi
+  fi
+
+Resultado: Script que detecta correctamente flechas, ESC solo, letras
+normales y la tecla q para salir.
+
+
+--- DIA 2: Dibujar en pantalla con codigos ANSI --------------------------------
+
+Objetivo: Controlar que se muestra en pantalla y donde.
+
+Conceptos aprendidos:
+  - Codigos de escape ANSI:
+      \e[2J    -> Limpia toda la pantalla
+      \e[H     -> Mueve el cursor a la posicion 1,1 (arriba-izquierda)
+      \e[F;CH  -> Mueve el cursor a fila F, columna C
+      \e[7m    -> Texto invertido (fondo y letra intercambian colores)
+      \e[0m    -> Resetea todos los estilos y colores
+
+  - Variables de entorno del terminal:
+      FILAS=$(tput lines)  -> Cantidad de filas de la terminal
+      COLS=$(tput cols)    -> Cantidad de columnas de la terminal
+      Nota: Se guardan ANTES de stty raw porque tput puede fallar en modo raw.
+
+  - Concepto de Game Loop:
+      El editor redibuja TODA la pantalla en cada ciclo del loop.
+      No se puede hacer printf y olvidarse: al limpiar pantalla se borra todo.
+      Solucion: guardar estado en variables y redibujar en cada iteracion.
+
+      Patron: estado -> dibujar -> leer -> actualizar estado -> repetir
+
+  - Comillas simples vs dobles en Bash:
+      'texto'  -> Literal, no expande variables ni escapes
+      "texto"  -> Expande $variables y \escapes
+      Ejemplo: printf '${VAR}' imprime literal "${VAR}"
+               printf "${VAR}" imprime el valor de la variable
+
+Barra de estado:
+  Se dibuja en la ultima fila del terminal usando posicionamiento ANSI.
+  Se usa texto invertido (\e[7m) y padding con %-${COLS}s para que
+  la barra ocupe toda la linea de lado a lado.
+
+  printf "\e[${FILAS};1H${BARRA_BG}${FG}%-${COLS}s${RESET}" ' Editor - BIM | NORMAL'
+
+Colores Gruvbox:
+  Para que el editor se vea igual en cualquier PC, los colores se definen
+  dentro del script usando colores RGB verdaderos (true color):
+
+    \e[38;2;R;G;Bm  -> Color de texto (foreground)
+    \e[48;2;R;G;Bm  -> Color de fondo (background)
+
+  Paleta Gruvbox implementada:
+    BG (fondo oscuro):    RGB(40, 40, 40)
+    FG (texto normal):    RGB(235, 219, 178)
+    Amarillo (titulos):   RGB(250, 189, 47)
+    Barra BG (gris):      RGB(80, 73, 69)
+
+  Se guardan en variables para reutilizar:
+    BG='\e[48;2;40;40;40m'
+    FG='\e[38;2;235;219;178m'
+    AMARILLO='\e[38;2;250;189;47m'
+    BARRA_BG='\e[48;2;80;73;69m'
+    RESET='\e[0m'
+
+Optimizacion - Evitar parpadeo:
+  Limpiar con \e[2J en cada ciclo causa parpadeo visible.
+  Solucion: usar solo \e[H (mover cursor al inicio) y redibujar encima.
+  Se hace un unico \e[2J\e[H antes de entrar al loop.
+
+Pantalla de inicio:
+  El editor muestra un logo ASCII art de BIM al iniciar y espera a que
+  el usuario presione cualquier tecla antes de entrar al editor.
+
+Resultado: Pantalla con fondo Gruvbox, barra de estado invertida en la
+ultima fila, y transicion limpia desde el logo de inicio.
+
+
+--- DIA 3: Buffer de texto + abrir archivos -----------------------------------
+
+Objetivo: Cargar un archivo en memoria y mostrarlo en pantalla.
+
+Conceptos aprendidos:
+  - Arrays en Bash:
+      declare -a buffer        -> Declara un array
+      buffer[0]="primera"      -> Asigna valor a posicion 0
+      ${buffer[$i]}            -> Accede al elemento en posicion i
+      ${#buffer[@]}            -> Cantidad total de elementos
+
+  - mapfile (readarray):
+      mapfile -t buffer < "$1"
+      Carga el archivo linea por linea en el array buffer.
+      -t: Elimina el newline (\n) de cada linea.
+      $1: Primer argumento del script (nombre del archivo).
+
+  - Argumentos del script:
+      ./bim.sh archivo.txt  ->  $1 vale "archivo.txt"
+
+  - chmod +x: Agrega permiso de ejecucion a un archivo.
+      Sin este permiso, Linux no permite ejecutar con ./bim.sh
+      Alternativa: bash bim.sh (ejecuta bash directamente)
+
+Dibujar el archivo:
+  Se recorre el array con un for y se dibuja cada linea en su fila:
+
+  for ((i=0; i<${#buffer[@]}; i++)); do
+      printf "\e[$((i+1));1H %3d %s" "$((i+1))" "${buffer[$i]}"
+  done
+
+  - \e[$((i+1));1H -> Posiciona cursor en fila i+1, columna 1
+  - %3d -> Numero de linea con 3 digitos de ancho (alineado)
+  - %s  -> Contenido de la linea
+  - $((i+1)) -> Aritmetica: i empieza en 0 pero las filas desde 1
+
+Resultado: El editor abre un archivo pasado como argumento y lo muestra
+en pantalla con numeros de linea alineados a la izquierda.
+
+
+--- DIA 4 + 5: Modo NORMAL y modo INSERT --------------------------------------
+
+Objetivo: Moverse por el archivo con las teclas de flecha.
+
+Conceptos aprendidos:
+  - Variables de posicion del cursor:
+      cursor_row=0  -> Fila actual en el buffer (vertical, arriba/abajo)
+      cursor_col=0  -> Columna actual (horizontal, izquierda/derecha)
+
+  - Grilla de texto:
+             col 0  col 1  col 2  col 3
+    row 0  ->  h      o      l      a
+    row 1  ->  m      u      n      d
+    row 2  ->  t      e      s      t
+
+    row = fila (arriba/abajo)
+    col = columna (izquierda/derecha)
+
+  - Aritmetica en Bash:
+      $((cursor_row - 1))  -> Resta 1
+      $((cursor_row + 1))  -> Suma 1
+
+Movimiento con flechas:
+  Flecha Arriba  ([A) -> cursor_row=$((cursor_row - 1))
+  Flecha Abajo   ([B) -> cursor_row=$((cursor_row + 1))
+  Flecha Derecha ([C) -> cursor_col=$((cursor_col + 1))
+  Flecha Izquierda([D)-> cursor_col=$((cursor_col - 1))
+
+Limites de borde (el cursor no se sale del texto):
+  Arriba:    if ((cursor_row < 0)); then cursor_row=0; fi
+  Abajo:     if ((cursor_row > ${#buffer[@]} - 1)); then
+                 cursor_row=$((${#buffer[@]} - 1)); fi
+  Izquierda: if ((cursor_col < 0)); then cursor_col=0; fi
+  Derecha:   if ((cursor_col > ${#buffer[$cursor_row]})); then
+                 cursor_col=${#buffer[$cursor_row]}; fi
+
+  Nota: El limite de derecha depende del largo de la LINEA ACTUAL,
+  no de un valor fijo. ${#buffer[$cursor_row]} da el largo de la
+  linea donde esta el cursor.
+
+Posicionamiento del cursor:
+  printf "\e[$((cursor_row+1));$((cursor_col+5))H"
+
+  - cursor_row+1: Porque las filas ANSI empiezan en 1, el array en 0
+  - cursor_col+5: Offset por los numeros de linea (" 1  " ocupa ~5 cols)
+
+  IMPORTANTE: Este printf debe ser lo ULTIMO antes del read, despues de
+  dibujar la barra de estado. Si se pone antes de la barra, la barra
+  mueve el cursor a la ultima fila y se pierde la posicion.
+
+Orden correcto de dibujo:
+  1. Limpiar pantalla (solo \e[H, sin \e[2J para evitar parpadeo)
+  2. Dibujar lineas del buffer con numeros de linea
+  3. Dibujar barra de estado en la ultima fila
+  4. Hacer cursor visible (\e[?25h)
+  5. Posicionar cursor en cursor_row, cursor_col
+  6. Leer tecla (read -rsn1)
+
+Resultado: El cursor se mueve libremente por el archivo con las flechas,
+respetando los limites del texto. No se sale por arriba, abajo, izquierda
+ni derecha.
+
+
+--- DIA 5: Modo INSERT - Editar texto -----------------------------------------
+
+Objetivo: Poder escribir y modificar el contenido del archivo en memoria.
+
+Conceptos aprendidos:
+  - Variable de modo:
+      modo="NORMAL"   ->  El editor arranca en modo NORMAL
+      modo="INSERT"   ->  Se activa con la tecla i
+
+  - Separacion de logica en funciones:
+      modeNormal()    ->  Maneja flechas, i, q
+      modeInsert()    ->  Maneja escritura, backspace, enter, ESC
+      loopStart()     ->  El loop principal que llama a cada funcion segun el modo
+
+  - Substring en Bash (la clave de todo INSERT mode):
+      ${var:inicio}         -> Desde 'inicio' hasta el final
+      ${var:inicio:largo}   -> Desde 'inicio' tomando 'largo' caracteres
+      Ejemplo:
+        texto="hola mundo"
+        ${texto:0:4}  -> "hola"
+        ${texto:5}    -> "mundo"
+
+Insertar un caracter en el cursor:
+  buffer[$cursor_row]="${buffer[$cursor_row]:0:$cursor_col}${char}${buffer[$cursor_row]:$cursor_col}"
+  cursor_col=$((cursor_col + 1))
+
+  Logica: todo lo de antes del cursor + el char nuevo + todo lo de despues
+
+Backspace - borrar caracter anterior:
+  Codigo del backspace: $'\x7f'
+  buffer[$cursor_row]="${buffer[$cursor_row]:0:$((cursor_col-1))}${buffer[$cursor_row]:$cursor_col}"
+  cursor_col=$((cursor_col - 1))
+
+  Importante: validar que cursor_col > 0 antes de borrar para no salirse.
+
+Enter - partir una linea en dos:
+  local antes="${buffer[$cursor_row]:0:$cursor_col}"     # lo que queda en la linea actual
+  local despues="${buffer[$cursor_row]:$cursor_col}"     # lo que pasa a la linea nueva
+  buffer[$cursor_row]="$antes"
+  buffer=(${buffer[@]:0:$((cursor_row+1))} "$despues" ${buffer[@]:$((cursor_row+1))})
+  cursor_row=$((cursor_row + 1))
+  cursor_col=0
+
+  Logica del array:
+    - ${buffer[@]:0:N}  -> las primeras N lineas
+    - "$despues"        -> la linea nueva insertada en el medio
+    - ${buffer[@]:N}    -> el resto de las lineas (se corren para abajo)
+
+Recuperacion de trabajo perdido:
+  Durante esta etapa el trabajo se perdio por no commitear.
+  Se recupero usando git cat-file blob sobre objetos huerfanos del repo.
+  Un blob en git es el contenido puro de un archivo sin nombre ni ruta.
+  Git guarda blobs aunque no esten referenciados por ningun commit.
+  Leccion: commitear seguido aunque sea trabajo a medias (WIP).
+
+Resultado: El editor permite entrar a modo INSERT con i, escribir texto,
+borrar con backspace, partir lineas con enter y volver a NORMAL con ESC.
+La barra de estado muestra el modo actual.
+
+
+================================================================================
+                         ESTRUCTURA ACTUAL DEL ARCHIVO
+================================================================================
+
+bim.sh
+  |
+  |-- Logo ASCII de BIM + espera tecla (pantalla de inicio)
+  |
+  |-- cleanup()              Restaura terminal con stty sane
+  |-- Variables de cursor    cursor_row, cursor_col
+  |-- mapfile                Carga archivo en buffer[]
+  |-- FILAS, COLS            Tamano del terminal
+  |-- trap cleanup EXIT      Asegura limpieza al salir
+  |-- stty raw -echo         Modo raw
+  |-- Clear inicial          \e[2J\e[H (una sola vez)
+  |-- Variables de color     BG, FG, AMARILLO, BARRA_BG, RESET
+  |
+  |-- LOOP PRINCIPAL --------
+  |   |-- Setear colores (BG, FG)
+  |   |-- Mover cursor al inicio (\e[H)
+  |   |-- Dibujar buffer con numeros de linea (for)
+  |   |-- Dibujar barra de estado (ultima fila, invertida)
+  |   |-- Hacer cursor visible (\e[?25h)
+  |   |-- Posicionar cursor (cursor_row, cursor_col)
+  |   |-- Leer tecla (read -rsn1)
+  |   |-- Procesar tecla:
+  |   |   |-- ESC -> leer 2 bytes mas
+  |   |   |   |-- [A -> mover arriba
+  |   |   |   |-- [B -> mover abajo
+  |   |   |   |-- [C -> mover derecha
+  |   |   |   |-- [D -> mover izquierda
+  |   |   |   |-- nada -> ESC solo
+  |   |   |-- q -> salir
+  |   |-- Repetir
+  |
+  |-- FIN -------------------
+
+
+================================================================================
+                          EJECUCION
+================================================================================
+
+Requisitos:
+  - Terminal con soporte true color (RGB)
+  - Bash 4.0 o superior (por mapfile)
+
+Uso:
+  chmod +x bim.sh              # Solo la primera vez
+  ./bim.sh archivo.txt         # Abrir un archivo
+
+  O sin chmod:
+  bash bim.sh archivo.txt
+
+Controles actuales:
+  Flechas       -> Mover cursor por el archivo
+  q             -> Salir del editor
+  ESC           -> (Reservado para futuro cambio de modo)
+
+
+================================================================================
+                    MIGRACION A SDL2 + INTEGRACION PTY
+                    Fecha: 2026-03-04
+================================================================================
+
+--- DECISION ARQUITECTURAL ---
+
+Se decidio migrar el entorno grafico de ncurses a SDL2.
+
+Razon: ncurses corre en terminal (caracteres ASCII), SDL2 dibuja pixeles reales.
+Con SDL2 se pueden tener imagenes, fuentes TTF, colores RGB reales, sprites.
+
+Division del proyecto:
+  - C + SDL2  -> entorno grafico: paneles, UI, niveles, menus
+  - Bash      -> logica del editor (bim.sh), vive en un PTY embebido
+  - PTY       -> puente entre los dos mundos
+
+--- LO QUE SE REESCRIBIO ---
+
+main.c: completamente reescrito de ncurses a SDL2.
+  - SDL_Init(SDL_INIT_VIDEO)
+  - SDL_CreateWindow() con SDL_WINDOW_FULLSCREEN_DESKTOP
+  - SDL_CreateRenderer()
+  - SDL_GetWindowSize() para obtener resolucion real del monitor
+  - Game loop con SDL_PollEvent()
+  - Cierra con ESC o con la X de la ventana
+
+Makefile: LDFLAGS cambiado de -lncurses a -lSDL2 -lSDL2_ttf
+
+--- ESTRUCTURA VISUAL ACTUAL ---
+
+  [barra azul - titulo "PseudoGames" - ancho total - 30px alto]
+  [panel izquierdo gris XP | panel derecho oscuro editor]
+  [    consigna del nivel  |    bim.sh via PTY           ]
+
+Colores:
+  Barra titulo:    RGB(0, 78, 152)      <- azul Windows XP
+  Panel izquierdo: RGB(236, 233, 216)   <- gris XP clasico
+  Panel derecho:   RGB(30, 30, 30)      <- oscuro tipo editor
+  Linea divisoria: RGB(128, 128, 128)   <- gris medio
+
+--- INTEGRACION PTY (bim.sh embebido) ---
+
+Objetivo: mostrar bim.sh corriendo dentro del panel derecho de SDL2.
+No se usa xterm ni ventana externa - el output de bash se parsea y dibuja en SDL2.
+
+Tecnologia usada:
+  forkpty()  <- crea PTY + fork del proceso
+  execlp()   <- reemplaza proceso hijo con bash corriendo bim.sh
+  fcntl()    <- hace el fd no bloqueante para no congelar el game loop
+  read()     <- lee output de bim.sh cada frame
+
+Conceptos nuevos aprendidos:
+  - File descriptor: numero entero que representa una conexion abierta
+      0 = stdin, 1 = stdout, 2 = stderr
+      forkpty() devuelve un fd que es "el telefono de bash"
+  - PTY (Pseudo Terminal): terminal falsa bidireccional
+      write(fd_pty, ...) -> manda input a bash
+      read(fd_pty, ...)  -> recibe output de bash
+  - pid_t: tipo de dato para IDs de proceso (el DNI del proceso)
+      pid == 0  -> soy el proceso hijo
+      pid > 0   -> soy el padre, pid = DNI del hijo
+  - fflush(): fuerza a que printf vuelque su buffer interno a pantalla
+  - fcntl() O_NONBLOCK: el read() no bloquea si no hay datos disponibles
+  - fork(): divide el proceso en padre e hijo
+  - chdir(): cambia el directorio de trabajo (como cd en terminal)
+  - execlp(): reemplaza el proceso actual con otro programa
+
+Includes necesarios:
+  #include <pty.h>     <- forkpty()
+  #include <unistd.h>  <- execlp(), chdir(), read(), write()
+  #include <fcntl.h>   <- fcntl(), O_NONBLOCK
+
+Codigo del PTY en main.c:
+  struct winsize ws = {24, 80, 0, 0};
+  pid_t pid = forkpty(&fd_pty, NULL, NULL, &ws);
+  if (pid == 0) {
+      chdir("scripts/editorBim");
+      execlp("bash", "bash", "bim.sh", "archivoPrueba.txt", NULL);
+      exit(1);
+  }
+  fcntl(fd_pty, F_SETFL, O_NONBLOCK);
+
+  // dentro del game loop:
+  char buf[4096];   <- 4096 = potencia de 2, eficiente para el sistema
+  int n = read(fd_pty, buf, sizeof(buf) - 1);
+  if (n > 0) {
+      buf[n] = '\0';
+      // parsear y dibujar
+  }
+
+--- PARSER ANSI (EN PROGRESO) ---
+
+bim.sh manda texto con codigos ANSI mezclados. Hay que parsearlos para
+saber que color dibujar y donde posicionar cada caracter.
+
+Codigos ANSI que usa bim.sh (7 tipos):
+  \e[2J          -> limpiar pantalla
+  \e[H           -> cursor a posicion 1,1
+  \e[48;2;R;G;Bm -> color de fondo RGB
+  \e[38;2;R;G;Bm -> color de texto RGB
+  \e[0m          -> reset color
+  \e[ROW;COLH    -> mover cursor a fila/columna
+  \e[?25h        -> mostrar cursor
+
+Logica del parser:
+  char *p = buf;
+  while (*p != '\0') {
+      if (*p == 27) {        <- ESC = inicio de codigo ANSI
+          // saltar/parsear codigo
+          while (*p != 'm' && *p != '\0') p++;
+      } else {
+          // texto normal -> dibujar con SDL2_ttf
+      }
+      p++;
+  }
+
+Estado actual: el parser detecta ESC y salta los codigos.
+Proximo paso: extraer los valores RGB con sscanf() y pasarselos a SDL2.
+
+--- PENDIENTES SDL2 ---
+
+  1. Parser ANSI completo:
+     - Extraer R,G,B de \e[38;2;R;G;Bm con sscanf()
+     - Extraer ROW,COL de \e[ROW;COLH
+     - Detectar \e[2J para limpiar el panel
+     - Detectar \e[0m para resetear color
+
+  2. Renderizar texto en panel derecho:
+     - Mantener posicion x,y actual
+     - Por cada caracter de texto: TTF_RenderText_Solid + SDL_RenderCopy
+     - Avanzar x por el ancho del caracter
+     - En newline: x = panel_der.x, y += altura_fuente
+
+  3. Enviar input al PTY:
+     - Capturar SDL_KEYDOWN en el game loop
+     - Convertir SDL_Keysym a char
+     - write(fd_pty, &c, 1) para mandarlo a bim.sh
+
+  4. Reconectar los modulos C:
+     - Descomentar niveles.h, progreso.h en main.c
+     - Panel izquierdo: mostrar enunciado del nivel actual
+     - Conectar sistema de pantallas (menu, niveles, juego)
+
+  5. Sistema de soluciones del jugador:
+     - Carpeta: soluciones/
+     - Formato: nivel_1.txt, nivel_2.txt, etc. (pseudocodigo texto plano)
+     - El jugador escribe su solucion en bim.sh y se guarda ahi
+     - Despues de calificar aparece opcion [Ver mi solucion] en el menu
+     - C lo lee con fopen() y lo muestra en el panel izquierdo
+     - Sirve tambien para practicar AED escribiendo las soluciones a mano
+
+================================================================================
+                        PROXIMOS PASOS (PENDIENTES)
+================================================================================
+
+Dia 5 - Etapa 5: Modo INSERT  [COMPLETADO]  ✓
+Dia 6 - Etapa 6: Refactor - Modularizacion  [COMPLETADO]  ✓
+  keys.sh / modes.sh / loop.sh / render.sh separados y funcionando.
+  readKey() centraliza lectura de teclas, modos usan $KEY.
+
+Dia 7 - Integracion PseudoGames + niveles  [COMPLETADO]  ✓
+  - Vision del proyecto documentada en ESTRUCTURA.md
+  - Font Cascadia Code en assets/fonts/
+  - sintaxis.json creado con keywords, tipos, operadores, funciones, I/O
+  - main.c: estado con variable screen (0=menu, 1=niveles, 2=jugando)
+  - ui.c: mostrar_menu_principal() y mostrar_niveles() funcionando
+  - niveles.json carga correctamente via cJSON (3 niveles disponibles)
+  - Patron de navegacion: loop dibuja segun screen, teclas cambian screen
+
+--- PENDIENTES ---
+
+PseudoGames - Seleccion de nivel:
+  - Implementar mostrar_nivel(int numero) en ui.c con enunciado completo
+  - Agregar nivel_actual en main.c y handlers de teclas '1','2','3' en screen==1
+  - screen=2 -> pantalla de juego con bim integrado
+
+PseudoGames - Editor Libre:
+  - Agregar [5] Editor Libre en menu (ui.c)
+  - Handler tecla '5' en main.c: system("cd scripts/editorBim && bash bim.sh archivo.bim")
+
+PseudoGames - UI cartas de color para niveles:
+  - newwin(), box(), wbkgd() para cartas visuales
+  - Nuevos PAIR_CARD1/2/3 en ui.h con fondo de color
+
+Editor bim - Fixes pendientes:
+  - modeInsert: flechas para mover cursor en modo INSERT
+  - bim.sh: manejar $1 vacio (nuevo archivo, buffer vacio)
+  - render.sh: agregar \e[K al dibujar lineas (limpiar residuos al borrar)
+  - Modo COMMAND: :w, :q, :wq, :q!, dirty flag
+  - Syntax highlighting: colorear keywords del pseudocodigo en render.sh
+
+================================================================================
+                    SESION 2026-03-05: SISTEMA DE PANTALLAS SDL2
+                    screenMenu, screenSoluciones, arquitectura de navegacion
+================================================================================
+
+--- ARQUITECTURA DE NAVEGACION ---
+
+Se rediseno main.c para separar responsabilidades:
+
+  main()              -> solo inicializa SDL y coordina pantallas
+  screenMenu()        -> menu principal con botones
+  screenLvLEditor()   -> pantalla de juego (paneles + editor)
+  screenSoluciones()  -> visor de soluciones guardadas
+  screenFreeEditor()  -> editor libre (esqueleto)
+  screenLvLs()        -> seleccion de nivel (esqueleto)
+  dibujadoTexto()     -> helper reutilizable para dibujar texto
+
+Patron de navegacion:
+  int opcion = screenMenu(renderer, fuente, ancho, alto);
+  switch (opcion) {
+      case 1: screenLvLEditor(...); break;
+      case 6: screenSoluciones(...); break;
+      ...
+  }
+
+Cada screenX() tiene su propio game loop interno. Cuando retorna,
+main() decide a que pantalla ir segun el valor devuelto.
+
+
+--- SCREENMENU() - MENU PRINCIPAL ---
+
+Firma: int screenMenu(SDL_Renderer*, TTF_Font*, int ancho, int alto)
+
+Botones (7 total):
+  1. Jugar
+  2. DOC
+  3. Pomodoro
+  4. Editor Libre
+  5. Seleccion de Nivel
+  6. Soluciones
+  7. Salir
+
+Retorna el numero del boton presionado (1-7) o 0 si cierra con ESC/X.
+
+Hover con mouse:
+  int mx, my;
+  SDL_GetMouseState(&mx, &my);
+  int hover = (mx >= btn_x && mx <= btn_x + btn_w &&
+               my >= btn_y && my <= btn_y + btn_h);
+  if (hover)
+      SDL_SetRenderDrawColor(renderer, 0, 120, 200, 255); // azul claro
+  else
+      SDL_SetRenderDrawColor(renderer, 0, 78, 152, 255);  // azul normal
+
+Click con mouse:
+  El click se detecta en el event handler (while SDL_PollEvent), NO en
+  el render. Usa evento.button.x / evento.button.y para la posicion.
+
+Centrado horizontal de botones:
+  int btn_w = 300;
+  int btn_x = (ancho - btn_w) / 2;  <- siempre centrado sin importar resolucion
+
+Posicion vertical de botones (formula):
+  int btn_y = (alto / 2) - 80 + (i * 70);  <- desde el centro, separados 70px
+
+
+--- DIBUJADOTEXTO() - HELPER REUTILIZABLE ---
+
+Firma: void dibujadoTexto(SDL_Renderer*, TTF_Font*, const char *texto, int x, int y)
+
+Dibuja cualquier texto en cualquier posicion. Se usa en todas las pantallas.
+
+  SDL_Surface *sup = TTF_RenderText_Solid(fuente, texto, blanco);
+  SDL_Texture *tex = SDL_CreateTextureFromSurface(renderer, sup);
+  SDL_Rect pos = {x + 10, y + 12, sup->w, sup->h};
+  SDL_RenderCopy(renderer, tex, NULL, &pos);
+  SDL_FreeSurface(sup);
+  SDL_DestroyTexture(tex);
+
+sup->w y sup->h: ancho y alto en pixeles del texto renderizado.
+Usando estos valores el rect se ajusta exacto al largo de cada string.
+
+Por que const char*:
+  Acepta tanto char* como literales de string "texto".
+  Sin const el compilador da warning con literales.
+
+
+--- SCREENSOLUCIONES() - VISOR DE SOLUCIONES ---
+
+Lee los archivos de solutions/ y muestra una tarjeta por cada uno.
+
+Leer directorio en C:
+  #include <dirent.h>
+
+  char *archivos[20];
+  int total = 0;
+
+  DIR *dir = opendir("solutions");
+  if (dir == NULL) return 0;
+
+  struct dirent *entrada;
+  while ((entrada = readdir(dir)) != NULL) {
+      if (entrada->d_name[0] == '.') continue;  // saltea . y ..
+      archivos[total] = strdup(entrada->d_name); // IMPORTANTE: strdup()
+      total++;
+  }
+  closedir(dir);
+
+Por que strdup() y no solo =:
+  entrada->d_name es un puntero a memoria interna de dirent.
+  Despues de closedir() esa memoria se libera.
+  strdup() hace una copia del string en heap nuevo que sigue viva.
+  Sin strdup() -> segmentation fault al intentar leer los nombres.
+
+Dibujar tarjetas:
+  for (int i = 0; i < total; i++) {
+      int card_y = 50 + (i * 80);
+      SDL_Rect card = {card_x, card_y, card_w, card_h};
+      SDL_RenderFillRect(renderer, &card);
+      dibujadoTexto(renderer, fuente, archivos[i], card_x, card_y);
+  }
+
+Boton Salir clickeable en esquina inferior izquierda:
+  SDL_Rect btn_salir = {10, alto - 50, 100, 35};
+  Click: cx >= 10 && cx <= 110 && cy >= alto-50 && cy <= alto-15 -> return 0
+
+
+--- CONCEPTOS CLAVE APRENDIDOS ---
+
+SDL_Surface* vs SDL_Texture*:
+  Surface: imagen en RAM (CPU)
+  Texture: imagen en GPU, lista para dibujar
+  Flujo: TTF_RenderText -> Surface -> CreateTextureFromSurface -> Texture -> RenderCopy
+
+Por que -> y no . en structs:
+  sup->w  equivale a  (*sup).w
+  Se usa -> cuando la variable es un puntero, . cuando es la struct directa.
+
+Variables dentro del for:
+  Las variables declaradas dentro de un for (como btn_y, i) solo existen
+  dentro de ese bloque. No se pueden usar afuera.
+
+Llaves en C - regla practica:
+  Cada { necesita su }. Para contar: abrir el archivo y contar { y }
+  en cada funcion - deben ser iguales. Las llaves dentro de /* */ no
+  cuentan para el compilador.
+
+opendir retorna NULL:
+  Siempre verificar despues de opendir. Si retorna NULL la carpeta no
+  existe o no se tiene permiso. Sin verificacion -> segfault al usar dir.
+
+================================================================================
+
+================================================================================
+                    SESION 2026-03-07: screenDoc - WIKI NAVEGABLE
+                    Lectura de archivos, deteccion de capitulos, indice
+================================================================================
+
+--- HERRAMIENTAS DE I/O APRENDIDAS ---
+
+fopen(path, modo):
+  Abre un archivo. Modo "r" = lectura. Devuelve NULL si no lo encuentra.
+  SIEMPRE verificar despues: if (f == NULL) return 0;
+
+fgets(buffer, tamanio, archivo):
+  Lee una linea del archivo y la guarda en buffer.
+  Para cuando encuentra \n o llega al tamanio maximo.
+  Devuelve NULL cuando no quedan mas lineas (fin de archivo).
+  Guarda el \n al final de cada linea - hay que sacarlo:
+
+    int len = strlen(lineas[total_lineas]);
+    if (len > 0 && lineas[total_lineas][len - 1] == '\n')
+        lineas[total_lineas][len - 1] = '\0';
+
+fclose(archivo):
+  Siempre cerrar el archivo cuando terminas de leerlo.
+
+strncmp(a, b, n):
+  Compara los primeros n caracteres de a con b.
+  Devuelve 0 si son iguales. No true/false - 0 es igual.
+
+  if (strncmp(lineas[i], "CAPITULO", 8) == 0) {
+      // esta linea empieza con "CAPITULO"
+  }
+
+strncpy(destino, origen, n):
+  Copia hasta n caracteres de origen a destino.
+  Version segura de strcpy - no se pasa del array.
+
+
+--- ARRAY BIDIMENSIONAL PARA LEER ARCHIVO ---
+
+  static char lineas[3200][512];
+  //           filas (lineas)  columnas (chars por linea)
+
+  static: evita que 1.6MB en el stack revienten el programa.
+  Sin static -> segmentation fault porque el stack tiene limite (~8MB).
+  Con static -> vive en el data segment, sin ese limite.
+
+
+--- SCREENOC: ESTRUCTURA DE LA FUNCION ---
+
+Carga el archivo:
+  FILE *f = fopen("data/wiki.txt", "r");
+  if (f == NULL) return 0;
+  while (fgets(lineas[total_lineas], 512, f) != NULL)
+      total_lineas++;
+  fclose(f);
+
+Detecta capitulos:
+  for (int i = 0; i < total_lineas; i++) {
+      if (strncmp(lineas[i], "CAPITULO", 8) == 0) {
+          strncpy(capitulos[total_capitulos].titulo, lineas[i], 255);
+          capitulos[total_capitulos].linea_inicio = i;
+          total_capitulos++;
+      }
+  }
+
+Navegacion:
+  SDLK_UP / SDLK_DOWN    -> cambia capitulo_sel (indice)
+  SDLK_PAGEUP / PAGEDOWN -> cambia scroll (contenido)
+  Al cambiar capitulo: scroll = 0 (vuelve al inicio del capitulo)
+
+Dibujar contenido del capitulo seleccionado:
+  int linea_desde = capitulos[capitulo_sel].linea_inicio;
+  int linea_hasta = (capitulo_sel + 1 < total_capitulos)
+                    ? capitulos[capitulo_sel + 1].linea_inicio
+                    : total_lineas;
+
+  Logica: desde el inicio del capitulo hasta el inicio del proximo.
+  El ultimo capitulo llega hasta el final del archivo (total_lineas).
+
+
+--- CALIDAD DE TEXTO SDL2 ---
+
+TTF_RenderText_Solid(fuente, texto, color):
+  Renderizado basico. Sin anti-aliasing. Letras pixeladas/serradas.
+
+TTF_RenderText_Blended(fuente, texto, color):
+  Renderizado con anti-aliasing. Letras suavizadas, mejor calidad.
+  Usar siempre Blended para texto que el usuario va a leer.
+
+  Cambio en dibujadoTexto() en ui.c:
+    antes:  SDL_Surface *sup = TTF_RenderText_Solid(fuente, texto, blanco);
+    ahora:  SDL_Surface *sup = TTF_RenderText_Blended(fuente, texto, blanco);
+
+
+--- LECCION DEL DIA: ARCHIVOS NO COMMITEADOS ---
+
+wiki.txt fue borrado por make clean porque estaba en SRC del Makefile.
+Como no estaba commiteado en git (untracked), se perdio.
+Fue recuperado desde los logs de sesion de Claude Code en:
+  /root/.claude/projects/-root-VimMon-PseudoGames/*.jsonl
+
+Leccion: commitear todo archivo de datos importante inmediatamente.
+  git add data/wiki.txt
+  git commit -m "wiki: agregar contenido"
+
+El .gitignore fue creado para ignorar binarios:
+  *.o
+  aed
+  saves/
+
+================================================================================

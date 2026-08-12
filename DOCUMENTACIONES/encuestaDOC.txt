@@ -1,0 +1,166 @@
+================================================================================
+                    FEATURE: ENCUESTA DE NIVELACION INICIAL
+                    screenEncuesta.c — PseudoGames
+================================================================================
+
+Feature:        Encuesta de nivelacion inicial
+Archivo:        src/screenEncuesta.c
+Estado:         PENDIENTE DE IMPLEMENTACION
+Fecha doc:      2026-03-30
+Relacionado:    src/progreso.c, src/progreso.h, src/main.c
+
+================================================================================
+                            DESCRIPCION GENERAL
+================================================================================
+
+Pantalla que aparece UNA SOLA VEZ en la vida del jugador, despues de la intro
+de la mazmorra y antes del menu principal. El jugador responde una serie de
+preguntas SI/NO sobre sus conocimientos de algoritmos y estructuras de datos.
+Segun las respuestas, el juego ajusta la dificultad automaticamente.
+
+Flujo del juego con la feature incluida:
+
+  Mazmorra 3D (intro)
+       |
+       v
+  Encuesta SI/NO  <-- NUEVA, solo la primera vez
+       |
+       v
+  Menu principal  (en adelante, nunca mas)
+
+El modelo de "una sola vez" ya existe en el proyecto: es el mismo patron que
+usa intro_ya_vista() / marcar_intro_vista() en progreso.c.
+
+================================================================================
+                         ESTADOS / DIFICULTADES RESULTADO
+================================================================================
+
+La encuesta puede derivar a 4 resultados posibles:
+
+  DIFICULTAD_FACIL    -- El jugador es nuevo en el tema
+  DIFICULTAD_MEDIO    -- Conoce las bases, necesita practica
+  DIFICULTAD_DIFICIL  -- Conocimiento solido, quiere desafio
+  DIFICULTAD_EXAMEN   -- Conoce algoritmos en profundidad,
+                         va directo al modo BOSS (examen real)
+
+Importante sobre DIFICULTAD_EXAMEN:
+  - No hay guardado automatico mientras dura el examen
+  - El jugador puede salir con ESC en cualquier momento
+  - Se evalua con problemas reales de nivel universitario
+
+================================================================================
+                        ESTRUCTURA DE DATOS: PREGUNTA
+================================================================================
+
+Cada pregunta tiene un texto visible y un peso (valor en puntos si responde SI).
+
+  struct Pregunta {
+      const char *texto;   // lo que ve el jugador
+      int         peso;    // puntos que suma si dice SI
+  }
+
+Ejemplo del array de preguntas (8 en total):
+
+  Bloque basico (preguntas 1-3, peso 1 cada una):
+    "¿Sabes que es un array y como recorrerlo?"
+    "¿Usaste bucles para resolver problemas (for, while)?"
+    "¿Escribiste funciones con parametros y retorno?"
+
+  Bloque intermedio (preguntas 4-6, peso 1 cada una):
+    "¿Entiendes como funciona la recursion?"
+    "¿Conoces algun algoritmo de ordenamiento (burbuja, insercion)?"
+    "¿Trabajaste con structs o registros en algun lenguaje?"
+
+  Bloque avanzado (preguntas 7-8, peso 1 cada una):
+    "¿Sabes implementar una pila o una cola desde cero?"
+    "¿Conoces que es la complejidad O(n) y como analizarla?"
+
+================================================================================
+                           ALGORITMO DE ROUTING
+================================================================================
+
+Se suma el total de puntos de todas las respuestas SI.
+
+  Puntaje total  |  Resultado
+  ---------------+------------------
+  0 - 2          |  DIFICULTAD_FACIL
+  3 - 5          |  DIFICULTAD_MEDIO
+  6 - 7          |  DIFICULTAD_DIFICIL
+  8 (maximo)     |  DIFICULTAD_EXAMEN
+
+El puntaje maximo posible es 8 (8 preguntas x 1 punto cada una).
+
+================================================================================
+                         NAVEGACION DE LA PANTALLA
+================================================================================
+
+  Teclas:
+    FLECHA IZQUIERDA  /  A  -->  Seleccionar SI
+    FLECHA DERECHA    /  D  -->  Seleccionar NO
+    ENTER                   -->  Confirmar seleccion y avanzar
+    ESC                     -->  Salir del juego (igual que menu)
+
+  Visual:
+    - Una pregunta por pantalla
+    - Indicador de progreso: "Pregunta 3 de 8"
+    - Opciones SI / NO con cursor > al lado de la seleccionada
+    - Fondo: mismo efecto matrix rain del menu
+
+================================================================================
+                    CAMBIOS NECESARIOS EN OTROS ARCHIVOS
+================================================================================
+
+1. progreso.h
+   Agregar el enum DificultadJuego:
+
+     typedef enum {
+         DIFICULTAD_FACIL,
+         DIFICULTAD_MEDIO,
+         DIFICULTAD_DIFICIL,
+         DIFICULTAD_EXAMEN
+     } DificultadJuego;
+
+   Agregar declaraciones de funciones:
+
+     int            encuesta_ya_hecha(void);
+     void           marcar_encuesta_hecha(DificultadJuego d);
+     DificultadJuego get_dificultad(void);
+
+2. progreso.c
+   Agregar variables estaticas:
+
+     static int s_encuesta_hecha = 0;
+     static int s_dificultad     = DIFICULTAD_FACIL;
+
+   Implementar las tres funciones nuevas.
+   Guardar y cargar del JSON con clave "encuesta_hecha" y "dificultad".
+
+3. main.c
+   Despues del bloque de la intro, agregar:
+
+     if (!encuesta_ya_hecha()) {
+         screenEncuesta(renderer, fuente, ancho, alto);
+         screen_transition(renderer, ancho, alto);
+     }
+
+4. screenEncuesta.c (ARCHIVO NUEVO)
+   La pantalla en si. Firma de la funcion:
+
+     void screenEncuesta(SDL_Renderer *renderer, TTF_Font *fuente,
+                         int ancho, int alto);
+
+   Internamente llama a marcar_encuesta_hecha(resultado) al terminar.
+
+================================================================================
+                              NOTAS DE DISENO
+================================================================================
+
+- La dificultad guardada persiste para siempre en progreso.json
+- El jugador NO puede repetir la encuesta (es una decision de diseno)
+  Si en el futuro se quiere resetear, se hace desde screenConfig
+- En MODO EXAMEN: el nivel no guarda progreso al completarse
+  (esto se controla desde screenLvLEditor verificando get_dificultad())
+- La encuesta debe ser rapida: 8 preguntas, sin textos largos
+- No hay respuesta "correcta" — el jugador no puede "ganar" la encuesta
+
+================================================================================

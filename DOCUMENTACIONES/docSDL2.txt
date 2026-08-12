@@ -1,0 +1,3493 @@
+================================================================================
+              DOCUMENTACION SDL2 - PSEUDOGAMES
+              Todo lo que se hizo, como funciona, y por que
+================================================================================
+
+INDICE
+------
+  1. Que es SDL2 y como arranca el juego
+  2. El game loop - el corazon de todo
+  3. SDL_PollEvent - que es un poll
+  4. Renderizado - como se dibuja en pantalla
+  5. TTF - fuentes y texto
+  6. El efecto Matrix Rain (screenMenu.c)
+  7. Botones acrilicos con texto centrado
+  8. El titulo PSEUDOGAMES pulsante
+  9. El emulador de terminal - screenPomodoro.c
+ 10. El editor de niveles - screenEditorLvl.c
+ 11. La pantalla DOC - screenDOC.c
+ 12. Funciones de UI compartidas - ui.c / ui.h
+ 13. El fix de UTF-8 - acentos y simbolos
+ 14. El fix de foco - ventana sin click inicial
+ 15. El fix de click - por que se perdia el evento
+ 16. Conceptos clave de C usados
+ 17. Integracion del editor bim.sh
+ 18. Fix de simbolos raros (bim y consignas)
+ 19. Sistema de progreso y niveles bloqueados
+ 20. Tarjetas de nivel y boton de reset
+ 21. Pomodoro global en background + cursor parpadeante
+ 22. Transiciones de pantalla: cambio de canal y encendido de tele
+ 23. Cross-compilacion para Windows y GitHub Actions
+ 24. Boton de configuracion y screenConfig
+ 25. Pantalla de feedback y contacto
+ 26. Sistema de subrayado con colores (screenDOC.c)
+ 27. Clipboard multi-linea en el editor (editorText.c)
+ 28. Boton |> RUN y mini menu en el editor (editorText.c)
+ 29. Sistema Guardar / Cargar archivos .paed (editorText.c)
+ 30. Icono en el ejecutable Windows (app.rc + windres)
+ 31. Linking estatico de SDL2 en Windows
+ 32. Script de release automatico (scripts/release.sh)
+ 33. El bug del heap doble: static SDL2 + SDL2_ttf.dll
+
+
+================================================================================
+1. QUE ES SDL2 Y COMO ARRANCA EL JUEGO
+================================================================================
+
+SDL2 (Simple DirectMedia Layer 2) es una libreria en C que te da acceso a:
+  - Ventanas del sistema operativo
+  - Renderizado 2D (dibujar rectangulos, texturas, lineas)
+  - Eventos de teclado, mouse y sistema
+  - Audio (no usamos todavia)
+
+El arranque en main.c sigue este orden fijo:
+
+  SDL_Init(SDL_INIT_VIDEO)
+      Inicializa el subsistema de video de SDL2.
+      Sin esto nada funciona. INIT_VIDEO activa ventana + renderer.
+
+  TTF_Init()
+      Inicializa SDL2_ttf, la extension que permite renderizar fuentes .ttf
+      Es una libreria separada de SDL2, necesita su propio init.
+
+  TTF_OpenFont("ruta/fuente.ttf", tamano)
+      Carga un archivo de fuente tipografica en memoria.
+      El tamano es en puntos (pts). Devuelve TTF_Font* o NULL si falla.
+
+  SDL_CreateWindow(titulo, x, y, ancho, alto, flags)
+      Crea la ventana del sistema operativo.
+      SDL_WINDOWPOS_CENTERED = centra automaticamente.
+      SDL_WINDOW_FULLSCREEN_DESKTOP = pantalla completa al tamano del monitor.
+
+  SDL_CreateRenderer(ventana, -1, 0)
+      Crea el renderer: el objeto que sabe dibujar dentro de la ventana.
+      -1 = usar el mejor driver disponible automaticamente.
+      0  = sin flags especiales (modo default).
+
+  SDL_RaiseWindow(ventana)
+  SDL_SetWindowInputFocus(ventana)
+      Traen la ventana al frente y le dan foco de teclado/mouse.
+      Sin esto, en algunos sistemas (WSL2, ciertos WM) hay que dar un
+      click para que la ventana "despierte" y reciba input.
+
+  SDL_GetWindowSize(ventana, &ancho, &alto)
+      Lee el tamano REAL de la ventana despues de crearla.
+      Importante con FULLSCREEN_DESKTOP porque el tamano final
+      depende de la resolucion del monitor, no de los 800x600 del Create.
+
+
+================================================================================
+2. EL GAME LOOP - EL CORAZON DE TODO
+================================================================================
+
+Cada pantalla del juego tiene un loop infinito que hace siempre lo mismo:
+
+  while (corriendo) {
+      // 1. Procesar eventos (teclado, mouse, cerrar ventana)
+      // 2. Actualizar estado (mover cosas, calcular posiciones)
+      // 3. Dibujar (limpiar pantalla, dibujar todo, presentar)
+      SDL_Delay(16); // ~60 fps
+  }
+
+Por que SDL_Delay(16)?
+  El loop sin delay correria miles de veces por segundo, quemando CPU.
+  16 milisegundos = ~60 frames por segundo (1000ms / 60fps = 16.6ms).
+  Es una limitacion simple. Lo correcto seria delta time, pero para
+  este proyecto 16ms funciona bien.
+
+Por que "corriendo" y no while(1)?
+  Para poder salir limpiamente: corriendo = 0 termina el loop
+  sin necesidad de return en el medio. Ambos funcionan, es estilo.
+
+
+================================================================================
+3. SDL_POLLEVENT - QUE ES UN POLL
+================================================================================
+
+Un "poll" es preguntar: "hay algo en la cola de eventos? dame el siguiente."
+
+SDL2 mantiene una cola (queue) interna. Cada vez que el usuario presiona
+una tecla, mueve el mouse o cierra la ventana, SDL2 agrega un evento a esa
+cola. SDL_PollEvent saca de a uno por vez.
+
+  while (SDL_PollEvent(&evento)) {
+      // procesar evento
+  }
+
+El while es clave: hay que vaciar TODA la cola en cada frame.
+Si no lo vacias, los eventos se acumulan y el juego se retrasa.
+SDL_PollEvent devuelve 1 si habia evento, 0 si la cola esta vacia.
+
+Tipos de eventos mas usados:
+
+  evento.type == SDL_QUIT
+      El usuario cerro la ventana con la X del sistema operativo.
+
+  evento.type == SDL_KEYDOWN
+      Se presiono una tecla. La tecla especifica esta en:
+      evento.key.keysym.sym  →  SDLK_ESCAPE, SDLK_UP, SDLK_RETURN, etc.
+
+  evento.type == SDL_MOUSEBUTTONDOWN
+      Se hizo click con el mouse.
+      evento.button.button  →  SDL_BUTTON_LEFT, SDL_BUTTON_RIGHT
+      evento.button.x / .y  →  coordenadas del click en pixels
+
+  evento.type == SDL_MOUSEWHEEL
+      Se movio la rueda del mouse.
+      evento.wheel.y  →  positivo = arriba, negativo = abajo
+
+  evento.type == SDL_TEXTINPUT
+      El usuario escribio texto (ya procesa shift, mayusculas, etc).
+      evento.text.text  →  string con el caracter escrito (UTF-8)
+      Se usa en screenPomodoro para mandar teclas al script bash.
+
+BUG CLASICO DEL POLL (que teniamos y arreglamos):
+
+  INCORRECTO:
+    while(SDL_PollEvent(&evento)) { ... }
+    // evento ahora tiene el ULTIMO evento del frame
+    if (evento.type == SDL_MOUSEBUTTONDOWN) { ... }  // puede haberse perdido
+
+  CORRECTO:
+    int clicked = 0, click_x = 0, click_y = 0;
+    while(SDL_PollEvent(&evento)) {
+        if (evento.type == SDL_MOUSEBUTTONDOWN) {
+            clicked = 1;
+            click_x = evento.button.x;
+            click_y = evento.button.y;
+        }
+    }
+    if (clicked) { ... }  // seguro, no se sobreescribe
+
+  Por que se perdia: si en el mismo frame llegan dos eventos
+  (por ejemplo SDL_MOUSEBUTTONDOWN seguido de SDL_MOUSEMOTION),
+  el while los procesa ambos y "evento" queda con el ultimo.
+  El click anterior se pierde. Capturandolo en variables propias
+  dentro del poll se resuelve.
+
+
+================================================================================
+4. RENDERIZADO - COMO SE DIBUJA EN PANTALLA
+================================================================================
+
+Todo el dibujo sigue este orden en cada frame:
+
+  1. SDL_RenderClear(renderer)
+       Limpia la pantalla con el color actual de draw.
+       Sin esto, lo del frame anterior queda visible (ghosting).
+
+  2. Dibujar cosas (rectangulos, texturas, lineas)
+
+  3. SDL_RenderPresent(renderer)
+       Muestra lo dibujado en pantalla. SDL2 usa double buffering:
+       dibuja en un buffer oculto, SDL_RenderPresent lo muestra.
+       Sin esto, el usuario nunca ve nada.
+
+SDL_SetRenderDrawColor(renderer, R, G, B, A)
+  Define el color para las siguientes operaciones de dibujo.
+  R, G, B = rojo, verde, azul (0-255)
+  A = alpha / transparencia (0=invisible, 255=solido)
+
+SDL_RenderFillRect(renderer, &rect)
+  Dibuja un rectangulo relleno con el color actual.
+  SDL_Rect rect = {x, y, ancho, alto};
+
+SDL_RenderDrawRect(renderer, &rect)
+  Dibuja solo el contorno (borde) del rectangulo.
+
+SDL_RenderDrawLine(renderer, x1, y1, x2, y2)
+  Dibuja una linea entre dos puntos.
+
+SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND)
+  Activa el modo de mezcla de colores.
+  Necesario para que el canal alpha (A) funcione.
+  Sin esto, alpha 50 se ve igual que alpha 255.
+
+SDL_RenderSetClipRect(renderer, &rect)
+  Todo lo que se dibuje despues queda recortado a ese rectangulo.
+  Pixels fuera del rect no se dibujan. Como overflow:hidden en CSS.
+  Para quitar el clip: SDL_RenderSetClipRect(renderer, NULL)
+
+  Usamos clip en screenDOC.c para que el texto del panel izquierdo
+  no sangre al panel derecho, y viceversa.
+
+
+================================================================================
+5. TTF - FUENTES Y TEXTO
+================================================================================
+
+SDL2_ttf es la libreria para renderizar texto con fuentes .ttf.
+
+TTF_OpenFont(ruta, tamano)
+  Carga la fuente. Devuelve TTF_Font* o NULL si no encuentra el archivo.
+  El tamano es en puntos. A 16 puntos ~= 16-20px dependiendo de la fuente.
+
+TTF_RenderUTF8_Blended(fuente, texto, color)
+  Renderiza el texto como una SDL_Surface (imagen en memoria).
+  UTF8 = soporta acentos, enie, simbolos Unicode.
+  Blended = renderizado suavizado con antialiasing.
+  Devuelve SDL_Surface* que hay que liberar con SDL_FreeSurface().
+
+  POR QUE UTF8 Y NO TTF_RenderText:
+    TTF_RenderText trata el string como Latin-1 (encoding viejo).
+    Los acentos en UTF-8 usan 2 bytes (ejemplo: a con acento = 0xC3 0xA1).
+    TTF_RenderText lee esos 2 bytes como 2 caracteres Latin-1 separados
+    y no sabe que glifo mostrar → cuadrado.
+    TTF_RenderUTF8 los lee juntos como un solo caracter Unicode → correcto.
+
+TTF_SizeUTF8(fuente, texto, &ancho, &alto)
+  Mide en pixels cuanto ocuparia ese texto con esa fuente.
+  Se usa para centrar texto o hacer word wrap.
+  Misma razon de usar UTF8: mide correctamente caracteres multibyte.
+
+TTF_FontHeight(fuente)
+  Devuelve la altura en pixels de la fuente (altura de una linea).
+  Se usa para calcular el espaciado entre lineas.
+
+Flujo completo para dibujar texto:
+  SDL_Surface *sup = TTF_RenderUTF8_Blended(fuente, "hola", color);
+  SDL_Texture *tex = SDL_CreateTextureFromSurface(renderer, sup);
+  SDL_Rect pos = {x, y, sup->w, sup->h};
+  SDL_RenderCopy(renderer, tex, NULL, &pos);
+  SDL_FreeSurface(sup);      // liberar la imagen en memoria
+  SDL_DestroyTexture(tex);   // liberar la textura en GPU
+
+  Por que liberar? SDL2 no tiene garbage collector. Cada superficie
+  y textura creada ocupa memoria hasta que la liberes manualmente.
+  Si no liberas, el programa pierde memoria cada frame (memory leak).
+
+
+================================================================================
+6. EL EFECTO MATRIX RAIN (screenMenu.c)
+================================================================================
+
+El efecto de lluvia de 0s y 1s que cae detras del menu.
+
+Estructura de cada columna:
+  typedef struct {
+      int x;      // posicion horizontal fija (no cambia)
+      int y;      // posicion vertical actual (va bajando cada frame)
+      int speed;  // pixels que baja por frame (random entre 2 y 7)
+  } Columna;
+
+  Columna cols[MAX_COLS];  // 80 columnas que cubren el ancho de pantalla
+
+Inicializacion (antes del while):
+  int espaciado = ancho / MAX_COLS;
+  for (int i = 0; i < MAX_COLS; i++) {
+      cols[i].x     = i * espaciado;
+      cols[i].y     = -(rand() % alto);  // empieza en posicion negativa random
+      cols[i].speed = 2 + rand() % 6;
+  }
+  Empezar en negativo hace que las columnas no aparezcan todas a la vez.
+  Cada una "cae" desde arriba en momentos distintos.
+
+El truco del fade (la cola de los caracteres):
+  En vez de SDL_RenderClear (que borraria todo), se dibuja un rectangulo
+  negro con alpha muy bajo sobre toda la pantalla:
+
+  SDL_SetRenderDrawColor(renderer, 0, 0, 0, 25);  // negro, alpha 25
+  SDL_RenderFillRect(renderer, NULL);  // NULL = toda la pantalla
+
+  Cada frame oscurece un poco lo anterior. Los caracteres mas viejos
+  van desapareciendo gradualmente. Eso crea la "cola" sin tener que
+  guardar historial de posiciones anteriores.
+  Alpha 25 de 255 = cola larga. Alpha 80 = cola corta.
+
+Tres niveles de brillo por columna:
+  verde_cabeza = {180, 255, 180}  // blanco-verde, el char que cae ahora
+  verde_cuerpo = {0, 200, 50}    // verde medio, 16px atras
+  verde_cola   = {0, 120, 30}    // verde oscuro, 32px atras
+
+Reset de columna:
+  if (cols[i].y > alto) {
+      cols[i].y     = -(rand() % 300);  // vuelve arriba con delay random
+      cols[i].speed = 2 + rand() % 6;  // nueva velocidad random
+  }
+  El delay random evita que todas reseteen a la vez.
+
+La funcion dibujarChar (static en screenMenu.c):
+  Igual que dibujadoTexto de ui.c pero acepta SDL_Color como parametro.
+  Es static porque solo la usa este archivo (no se exporta).
+  Renderiza UN solo caracter ('0' o '1') en una posicion con un color.
+
+
+================================================================================
+7. BOTONES ACRILICOS CON TEXTO CENTRADO
+================================================================================
+
+Los botones del menu principal tienen:
+  - Fondo semitransparente (acrilico): se ve la lluvia por detras
+  - Borde que brilla en hover
+  - Texto centrado exactamente dentro del boton
+
+Fondo acrilico:
+  SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
+  SDL_SetRenderDrawColor(renderer, 0, 60, 120, 60);   // alpha 60 = semitransparente
+  SDL_RenderFillRect(renderer, &btn);
+  El alpha bajo (60 de 255) deja pasar la lluvia de atras.
+  En hover sube a 80 para que se note la seleccion.
+
+Texto centrado:
+  int txt_w, txt_h;
+  TTF_SizeUTF8(fuente, labels[i], &txt_w, &txt_h);
+  int txt_x = btn_x + (btn_w - txt_w) / 2;  // margen izquierdo = (espacio libre) / 2
+  int txt_y = btn_y + (btn_h - txt_h) / 2;  // margen arriba    = (espacio libre) / 2
+
+  Formula: (tamano_contenedor - tamano_contenido) / 2 = margen para centrar
+  Funciona igual en horizontal y vertical.
+
+
+================================================================================
+8. EL TITULO PSEUDOGAMES PULSANTE
+================================================================================
+
+El titulo grande que pulsa (crece y achica) en el fondo del menu.
+
+Se crea UNA SOLA VEZ antes del while (eficiencia):
+  TTF_Font *fuente_titulo = TTF_OpenFont("assets/fonts/main.ttf", 90);
+  SDL_Surface *sup = TTF_RenderUTF8_Blended(fuente_titulo, "PSEUDOGAMES", blanco);
+  SDL_Texture *tex_titulo = SDL_CreateTextureFromSurface(renderer, sup);
+  titulo_w = sup->w;
+  titulo_h = sup->h;
+  SDL_FreeSurface(sup);
+  TTF_CloseFont(fuente_titulo);
+
+  Por que crear una vez? Crear una textura cada frame es costoso (CPU + GPU).
+  Como el texto no cambia, se crea una vez y se reutiliza.
+
+El pulso (dentro del while, cada frame):
+  float t = SDL_GetTicks() / 1000.0f;         // tiempo en segundos
+  float scale = 1.0f + 0.15f * sinf(t * 0.6f); // oscila entre 0.85 y 1.15
+
+  SDL_GetTicks() devuelve milisegundos desde que SDL inicio.
+  Dividido 1000 = segundos como float.
+  sinf() devuelve un valor entre -1 y 1 que oscila suavemente.
+  Multiplicado por 0.15 = oscila +/-15% del tamano original.
+  0.6f controla la velocidad: mas bajo = mas lento.
+  Necesita -lm en el Makefile (libreria de matematicas de Linux).
+
+  int w = (int)(titulo_w * scale);   // nuevo ancho escalado
+  int h = (int)(titulo_h * scale);   // nuevo alto escalado
+  int x = (ancho - w) / 2;           // centrado horizontal
+  int y = alto / 6 - h / 2;          // parte superior de la pantalla
+
+SDL_SetTextureAlphaMod(tex_titulo, 35)
+  Cambia el alpha de toda la textura sin recrearla.
+  35 de 255 = muy transparente, "empotrado" en el fondo.
+  Para mas visible: subir el numero.
+
+Liberacion al salir:
+  if (tex_titulo) SDL_DestroyTexture(tex_titulo);
+  Se llama despues del while, antes del return.
+
+
+================================================================================
+9. EL EMULADOR DE TERMINAL - screenPomodoro.c
+================================================================================
+
+El Pomodoro corre un script bash DENTRO del juego SDL2, sin abrir una
+terminal externa. El script cree que esta en una terminal real.
+
+forkpty() - la funcion clave:
+  int master_fd;
+  struct winsize ws = {50, 120, 0, 0};  // filas, columnas del terminal virtual
+  pid_t pid = forkpty(&master_fd, NULL, NULL, &ws);
+
+  forkpty hace 3 cosas en una:
+    1. Crea un PTY (pseudo-terminal): un par de file descriptors donde
+       uno es el "lado master" (nuestro programa) y otro es el
+       "lado esclavo" (la terminal que vera el proceso hijo).
+    2. Hace fork(): divide el proceso en padre e hijo.
+    3. Conecta el PTY al hijo: el hijo tiene su stdin/stdout/stderr
+       conectados al lado esclavo del PTY.
+
+  Resultado:
+    pid == 0  → somos el HIJO. Ejecutamos el script.
+    pid > 0   → somos el PADRE. master_fd es nuestro canal.
+
+  En el hijo:
+    setenv("TERM", "xterm", 1);  // el script necesita saber que tipo de terminal es
+    execl("/bin/bash", "bash", "scripts/editorBim/pomodoro.sh", NULL);
+    _exit(1);  // si execl falla, salir
+
+  En el padre:
+    fcntl(master_fd, F_SETFL, O_NONBLOCK);  // lectura no bloqueante
+    // cada frame: leer output del script, dibujarlo en SDL2
+    // teclas SDL2: escribirlas al script via write(master_fd, &c, 1)
+
+Mini emulador VT100:
+  El script pomodoro.sh usa codigos de escape ANSI para mover el cursor,
+  limpiar pantalla, etc. Son secuencias como \033[H (ir al inicio),
+  \033[2J (limpiar), \033[row;colH (mover cursor a posicion).
+
+  Se mantiene una grilla de caracteres en memoria:
+    char vt_grid[VT_ROWS][VT_COLS];  // 50 filas x 120 columnas
+    int vt_row = 0, vt_col = 0;       // posicion actual del cursor virtual
+
+  vt_process(buf, n) interpreta el output byte por byte:
+    - Char normal → lo pone en vt_grid[vt_row][vt_col], avanza col
+    - \r → col = 0 (retorno de carro)
+    - \n → row++, col = 0 (nueva linea)
+    - \033[ → inicio de secuencia CSI, parsear parametros hasta letra final
+      H/f → mover cursor a posicion row;col
+      J   → limpiar pantalla (memset de vt_grid)
+      K   → limpiar hasta fin de linea
+      A/B/C/D → mover cursor arriba/abajo/derecha/izquierda
+      m   → colores → ignorados (renderizamos todo verde)
+
+  Cada frame se renderiza vt_grid fila por fila:
+    for (int row = 0; row < VT_ROWS; row++) {
+        // trim espacios al final de la fila
+        // si la fila tiene contenido: TTF_RenderUTF8_Blended y SDL_RenderCopy
+    }
+
+Cleanup al salir:
+  kill(pid, SIGTERM);    // matar el proceso hijo (el script)
+  waitpid(pid, NULL, 0); // esperar que termine (evitar proceso zombie)
+  close(master_fd);       // cerrar el file descriptor del PTY
+
+
+================================================================================
+10. EL EDITOR DE NIVELES - screenEditorLvl.c
+================================================================================
+
+Tiene dos funciones: screenLvLs (seleccion de nivel) y screenLvLEditor (el editor).
+
+screenLvLs:
+  Muestra los niveles cargados del JSON como botones.
+  Devuelve el numero del nivel seleccionado (1, 2, 3...) o 0 para volver.
+
+  obtener_nivel(i + 1) → devuelve Nivel* con titulo y enunciado.
+  total_niveles() → cuantos niveles hay cargados.
+
+screenLvLEditor:
+  Muestra la pantalla dividida en dos paneles:
+    Panel izquierdo (0, 0, ancho/2, alto):  consigna del nivel
+    Panel derecho  (ancho/2, 0, ancho/2, alto): area del editor (vacia por ahora)
+
+  Panel izquierdo tiene fondo negro-verde oscuro (10, 18, 10).
+  El titulo del nivel en verde brillante (0, 230, 80).
+  Una linea separadora verde entre titulo y enunciado.
+  El enunciado con word wrap via dibujadoTextoMultilineaColor.
+
+  No tiene barra azul arriba: fue eliminada para que los paneles
+  ocupen toda la altura y se vea mas limpio.
+
+
+================================================================================
+11. LA PANTALLA DOC - screenDOC.c
+================================================================================
+
+Lee data/wiki.txt y lo presenta en una interfaz de dos paneles con
+navegacion de capitulos → esquema de episodios → contenido.
+
+Parseo del archivo:
+  static char lineas[3200][512];
+  fgets(lineas[i], 512, f)  → lee linea por linea hasta EOF
+
+  static: la variable vive en el data segment, no en el stack.
+  El stack de C tiene un limite pequeno (~1-8MB segun el SO).
+  3200 lineas x 512 bytes = 1.6MB → reventaria el stack sin static.
+
+Deteccion de capitulos:
+  if (strncmp(lineas[i], "CAPITULO", 8) == 0)
+  Busca lineas que empiecen exactamente con "CAPITULO".
+
+Deteccion de episodios:
+  char *p = lineas[i];
+  while (*p == ' ') p++;  // saltear espacios al inicio
+  if (strncmp(p, "EPISODIO", 8) == 0)
+  Los episodios tienen espacios adelante en el archivo, por eso hay
+  que saltear espacios antes de comparar.
+  Para saber a que capitulo pertenece: busca el ultimo capitulo
+  cuya linea_inicio sea menor o igual a la linea actual.
+
+Navegacion en 3 niveles (variable "foco" y "vista"):
+  foco = 0: panel izquierdo activo (capitulos)
+    UP/DOWN → cambiar capitulo
+    ENTER o → → ir al esquema (foco = 1)
+
+  foco = 1, vista = 0: panel derecho en modo ESQUEMA
+    Muestra caja con nombre del capitulo + lista de episodios
+    UP/DOWN → navegar episodios
+    ENTER → abrir contenido (vista = 1)
+    ESC o ← → volver a panel izquierdo (foco = 0)
+
+  vista = 1: panel derecho en modo CONTENIDO
+    Muestra el texto del episodio con scroll
+    PageUp/Down y rueda del mouse → scroll
+    ESC → volver al esquema (vista = 0)
+
+SDL_RenderSetClipRect:
+  Aplicado a cada panel para que el texto no sangre al panel vecino.
+  Se quita con NULL antes de dibujar el scrollbar (que esta fuera de ambos paneles).
+
+Scrollbar:
+  track = rectangulo fijo que representa el largo total del contenido
+  thumb = rectangulo proporcional que se mueve segun el scroll actual
+
+  float ratio = (float)lineas_visibles / total_lineas_del_episodio;
+  int thumb_h = (int)(track_h * ratio);   // que fraccion del track ocupa
+  int thumb_y = track_y + (scroll / max_scroll) * (track_h - thumb_h);
+
+altura_wrap():
+  Funcion estatica que simula el word wrap sin dibujar.
+  Hace el mismo algoritmo de corte por palabras que dibujadoTextoMultilineaColor
+  pero en vez de renderizar, cuenta cuantas lineas salen y devuelve los pixeles.
+  Se usa para que el highlight del indice tenga la altura correcta
+  cuando un titulo ocupa mas de una linea visual.
+
+
+================================================================================
+12. FUNCIONES DE UI COMPARTIDAS - ui.c / ui.h
+================================================================================
+
+dibujadoTexto(renderer, fuente, texto, x, y)
+  Renderiza texto en blanco en la posicion dada.
+  Agrega 10px horizontal y 12px vertical de padding interno.
+  Usa TTF_RenderUTF8_Blended.
+
+dibujadoTextoColor(renderer, fuente, texto, x, y, color)
+  Igual que dibujadoTexto pero con color configurable.
+  Se agrego para poder mostrar texto verde, rojo, etc.
+
+dibujadoTextoMultilineaColor(renderer, fuente, texto, x, y, max_ancho, color)
+  Hace word wrap: corta el texto en lineas que caben dentro de max_ancho.
+
+  Algoritmo (palabra por palabra):
+    linea = ""
+    para cada palabra del texto:
+        prueba = linea + " " + palabra
+        medir ancho de prueba con TTF_SizeUTF8
+        si prueba es mas ancha que max_ancho Y linea no esta vacia:
+            dibujar linea actual en y_actual
+            y_actual += alto_linea
+            linea = palabra  (empezar nueva linea con esta palabra)
+        sino:
+            linea = prueba   (la palabra entra, seguir acumulando)
+    dibujar la ultima linea que quedo
+
+  strtok(copia, " ") corta el string por espacios devolviendo punteros.
+  strtok(NULL, " ") continua desde donde quedo.
+  Nota: strtok modifica el string original por eso se trabaja con una copia.
+
+dibujadoTextoMultiLinea (la vieja, en minuscula):
+  Version legacy que usa blanco hardcodeado. Se mantiene para compatibilidad.
+
+
+================================================================================
+13. EL FIX DE UTF-8 - ACENTOS Y SIMBOLOS
+================================================================================
+
+Problema: las letras con acento (a, e, i, o, u con tilde), la enie (n con ~)
+y otros simbolos aparecian como cuadrados.
+
+Causa: TTF_RenderText y TTF_SizeText usan encoding Latin-1.
+  En Latin-1 cada caracter ocupa exactamente 1 byte.
+  En UTF-8 (el encoding de Linux moderno), los caracteres con acento
+  ocupan 2 bytes. Por ejemplo:
+    'a' con acento agudo = 0xC3 + 0xA1 en UTF-8
+  TTF_RenderText ve 0xC3 y 0xA1 como DOS caracteres Latin-1 separados
+  que no reconoce → cuadrado.
+
+Solucion: reemplazar en todos los archivos:
+  TTF_RenderText_Blended → TTF_RenderUTF8_Blended
+  TTF_SizeText           → TTF_SizeUTF8
+
+  Las versiones UTF8 leen los bytes multibyte como un solo caracter
+  Unicode y buscan el glifo correcto en la fuente.
+
+Archivos modificados: ui.c, screenMenu.c, screenDOC.c, screenPomodoro.c
+
+
+================================================================================
+14. EL FIX DE FOCO - VENTANA SIN CLICK INICIAL
+================================================================================
+
+Problema: al abrir el juego habia que dar un click antes de que
+el teclado y mouse funcionaran.
+
+Causa: en algunos entornos (WSL2, ciertos gestores de ventana),
+crear una ventana no garantiza que reciba el foco del sistema operativo.
+El SO espera que el usuario "active" la ventana con un click.
+
+Solucion en main.c, despues de SDL_CreateRenderer:
+  SDL_RaiseWindow(ventana);
+      Pide al sistema operativo que traiga la ventana al frente,
+      por encima de otras ventanas.
+
+  SDL_SetWindowInputFocus(ventana);
+      Pide al sistema operativo que le de el foco de input
+      (teclado y mouse) a esta ventana directamente.
+
+
+================================================================================
+15. EL FIX DE CLICK - POR QUE SE PERDIA EL EVENTO
+================================================================================
+
+Ver seccion 3 (SDL_PollEvent) para la explicacion completa del bug.
+
+Resumen del patron correcto:
+
+  // Antes del poll: preparar variables para capturar el click
+  int clicked = 0, click_x = 0, click_y = 0;
+
+  // Dentro del poll: capturar el click si ocurrio
+  while (SDL_PollEvent(&evento)) {
+      if (evento.type == SDL_MOUSEBUTTONDOWN &&
+          evento.button.button == SDL_BUTTON_LEFT) {
+          clicked = 1;
+          click_x = evento.button.x;
+          click_y = evento.button.y;
+      }
+  }
+
+  // Despues del poll: usar las variables para chequear colision
+  for (int i = 0; i < total_botones; i++) {
+      if (clicked &&
+          click_x >= btn_x && click_x <= btn_x + btn_w &&
+          click_y >= btn_y && click_y <= btn_y + btn_h)
+          return i + 1;
+  }
+
+Archivos corregidos: screenMenu.c, screenEditorLvl.c
+
+
+================================================================================
+16. CONCEPTOS CLAVE DE C USADOS
+================================================================================
+
+typedef struct:
+  Define un tipo de dato nuevo. Ejemplo:
+    typedef struct { int x; int y; int speed; } Columna;
+  Permite declarar variables: Columna cols[80];
+
+static (en variable local):
+  La variable persiste en memoria entre llamadas a la funcion.
+  Tambien mueve la variable del stack al data segment (mas grande).
+  Usamos static char lineas[3200][512] por el tamano.
+
+static (en funcion):
+  La funcion es privada al archivo. No se puede llamar desde otro .c
+  Usamos static para dibujarChar en screenMenu.c y altura_wrap en screenDOC.c.
+
+strncmp(a, b, n):
+  Compara los primeros n caracteres de dos strings.
+  Devuelve 0 si son iguales. Mas seguro que strcmp (no se pasa del buffer).
+
+strncpy(dest, src, n):
+  Copia hasta n caracteres. Mas seguro que strcpy.
+
+snprintf(dest, tamano, formato, ...):
+  Como printf pero guarda el resultado en un string en vez de imprimirlo.
+  El tamano evita desbordamiento del buffer.
+
+strtok(str, delimitador):
+  Corta un string por el delimitador, devolviendo punteros a cada parte.
+  La primera llamada recibe el string. Las siguientes reciben NULL.
+  MODIFICA el string original (reemplaza delimitadores con '\0').
+
+memset(ptr, valor, tamano):
+  Llena un bloque de memoria con un valor. memset(grid, ' ', sizeof(grid))
+  llena toda la grilla con espacios.
+
+memmove(dest, src, tamano):
+  Copia un bloque de memoria. Es seguro cuando origen y destino se solapan.
+
+kill(pid, signal):
+  Manda una senal a un proceso. SIGTERM = pedirle que termine.
+
+waitpid(pid, &status, flags):
+  Espera que un proceso hijo termine. WNOHANG = no bloquear si no termino.
+  Sin waitpid los procesos hijos terminados se convierten en "zombies".
+
+fcntl(fd, F_SETFL, O_NONBLOCK):
+  Cambia un file descriptor a modo no bloqueante.
+  Sin esto, read() espera hasta que haya datos (bloquea el juego).
+  Con O_NONBLOCK, read() devuelve inmediatamente con -1 si no hay datos.
+
+sinf(x):
+  Seno de x en radianes. Devuelve float entre -1 y 1.
+  Vive en libm (-lm en el Makefile). Se usa para el pulso del titulo.
+
+SDL_GetTicks():
+  Devuelve milisegundos desde que SDL_Init fue llamado.
+  Dividido 1000.0f = segundos como float.
+  Sirve para animaciones basadas en tiempo real.
+
+
+================================================================================
+17. BIM EDITOR EMPOTRADO EN EL PANEL DERECHO - screenEditorLvl.c
+================================================================================
+
+Se integro el editor bim.sh en el panel derecho de la pantalla de juego,
+exactamente igual que el Pomodoro pero renderizado solo en la mitad derecha.
+
+Layout final:
+  Panel izquierdo (0 a ancho/2):   consigna del nivel, titulo, enunciado
+  Panel derecho   (ancho/2 a ancho): bim.sh corriendo via forkpty
+
+Calculo de dimensiones del PTY segun el panel:
+  int bim_w = (ancho / 2) / char_w;   // cuantas columnas caben en el panel
+  int bim_h = alto / line_h;          // cuantas filas caben
+  struct winsize ws = {bim_h, bim_w, 0, 0};
+
+  El script bim.sh recibe estas dimensiones como si fuera una terminal real
+  de ese tamano, y dibuja su UI ajustada a esas columnas y filas.
+
+Lanzar bim.sh (en el hijo):
+  chdir("scripts/editorBim");     // bim.sh usa rutas relativas (source ./keys.sh etc.)
+  setenv("TERM", "xterm", 1);
+  execl("/bin/bash", "bash", "bim.sh", savefile, NULL);
+
+  Por que chdir? bim.sh hace "source ./keys.sh", "source ./modes.sh", etc.
+  Esas rutas relativas solo funcionan si el directorio de trabajo es el de bim.sh.
+
+Archivo de trabajo por nivel:
+  char savefile[128];
+  snprintf(savefile, sizeof(savefile), "../../saves/nivel_%d.pseudo", nivel_num);
+
+  Desde scripts/editorBim, ../../saves/ llega a PseudoGames/saves/.
+  Cada nivel tiene su propio archivo. Persiste entre sesiones.
+
+Mapeo de teclas SDL2 a bytes de terminal:
+  SDL_TEXTINPUT          → write(fd, texto, len)    // letras, numeros, simbolos
+  SDLK_ESCAPE            → write(fd, "\033", 1)     // ESC: bim lo usa para cambiar modo
+  SDLK_RETURN            → write(fd, "\n", 1)
+  SDLK_BACKSPACE         → write(fd, "\x7f", 1)
+  SDLK_UP                → write(fd, "\033[A", 3)   // secuencias VT100 de movimiento
+  SDLK_DOWN              → write(fd, "\033[B", 3)
+  SDLK_RIGHT             → write(fd, "\033[C", 3)
+  SDLK_LEFT              → write(fd, "\033[D", 3)
+  SDLK_HOME              → write(fd, "\033[H", 3)
+  SDLK_END               → write(fd, "\033[F", 3)
+  SDLK_DELETE            → write(fd, "\033[3~", 4)
+  Ctrl + letra           → write(fd, &ctrl_byte, 1) // Ctrl+A=1, Ctrl+S=19, etc.
+  SDLK_F10               → corriendo = 0            // salir al menu del juego
+
+  Por que F10 para salir y no ESC?
+  ESC lo necesita bim internamente para cambiar de modo INSERT a NORMAL.
+  Si usaramos ESC para salir del juego, bim no podria recibir ese caracter.
+  F10 es una tecla que bim no usa, por eso es segura para salir.
+
+Renderizado del panel derecho con clip:
+  SDL_RenderSetClipRect(renderer, &panel_der);
+  // renderizar filas de bim_grid
+  SDL_RenderSetClipRect(renderer, NULL);
+
+  El clip evita que el contenido de bim sangre al panel izquierdo.
+
+
+================================================================================
+18. FIX DE SIMBOLOS RAROS EN BIM - FILTRO ASCII Y SECUENCIAS OSC
+================================================================================
+
+Problema: al iniciar bim.sh aparecian simbolos extraños en el panel derecho.
+
+Causa 1 - Arte braille del splash de bim.sh:
+  bim.sh muestra una imagen en braille al iniciar (⠀⠀⠀ etc.).
+  Los caracteres braille son Unicode multibyte (3 bytes cada uno en UTF-8).
+  La grilla VT (bim_grid) guarda un byte por celda. Si se guardan los
+  3 bytes de un caracter braille en celdas consecutivas, al renderizar
+  la fila como string, TTF_RenderUTF8_Blended los intentaria interpretar
+  como UTF-8... pero el conteo de columnas (bim_col) quedaba desfasado,
+  y el cursor virtual terminaba en una posicion incorrecta.
+
+Causa 2 - Secuencias OSC no manejadas:
+  OSC (Operating System Command) son secuencias como:
+    \033]0;titulo de ventana\007
+  Se usan para cambiar el titulo de la ventana de terminal.
+  El emulador anterior no las manejaba, asi que los bytes del titulo
+  ("0;titulo de ventana") se pasaban a bim_putchar y aparecian en pantalla.
+
+Solucion 1 - Filtrar bytes no ASCII en bim_putchar:
+  if (uc < 0x20 || uc > 0x7E) return;  // ignorar, no guardar en la grilla
+
+  0x20 = espacio (primer ASCII imprimible)
+  0x7E = ~ (ultimo ASCII imprimible)
+  Bytes entre 0x80 y 0xFF son bytes continuacion de UTF-8 multibyte.
+  Al ignorarlos, el arte braille desaparece (se ve como espacios en blanco).
+  El codigo pseudocodigo que escribe el usuario es puro ASCII → no se pierde nada.
+
+Solucion 2 - Manejar secuencias OSC en bim_process:
+  } else if (buf[i] == ']') {
+      // OSC: saltar hasta BEL (0x07) o hasta ST (\033\)
+      i++;
+      while (i < n) {
+          if ((unsigned char)buf[i] == 0x07) { i++; break; }   // BEL = fin de OSC
+          if (buf[i] == '\033' && buf[i+1] == '\\') { i+=2; break; } // ST = fin de OSC
+          i++;
+      }
+  }
+
+  BEL (0x07) y ST (String Terminator = \033\) son los dos terminadores
+  validos de una secuencia OSC segun el estandar VT100/xterm.
+  Al saltar toda la secuencia, el titulo de ventana nunca llega a bim_putchar.
+
+Resumen: la grilla VT ahora solo contiene caracteres ASCII imprimibles.
+El editor funciona correctamente para escribir pseudocodigo.
+El splash de braille desaparece silenciosamente al arrancar bim.sh.
+
+
+================================================================================
+19. SISTEMA DE PROGRESO Y NIVELES BLOQUEADOS
+================================================================================
+
+OBJETIVO
+--------
+Que el jugador tenga que completar los niveles en orden.
+Si no completaste el nivel 1, el nivel 2 aparece bloqueado y no se puede entrar.
+Cuando completas uno, el siguiente se desbloquea automaticamente.
+
+ARCHIVOS INVOLUCRADOS
+---------------------
+  progreso.h / progreso.c   → guarda y carga el progreso
+  screenEditorLvl.c         → dibuja los botones de nivel con su estado
+  main.c                    → carga el progreso al arrancar
+
+COMO FUNCIONA progreso.c
+------------------------
+Mantiene un array estatico interno:
+  static int completados[64];
+  static int n_completados = 0;
+
+  cargar_progreso("saves/progreso.json")
+      Lee el JSON al arrancar. Si el archivo no existe (primera vez),
+      arranca con n_completados = 0 sin error.
+
+  guardar_progreso(NULL)
+      Escribe el array al JSON. Pasa NULL para que use el path
+      guardado en la primera llamada a cargar_progreso().
+
+  esta_completado(numero)
+      Busca "numero" en el array. Devuelve 1 si esta, 0 si no.
+
+  nivel_desbloqueado(numero)
+      El nivel 1 siempre esta desbloqueado.
+      Para cualquier otro: devuelve esta_completado(numero - 1).
+      Es decir, el nivel N se desbloquea cuando completas el N-1.
+
+  marcar_completado(numero)
+      Agrega el numero al array y llama guardar_progreso() automaticamente.
+      Si ya estaba completado, no lo duplica.
+
+COMO SE CARGA AL ARRANCAR (main.c)
+-----------------------------------
+  cargar_niveles("data/niveles.json");   // carga los datos del nivel (titulo, enunciado)
+  cargar_progreso("saves/progreso.json"); // carga cuales fueron completados
+
+El orden importa: primero los niveles, luego el progreso.
+
+VISUAL EN screenLvLs (screenEditorLvl.c)
+-----------------------------------------
+Para cada boton de nivel se evaluan 3 estados:
+
+  1. BLOQUEADO (nivel_desbloqueado() == 0)
+       Fondo gris oscuro  RGB(50, 50, 55)
+       Texto gris         RGB(90, 90, 95)
+       Label: "[N] Titulo  [BLOQUEADO]"
+       No reacciona al hover. No registra el click.
+
+  2. COMPLETADO (esta_completado() == 1)
+       Fondo verde oscuro RGB(0, 100, 40)  → RGB(0, 140, 60) en hover
+       Texto verde claro  RGB(80, 255, 120)
+       Label: "[N] Titulo  [OK]"
+       Se puede volver a entrar (click funciona normal).
+
+  3. DESBLOQUEADO SIN COMPLETAR
+       Fondo azul         RGB(0, 78, 152) → RGB(0, 120, 200) en hover
+       Texto blanco (dibujadoTexto normal)
+       Label: "[N] Titulo"
+       Funciona igual que antes.
+
+COMO SE COMPLETA UN NIVEL (screenLvLEditor)
+--------------------------------------------
+Dentro del loop de eventos, dos teclas especiales:
+
+  F5  → marcar_completado(nivel_num) + salir
+         Guarda el progreso al JSON en ese momento.
+         La proxima vez que entres a la lista, ese nivel aparece [OK]
+         y el siguiente se desbloquea.
+
+  F10 → salir sin marcar nada
+         Util si querés volver al menu sin completar el nivel todavia.
+
+La ayuda en pantalla dice:
+  [F5] completar nivel   [F10] volver sin completar
+
+EXTENSION DE ARCHIVO
+---------------------
+Cada nivel tiene su propio archivo de trabajo:
+  saves/nivel_1.paed
+  saves/nivel_2.paed
+  ...
+
+La extension .paed es la elegida para pseudocodigo del juego.
+bim.sh abre ese archivo al entrar al nivel. Si ya habia contenido
+de una sesion anterior, lo retoma desde donde quedo.
+
+PERSISTENCIA ENTRE SESIONES
+-----------------------------
+  - El codigo escrito → se guarda en saves/nivel_N.paed con Ctrl+S dentro de bim
+  - El progreso (que niveles completaste) → saves/progreso.json via marcar_completado()
+  - Al arrancar el juego, cargar_progreso() lee el JSON y todo vuelve al estado anterior
+
+
+================================================================================
+20. TARJETAS DE NIVEL Y BOTON DE RESET
+================================================================================
+
+OBJETIVO
+--------
+Reemplazar la lista de botones de nivel por tarjetas visuales en grilla,
+mas informativas y con mejor presentacion.
+
+LAYOUT DE LA GRILLA
+--------------------
+Las tarjetas se organizan en filas de 3 columnas centradas en pantalla.
+
+  cols   = 3
+  card_w = 200 px de ancho
+  card_h = 150 px de alto
+  gap_x  = 30 px de separacion horizontal entre tarjetas
+  gap_y  = 25 px de separacion vertical entre filas
+
+  grid_w  = cols * card_w + (cols - 1) * gap_x
+  start_x = (ancho - grid_w) / 2   <- centrado horizontal
+  start_y = 80                      <- margen desde arriba
+
+Para cada tarjeta i:
+  col = i % cols          <- columna (0, 1, 2, 0, 1, 2, ...)
+  row = i / cols          <- fila    (0, 0, 0, 1, 1, 1, ...)
+  cx  = start_x + col * (card_w + gap_x)
+  cy  = start_y + row * (card_h + gap_y)
+
+CONTENIDO DE CADA TARJETA
+---------------------------
+  Borde superior de 4px de alto  <- color segun estado
+  "Nivel N"                       <- numero del nivel
+  Nombre del nivel                <- titulo del nivel
+  [OK] o [BLOQUEADO]              <- estado (solo si aplica)
+  "100 pts"                       <- puntos que da (fijo por ahora)
+
+COLORES SEGUN ESTADO
+---------------------
+  BLOQUEADO:
+    Fondo       RGB(38, 38, 42)
+    Borde sup.  RGB(70, 70, 75)
+    Textos      grises apagados
+    No hover, no click
+
+  COMPLETADO:
+    Fondo       RGB(8, 70, 35)  → RGB(10, 90, 45) en hover
+    Borde sup.  RGB(60, 220, 100)  <- verde vivo
+    Textos      verdes
+    Click funciona (se puede volver a entrar)
+
+  DESBLOQUEADO SIN COMPLETAR:
+    Fondo       RGB(18, 40, 90) → RGB(25, 60, 120) en hover
+    Borde sup.  RGB(60, 130, 255)  <- azul vivo
+    Textos      azules/blancos
+    Click funciona
+
+POSICION DEL BOTON RESETEAR PROGRESO
+--------------------------------------
+Se dibuja debajo de toda la grilla:
+
+  rows_used = (total + cols - 1) / cols   <- cuantas filas hay
+  rbtn_y    = start_y + rows_used * (card_h + gap_y) + 10
+
+  Fondo rojo oscuro RGB(100, 12, 12) → RGB(160, 20, 20) en hover
+  Texto rosa claro  RGB(255, 160, 160)
+
+FUNCION resetear_progreso() - progreso.c
+-----------------------------------------
+Agregada a progreso.c y declarada en progreso.h.
+
+  int resetear_progreso(void) {
+      n_completados = 0;
+      return guardar_progreso(NULL);
+  }
+
+  Pone n_completados en 0 (vacia el array internamente).
+  Llama guardar_progreso(NULL) para sobreescribir el JSON con array vacio.
+  Al instante todos los niveles vuelven al estado inicial:
+    - Solo el nivel 1 queda desbloqueado
+    - Ningun nivel figura como completado
+
+EXTENSION Y PUNTOS
+-------------------
+  Archivos de trabajo:  saves/nivel_N.paed   (extension .paed)
+  Puntos por nivel:     100 pts (fijo, sin logica por ahora)
+  La logica de puntos se agregara en el futuro.
+
+TECLAS EN PANTALLA DE SELECCION
+---------------------------------
+  ESC        → volver al menu principal
+  Click      → entrar al nivel (solo si esta desbloqueado)
+
+
+================================================================================
+21. POMODORO GLOBAL EN BACKGROUND + CURSOR PARPADEANTE
+================================================================================
+
+PROBLEMA ORIGINAL
+------------------
+El pomodoro corria dentro de screenPomodoro() solamente.
+Al salir con ESC, el proceso se mataba y el timer se perdia.
+Ademas las teclas numericas (1-9) y "p", "0" no siempre funcionaban.
+
+SOLUCION: MODULO GLOBAL pomodoro_bg.c / pomodoro_bg.h
+-------------------------------------------------------
+Se creo un modulo separado que maneja el proceso de pomodoro.sh como
+un proceso en segundo plano que vive durante toda la sesion del juego.
+
+Archivos creados:
+  src/pomodoro_bg.h   declaraciones publicas
+  src/pomodoro_bg.c   implementacion: proceso + VT grid + API
+
+La grilla VT se declara como variables globales (no static):
+  char pom_grid[POM_ROWS][POM_COLS];   <- 50 filas x 120 columnas
+  int  pom_row, pom_col;               <- posicion del cursor VT
+
+Al ser globales (extern en el .h), screenPomodoro.c puede leerlas
+directamente para renderizarlas sin necesitar su propia copia.
+
+FUNCIONES DEL MODULO
+---------------------
+  pom_init()
+      Lanza pomodoro.sh en un PTY con forkpty().
+      Si ya esta corriendo (g_pid > 0) no hace nada — llamarla varias
+      veces es seguro.
+      Inicializa la grilla con espacios y el cursor en (0,0).
+
+  pom_cleanup()
+      Envia SIGTERM al proceso hijo y espera con waitpid().
+      Cierra el fd del PTY.
+      Se llama desde main.c al cerrar el juego.
+
+  pom_send(const char *s, int n)
+      Escribe n bytes al PTY del proceso.
+      Asi se mandan teclas al script: "p" para pausar, "0" para detener,
+      digitos para configurar el timer, etc.
+
+  pom_tick()
+      Lee output pendiente del PTY (no bloqueante, O_NONBLOCK).
+      Llama vt_process() para actualizar pom_grid y pom_row/pom_col.
+      Tambien verifica con waitpid(WNOHANG) si el proceso termino.
+      HAY QUE LLAMARLA CADA FRAME desde cada pantalla para evitar que
+      el pipe del OS se llene — si se llena, pomodoro.sh se bloquea.
+
+POR QUE pom_tick() EN CADA PANTALLA
+-------------------------------------
+El PTY tiene un buffer en el kernel. pomodoro.sh escribe en ese buffer.
+Si nadie lo lee (porque estamos en otro screen y no llamamos read()),
+el buffer se llena y el proceso se cuelga esperando que alguien lea.
+pom_tick() hace ese read() cada frame, vaciando el buffer aunque no
+estemos mostrando el pomodoro en pantalla.
+
+FLUJO ENTRE PANTALLAS
+----------------------
+  main.c
+    cargar_niveles(...)
+    cargar_progreso(...)
+    // NO se llama pom_init() aqui — se llama lazy desde screenPomodoro
+
+  screenPomodoro()
+    pom_init()         <- lanza el proceso la primera vez
+    loop:
+      pom_tick()       <- lee output
+      render pom_grid  <- muestra en pantalla
+      SDL_TEXTINPUT → pom_send()   <- manda teclas al script
+
+  screenMenu()  (usuario sale del pomodoro con ESC)
+    proceso SIGUE CORRIENDO
+    loop:
+      pom_tick()       <- sigue vaciando el pipe
+      p → pom_send("p", 1)
+      0 → pom_send("0", 1)
+
+  screenLvLs() / screenEditorLvl()
+    loop:
+      pom_tick()
+      p → pom_send("p", 1)     (en lvls)
+      0 → pom_send("0", 1)     (en lvls)
+      Ctrl+P → pom_send("p")   (en bim, para no chocar con tipeo)
+      Ctrl+0 → pom_send("0")   (en bim)
+
+  main.c al salir:
+    pom_cleanup()      <- mata el proceso limpiamente
+
+TECLAS DE CONTROL DEL POMODORO POR PANTALLA
+--------------------------------------------
+  screenPomodoro (dentro del timer):
+    Cualquier SDL_TEXTINPUT → se manda directo al script
+    Digitos 1-9             → configuran el timer
+    p                       → pausa / reanuda
+    0                       → detiene
+    Enter, Backspace        → tambien se mandan
+
+  screenMenu / screenLvLs:
+    p  → pom_send("p", 1)   pausa / reanuda
+    0  → pom_send("0", 1)   detiene
+
+  screenEditorLvl (bim, donde se tipea pseudocodigo):
+    Ctrl+P → pausa (para no interferir con 'p' en el editor)
+    Ctrl+0 → detiene
+
+POR QUE SDL_StartTextInput() PARA LOS NUMEROS
+----------------------------------------------
+En SDL2, SDL_TEXTINPUT no siempre se genera para todos los caracteres
+si no se llama explicitamente SDL_StartTextInput().
+Sin ella, teclas como "9" pueden no generar el evento TEXTINPUT
+en algunos sistemas/configuraciones.
+Se llama al entrar a screenPomodoro y SDL_StopTextInput() al salir.
+
+CURSOR PARPADEANTE VERDE
+-------------------------
+Tanto screenPomodoro como screenEditorLvl (bim) dibujan un cursor
+que parpadea 1 vez por segundo usando SDL_GetTicks():
+
+  if ((SDL_GetTicks() / 500) % 2 == 0) {
+      // dibujar cursor
+  }
+
+SDL_GetTicks() devuelve milisegundos desde que SDL arranco.
+Dividido 500 → cambia cada 500ms.
+Modulo 2 → alterna entre 0 y 1 → visible / invisible.
+
+El cursor es un SDL_Rect del tamano de un caracter (char_w x line_h)
+dibujado con SDL_BLENDMODE_BLEND y alpha 180 (semitransparente)
+para que se vea el caracter debajo si hay uno.
+
+Color: RGB(0, 255, 80) — verde vivo.
+
+  screenPomodoro:  posicion = margin_x + pom_col * char_w
+                              margin_y + 30 + pom_row * line_h
+
+  screenEditorLvl: posicion = panel_x + 4 + bim_col * char_w
+                              bim_row * line_h
+                   Se dibuja dentro del SDL_RenderSetClipRect del panel bim.
+
+MAKEFILE
+---------
+Se agrego src/pomodoro_bg.c a la lista SRC para que se compile.
+
+
+================================================================================
+22. TRANSICIONES DE PANTALLA: CAMBIO DE CANAL Y ENCENDIDO DE TELE
+================================================================================
+
+DONDE VIVEN LAS FUNCIONES
+---------------------------
+Ambas funciones se declararon en src/ui.h y se implementaron en src/ui.c.
+Se llaman desde src/main.c.
+
+Se agregaron estos includes a ui.c para que compilen:
+  #include <stdlib.h>   <- rand(), srand()
+  #include <math.h>     <- sinf()
+
+================================================================================
+FUNCION 1: screen_transition() - efecto de cambio de canal
+================================================================================
+
+QUE HACE
+---------
+Simula el desgarro de imagen de una tele vieja al cambiar de canal.
+Dura aproximadamente 300ms (22 frames x 14ms).
+Se llama cada vez que el juego cambia de una pantalla a otra.
+
+CUANDO SE LLAMA (main.c)
+--------------------------
+  Menu → cualquier pantalla:
+    opcion = screenMenu(...)
+    screen_transition(...)    <- se llama aqui, despues de que el menu devuelve
+    switch(opcion) { ... }    <- recien entonces arranca la nueva pantalla
+
+  Seleccion de niveles → editor:
+    int nivel = screenLvLs(...)
+    screen_transition(...)    <- se llama si hay nivel valido
+    screenLvLEditor(...)
+
+  Cualquier pantalla → menu (al volver):
+    Variable `primera_vez` en el do-while.
+    La primera iteracion NO llama la transicion (el juego esta arrancando).
+    Desde la segunda iteracion en adelante SI:
+      if (!primera_vez) screen_transition(...)
+      primera_vez = 0
+      opcion = screenMenu(...)
+
+COMO CAPTURA EL FRAME ACTUAL
+------------------------------
+Al inicio de screen_transition(), antes de distorsionar, se captura
+el ultimo frame renderizado usando dos funciones de SDL2:
+
+  SDL_CreateRGBSurface(0, ancho, alto, 32,
+      0x00FF0000, 0x0000FF00, 0x000000FF, 0xFF000000)
+
+  Crea una superficie (imagen en RAM) del tamaño de la ventana.
+  Los cuatro ultimos parametros son mascaras de bits para R, G, B y A:
+    0x00FF0000 = los bits 16-23 son el canal rojo
+    0x0000FF00 = los bits 8-15 son el canal verde
+    0x000000FF = los bits 0-7  son el canal azul
+    0xFF000000 = los bits 24-31 son el canal alpha
+  Esto define como SDL interpreta cada pixel de 32 bits en memoria.
+
+  SDL_RenderReadPixels(renderer, NULL,
+      SDL_PIXELFORMAT_ARGB8888, surf->pixels, surf->pitch)
+
+  Copia los pixeles actuales del renderer (backbuffer) a la superficie.
+  NULL como segundo parametro significa "toda la pantalla".
+  ARGB8888 es el formato: 1 byte por canal, en orden A-R-G-B.
+  surf->pitch es el numero de bytes por fila (ancho * 4 bytes en este caso).
+
+  SDL_CreateTextureFromSurface(renderer, surf)
+
+  Convierte la superficie (en RAM) en una textura (en GPU).
+  Esto permite usarla con SDL_RenderCopy() para dibujarla despues.
+  La superficie se libera con SDL_FreeSurface() una vez creada la textura.
+
+LOGICA DEL EFECTO FRAME A FRAME
+---------------------------------
+Hay un loop de 22 frames. Cada frame calcula:
+
+  float t = (float)f / (float)FRAMES   <- avance de 0.0 a 1.0
+
+PASO 1: DESGARRO HORIZONTAL (toda la animacion)
+  Se divide la pantalla en bandas horizontales de alto variable:
+    int band_h = 3 + rand() % 6       <- entre 3 y 8 pixeles de alto
+
+  Para cada banda:
+    - Se calcula un desplazamiento horizontal aleatorio (shift en X)
+    - La intensidad maxima del shift sigue la curva sinf(t * PI) * 120
+      Esto hace que el desplazamiento arranque en 0, llegue a 120px
+      en el medio de la animacion, y vuelva a 0 al final.
+      Usando seno de 0 a PI se obtiene una campana simetrica.
+    - Si rand() % 8 == 0, la banda se omite completamente (queda negra)
+      Esto crea las "rasgaduras" negras entre las bandas desplazadas.
+
+  La banda se dibuja con SDL_RenderCopy usando:
+    src: el rectangulo de la textura capturada (posicion original)
+    dst: el rectangulo destino desplazado en X
+
+PASO 2: RUIDO ESTATICO (intensidad crece con t)
+  int n_ruido = (int)(t * 30)    <- de 0 a 30 lineas
+  Para cada linea de ruido:
+    - Y aleatorio dentro de la pantalla
+    - Alto de 1 a 3 pixeles
+    - Ancho aleatorio (entre la mitad y toda la pantalla)
+    - X de inicio aleatorio
+    - Brillo aleatorio (Uint8 entre 0 y 255)
+    - Alpha fijo entre 180 y 255 (bastante visible)
+  Se usa BLENDMODE_BLEND para superponerlo sin tapar todo.
+
+PASO 3: LINEA DE SINCRONIZACION (toda la animacion)
+  int sync_y = (int)(t * alto)
+  Una linea de 2px que barre de arriba a abajo durante toda la animacion.
+  Color: RGB(200, 200, 220) alpha 60 (sutil, casi transparente).
+  Simula la linea de sincronismo vertical de los tubos catodicos.
+
+PASO 4: FLASH BLANCO AL FINAL (frames 15-22)
+  if (t > 0.72f):
+    float flash = (t - 0.72f) / 0.28f    <- 0 a 1 en el tramo final
+    alpha = flash * flash * 255           <- cuadratico: sube lento, termina rapido
+  Un rectangulo blanco cubre toda la pantalla con ese alpha.
+  El cuadrado de flash hace que sea casi invisible hasta casi el final,
+  y luego sube muy rapido: simula el "corte" de canal.
+
+LIMPIEZA
+---------
+SDL_DestroyTexture(snap) al final del loop.
+Si no se liberara, quedaria en memoria de GPU hasta cerrar el juego.
+
+================================================================================
+FUNCION 2: screen_poweron() - efecto de tele encendiendose
+================================================================================
+
+QUE HACE
+---------
+Simula el encendido de un monitor CRT. Se llama UNA SOLA VEZ al arrancar
+el juego, antes de que aparezca el menu principal.
+Dura aproximadamente 1.5 segundos en total.
+
+CUANDO SE LLAMA (main.c)
+--------------------------
+  screen_poweron(renderer, ancho, alto);   <- antes del do-while del menu
+  ...
+  do { opcion = screenMenu(...); ... } while (...);
+
+No recibe ni devuelve nada relacionado al menu — es animacion pura.
+El menu arranca normalmente despues de que esta funcion termina.
+
+FASE 1: APARECE LA LINEA (25 frames x 14ms = ~350ms)
+------------------------------------------------------
+Simula el primer momento cuando el CRT enciende: el haz de electrones
+arranca en el centro y forma una linea brillante.
+
+  float p = (float)f / 24.0f     <- avance de 0 a 1
+
+La linea crece en ancho usando p^2 (aceleracion cuadratica):
+  int lw = (int)(p * p * ancho)  <- empieza angosta, crece rapido al final
+  int lx = (ancho - lw) / 2      <- siempre centrada horizontalmente
+
+El alto de la linea tambien crece ligeramente:
+  int lh = 2 + (int)(p * 5)      <- de 2 a 7 pixeles de alto
+
+HALO (bloom):
+  Se dibuja en un loop de g = 10 hasta 1.
+  Cada iteracion dibuja un rectangulo mas grande y mas transparente
+  alrededor del nucleo de la linea.
+  Uint8 a = (Uint8)(40.0f * p / g)
+  Cuando g es grande, el rectangulo es grande y muy transparente.
+  Cuando g es 1, es pequeno y mas visible.
+  Esto crea el efecto de brillo difuso ("bloom") sin shaders.
+
+Nucleo de la linea:
+  Color blanco, alpha = 220 * p (arranca invisible, termina casi opaco).
+  Se dibuja encima del halo.
+
+FASE 2: SE ABRE VERTICALMENTE (51 frames x 14ms = ~700ms)
+----------------------------------------------------------
+La linea se expande hacia arriba y hacia abajo como dos cortinas
+que se abren, revelando el fondo de la pantalla.
+
+  float p  = (float)f / 50.0f
+  float ep = 1.0f - (1.0f - p) * (1.0f - p)   <- ease-out
+
+Que es ease-out:
+  Con p lineal, la expansion seria constante.
+  Con ease-out, arranca rapido y frena al llegar al borde.
+  La formula (1 - (1-p)^2) produce esa curva:
+    p=0.0 → ep=0.00
+    p=0.5 → ep=0.75   <- ya recorrio 75% con solo 50% del tiempo
+    p=1.0 → ep=1.00
+
+  int half_h = (int)(ep * (alto / 2))
+  int top    = cy - half_h     <- borde superior de la zona visible
+  int bot    = cy + half_h     <- borde inferior
+
+Lo que se dibuja cada frame:
+  1. SDL_RenderClear (negro total)
+  2. Zona visible: rect verde muy oscuro RGB(8,14,8) entre top y bot
+  3. Ruido aleatorio: 1 linea por frame (rand() % 2) dentro de la zona
+  4. Halo en los bordes: loop g=8..0, rectangulos de 1px con alpha decreciente
+  5. Nucleo de los bordes: 2 lineas de 2px, color RGB(220,255,220) alpha 200
+  6. Barras negras: dos rects solidos que cubren top y bot (lo que no se ve)
+     Las barras negras se dibujan al final para tapar cualquier pixel
+     que el halo haya pintado fuera de la zona visible.
+
+FASE 3: PARPADEOS Y ESTABILIZACION (31 frames x 16ms = ~480ms)
+----------------------------------------------------------------
+La pantalla ya es completa, pero un CRT real tarda en estabilizarse.
+Se simula con parpadeos y ruido que se van atenuando.
+
+  float p = (float)f / 30.0f      <- avance de 0 a 1
+  int parpadeo = (f % 4 == 0 && p < 0.6f) ? 50 : 0
+
+  f % 4 == 0: cada 4 frames hay un parpadeo (cada ~64ms)
+  p < 0.6f: solo en la primera mitad de esta fase
+  El parpadeo sube el brillo del fondo de RGB(8,14,8) a RGB(58,64,58)
+
+  Ruido:
+    int n_ruido = (int)((1.0f - p) * 20)   <- de 20 lineas a 0
+    A medida que p crece, hay menos lineas de ruido.
+    Al final de la fase (p=1) el ruido desaparece completamente.
+
+Al terminar esta fase, la pantalla queda en fondo verde oscuro
+sin ruido y sin parpadeos — el color base del menu.
+Entonces la funcion retorna y el menu empieza a renderizarse normalmente.
+
+RESUMEN DE TIEMPOS
+-------------------
+  Fase 1 (linea brillante):    25 frames x 14ms = ~350ms
+  Fase 2 (apertura vertical):  51 frames x 14ms = ~714ms
+  Fase 3 (estabilizacion):     31 frames x 16ms = ~496ms
+  TOTAL:                       ~1.56 segundos
+
+
+================================================================================
+23. CROSS-COMPILACION PARA WINDOWS Y GITHUB ACTIONS
+================================================================================
+
+PROBLEMA
+---------
+El juego corre en Linux. Para que corra en Windows hay que producir un .exe.
+Esto se hace desde Linux usando un cross-compilador — un compilador que corre
+en Linux pero genera codigo ejecutable para Windows.
+
+QUE ES CROSS-COMPILAR
+-----------------------
+Compilar normalmente: Linux genera codigo → corre en Linux.
+Cross-compilar:       Linux genera codigo → corre en Windows.
+
+El compilador usado es mingw-w64 (Minimalist GNU for Windows).
+El ejecutable que usa el compilador se llama:
+  x86_64-w64-mingw32-gcc
+  └─ x86_64   = arquitectura de 64 bits
+  └─ w64      = Windows 64-bit
+  └─ mingw32  = familia de herramientas MinGW
+  └─ gcc      = GNU C Compiler
+
+Instalacion en Arch/Manjaro (el sistema del proyecto):
+  pacman -S mingw-w64-gcc
+
+POR QUE pty.h NO EXISTE EN WINDOWS
+-------------------------------------
+pty.h es una libreria POSIX (Unix/Linux).
+Define forkpty(), que crea un pseudo-terminal (PTY).
+Un PTY es un par de descriptores de archivo que simulan una terminal real.
+Esto se usa para correr pomodoro.sh y bim.sh dentro del juego.
+
+Windows no tiene el concepto de PTY de Unix. Tiene su propia API de consola
+(ConPTY) pero es completamente diferente y no es compatible.
+
+Por eso, en vez de eliminar el codigo que usa pty.h, se lo envuelve con:
+  #ifndef _WIN32
+    // codigo que usa pty.h, forkpty, fork, exec, etc.
+  #else
+    // stub vacio o pantalla de "no disponible"
+  #endif
+
+_WIN32 es una macro que el compilador de Windows define automaticamente.
+Cuando se compila con mingw-w64, _WIN32 esta definido → el bloque Linux
+no se compila → no se busca pty.h → no hay error.
+Cuando se compila con clang en Linux, _WIN32 NO esta definido → el bloque
+Linux si se compila → todo funciona igual que antes.
+
+ARCHIVOS MODIFICADOS PARA COMPATIBILIDAD
+------------------------------------------
+  src/main.c
+    - Se removieron los includes de pty.h, unistd.h, fcntl.h, dirent.h
+      que main.c incluia pero no usaba directamente (herencia del codigo anterior).
+    - Se cambio la firma de main() de:
+        int main(void)
+      a:
+        int main(int argc, char *argv[])
+      porque SDL2 en Windows redefine main() internamente (SDL_main.h) y
+      necesita que reciba argc y argv. Sin esto el linker da error de
+      "conflicting types for SDL_main".
+
+  src/pomodoro_bg.c
+    Todo el codigo de forkpty, vt_process, vt_putchar, pom_init, pom_cleanup,
+    pom_send, pom_tick se envolvio en #ifndef _WIN32 ... #else ... #endif.
+    En Windows, las cuatro funciones publicas son stubs vacios:
+      void pom_init(void)    { }
+      void pom_cleanup(void) { }
+      void pom_send(...)     { }
+      void pom_tick(void)    { }
+
+  src/screenEditorLvl.c
+    Los includes de unistd.h, fcntl.h, pty.h, sys/wait.h se envolvieron en
+    #ifndef _WIN32.
+    La funcion screenLvLEditor se duplico con #ifdef _WIN32 ... #else ... #endif:
+      En Windows: muestra el titulo del nivel y "Editor no disponible en Windows"
+      En Linux:   todo el codigo con forkpty y bim.sh funciona igual
+
+  src/ui.c
+    Se agrego #include <stdio.h> que Windows requeria explicitamente
+    para snprintf() (en Linux estaba disponible a traves de otros headers).
+
+QUE FUNCIONA EN WINDOWS
+------------------------
+  Menu principal con lluvia de bits        SI
+  Transicion de encendido de tele          SI
+  Transicion de cambio de canal            SI
+  Seleccion de niveles con tarjetas        SI
+  Niveles bloqueados / completados         SI
+  Resetear progreso                        SI
+  Pantalla de documentacion (DOC)          SI
+  Pantalla de soluciones                   SI
+  Editor de nivel (bim.sh)                 NO (stub: muestra mensaje)
+  Pomodoro (pomodoro.sh)                   NO (stub: no hace nada)
+
+SDL2 Y SDL2_ttf PARA WINDOWS
+------------------------------
+SDL2 y SDL2_ttf proveen paquetes precompilados especificos para MinGW.
+Se descargan de GitHub Releases de cada libreria:
+  SDL2-devel-2.30.9-mingw.tar.gz
+  SDL2_ttf-devel-2.22.0-mingw.tar.gz
+
+Se extraen y se copian a la carpeta win-libs/ del proyecto:
+  win-libs/include/SDL2/   <- headers (.h) para compilar
+  win-libs/lib/            <- librerias de importacion (.dll.a) para linkear
+  win-libs/dll/            <- DLLs que van junto al .exe para ejecutar
+
+La carpeta win-libs/ esta en .gitignore — no se sube al repo porque
+son binarios de terceros. GitHub Actions los descarga en cada build.
+
+Las librerias de importacion (.dll.a):
+  libSDL2.dll.a     -> le dice al linker que al ejecutarse busque SDL2.dll
+  libSDL2main.a     -> provee la implementacion de WinMain que SDL2 requiere
+  libSDL2_ttf.dll.a -> le dice al linker que busque SDL2_ttf.dll
+
+Sin SDL2.dll y SDL2_ttf.dll en la misma carpeta que el .exe, Windows
+no puede ejecutar el programa (falta la libreria dinamica).
+
+FLAGS DE COMPILACION PARA WINDOWS
+-----------------------------------
+  -I win-libs/include   <- donde buscar los headers SDL2
+  -L win-libs/lib       <- donde buscar las librerias de importacion
+  -lmingw32             <- libreria base de MinGW (incluye WinMain)
+  -lSDL2main            <- adaptador main() de SDL2 para Windows
+  -lSDL2                <- la libreria SDL2
+  -lSDL2_ttf            <- la libreria SDL2_ttf
+  -lm                   <- matematica (sinf, etc.)
+  -mwindows             <- genera un ejecutable de ventana en vez de consola
+                           sin esto se abre una ventana de cmd negra atras
+
+TARGET EN EL MAKEFILE
+----------------------
+Se agrego el target `windows` al Makefile:
+  make          <- compila el binario Linux (aed)
+  make windows  <- cross-compila el ejecutable Windows (PseudoGames.exe)
+  make clean    <- borra todos los .o y binarios de ambas plataformas
+
+Los archivos objeto de Windows se llaman *.win.o para no chocar con
+los *.o de Linux cuando se usan ambos targets.
+
+GITHUB ACTIONS: BUILD AUTOMATICO
+----------------------------------
+Archivo: .github/workflows/build-windows.yml
+
+GitHub Actions es un sistema de CI/CD (Continuous Integration / Deployment).
+CI = cada vez que subis codigo, se ejecutan tareas automaticas en la nube.
+
+El workflow se activa en cada push a la rama aed_pseudo.
+Corre en una maquina virtual ubuntu-latest en los servidores de GitHub.
+
+Pasos del workflow:
+  1. checkout: descarga el codigo del repo
+  2. instala mingw-w64
+  3. descarga SDL2-devel mingw
+  4. descarga SDL2_ttf-devel mingw
+  5. prepara win-libs/ (mismo proceso que se hizo manualmente)
+  6. make windows → genera PseudoGames.exe
+  7. empaqueta en un .zip junto con las DLLs, assets, data y scripts
+  8. sube el .zip como GitHub Release con tag "latest"
+
+El tag "latest" siempre se sobreescribe → hay una sola Release que
+siempre contiene la version mas reciente del ejecutable.
+
+Eso es el "auto-update": no hay codigo dentro del juego que se actualice
+solo, sino que cada push automaticamente reemplaza el archivo descargable.
+El jugador descarga el .zip de la Release de GitHub cuando quiere la ultima version.
+
+COMO DESCARGAR EL .EXE
+------------------------
+  1. Ir a https://github.com/BrianKalbermatter/VimMon/releases
+  2. Descargar PseudoGames-Windows.zip
+  3. Extraer el zip (mantener la estructura de carpetas)
+  4. Ejecutar PseudoGames.exe — SDL2.dll y SDL2_ttf.dll deben estar
+     en la misma carpeta que el .exe
+
+FIRMA CORRECTA DE main() PARA SDL2 EN WINDOWS
+------------------------------------------------
+SDL2 en Windows redefine main() via una macro en SDL_main.h:
+  #define main SDL_main
+Esto hace que tu main() se llame SDL_main() internamente.
+SDL2 provee su propio WinMain() que inicializa Windows y llama SDL_main().
+Para que esto funcione, SDL_main debe tener la firma:
+  int SDL_main(int argc, char *argv[])
+Si main() esta declarado como main(void), el compilador dice
+"conflicting types for SDL_main" y falla el build.
+La solucion es siempre usar int main(int argc, char *argv[]).
+En Linux no hace diferencia — argc y argv simplemente se ignoran.
+
+
+================================================================================
+24. BOTON DE CONFIGURACION Y screenConfig
+================================================================================
+
+DONDE VIVE
+-----------
+  src/screenMenu.c    <- boton engranaje dibujado en el menu
+  src/screenConfig.c  <- pantalla de configuracion (archivo nuevo)
+  src/ui.h            <- declaracion de screenConfig()
+  src/main.c          <- case 7 en el switch de opciones
+  Makefile            <- agregado src/screenConfig.c a SRC
+
+BOTON ENGRANAJE EN EL MENU (screenMenu.c)
+------------------------------------------
+Se dibuja al final del loop de render, despues de los botones principales.
+
+Posicion: esquina inferior derecha.
+  int gear_size = 48             <- cuadrado de 48x48 px
+  int gear_x    = ancho - 48 - 18   <- 18px del borde derecho
+  int gear_y    = alto  - 48 - 18   <- 18px del borde inferior
+
+Deteccion de hover:
+  gear_hover = (mx >= gear_x && mx <= gear_x + gear_size &&
+                my >= gear_y && my <= gear_y + gear_size)
+
+Render del boton:
+  Fondo: SDL_BLENDMODE_BLEND, RGB(30,30,30) normal / RGB(80,80,80) hover
+  Borde: RGB(100,100,100) normal / RGB(200,200,200) hover
+  Texto "cfg" centrado dentro del cuadrado usando TTF_SizeUTF8 para
+  calcular la posicion exacta igual que los botones del menu.
+
+Click: retorna 7 — un valor nuevo que no usaba ninguna opcion anterior.
+  (los botones del menu devuelven 1-6 y 0 para salir)
+
+En main.c se agrego:
+  case 7: screenConfig(renderer, fuente, ancho, alto, ventana); break;
+
+screenConfig recibe `ventana` como parametro adicional porque necesita
+llamar SDL_SetWindowFullscreen() que requiere el SDL_Window*.
+
+ESTRUCTURA DE OPCIONES (screenConfig.c)
+-----------------------------------------
+Se definio un struct local para representar cada opcion:
+
+  typedef struct {
+      const char *nombre;       <- nombre visible de la opcion
+      const char *valores[4];   <- array de posibles valores (strings)
+      int n_valores;            <- cuantos valores tiene
+      int seleccion;            <- indice del valor actualmente elegido
+  } OpcionConfig;
+
+Las opciones se guardan en un array local:
+  OpcionConfig opciones[] = {
+      { "Pantalla completa", {"Si", "No"},             2, 0 },
+      { "Velocidad lluvia",  {"Lenta","Normal","Rapida"}, 3, 1 },
+      { "Brillo",            {"Bajo","Normal","Alto"},    3, 1 },
+  };
+
+  int n_opciones = sizeof(opciones) / sizeof(opciones[0]);
+
+sizeof(opciones) / sizeof(opciones[0]) es la forma estandar en C de
+calcular cuantos elementos tiene un array cuando no lo sabes de memoria.
+  sizeof(opciones)      = bytes totales del array completo
+  sizeof(opciones[0])   = bytes de un solo elemento
+  division              = cantidad de elementos
+
+Asi si en el futuro agregas mas opciones al array, n_opciones
+se actualiza automaticamente sin tener que cambiar ningun numero.
+
+NAVEGACION CON TECLADO
+------------------------
+  SDLK_UP / SDLK_DOWN     <- mueve `seleccionada` (la fila activa)
+                              con wrap: si llega a -1 va al ultimo,
+                              si llega a n_opciones va al primero
+  SDLK_LEFT               <- retrocede en los valores de la opcion activa
+  SDLK_RIGHT / SDLK_RETURN <- avanza en los valores de la opcion activa
+  SDLK_ESCAPE             <- sale de la pantalla
+
+NAVEGACION CON MOUSE
+---------------------
+  Hover sobre una fila     <- cambia `seleccionada` a esa fila
+  Click en el boton "<"    <- retrocede el valor de esa opcion
+  Click en el boton ">"    <- avanza el valor de esa opcion
+
+Los botones < y > se detectan con rectangulos de click manuales,
+igual que los botones del menu.
+
+RENDER DE CADA OPCION
+----------------------
+Para cada fila i:
+  1. Si es la fila seleccionada o hay hover: dibuja un rect de fondo
+     mas claro detras de toda la fila para resaltarla
+  2. Nombre de la opcion a la izquierda del panel
+  3. A la derecha: "<" + valor actual centrado en 120px + ">"
+     El valor se centra usando:
+       TTF_SizeUTF8(fuente, val_actual, &vw, NULL)
+       x = vx + 30 + (120 - vw) / 2
+
+OPCION QUE FUNCIONA EN TIEMPO REAL: PANTALLA COMPLETA
+------------------------------------------------------
+  SDL_SetWindowFullscreen(ventana, SDL_WINDOW_FULLSCREEN_DESKTOP)
+  <- activa pantalla completa
+
+  SDL_SetWindowFullscreen(ventana, 0)
+  <- vuelve a modo ventana
+
+Se aplica tanto al cambiar con teclado como al hacer click con mouse.
+Es la unica opcion que tiene efecto real por ahora.
+Las otras (velocidad lluvia, brillo) guardan el valor seleccionado
+en el struct pero todavia no estan conectadas a logica — estan listas
+para cuando se quiera implementar.
+
+PANEL CENTRAL
+--------------
+La pantalla de config dibuja un panel centrado sobre un fondo oscuro:
+  panel_w = 520, panel_h = 400
+  panel_x = (ancho - panel_w) / 2
+  panel_y = (alto  - panel_h) / 2
+
+Fondo del panel: SDL_BLENDMODE_BLEND, RGB(20,20,35) alpha 220
+Borde del panel: RGB(60,60,100) solido
+
+Titulo "Configuracion" arriba con linea divisoria debajo.
+Ayuda de controles en la ultima linea del panel.
+
+COMO AGREGAR MAS OPCIONES EN EL FUTURO
+----------------------------------------
+Solo hay que agregar una linea al array opciones[]:
+  { "Nueva opcion", {"valor1", "valor2"}, 2, 0 },
+
+n_opciones se recalcula solo con el sizeof.
+El render es automatico — el loop dibuja todas las opciones del array.
+Para que tenga efecto, agregar el codigo de aplicacion dentro del
+bloque donde se detecta el cambio (despues de SDLK_LEFT/RIGHT o click).
+
+
+================================================================================
+25. PANTALLA DE FEEDBACK Y CONTACTO
+================================================================================
+
+DONDE VIVE
+-----------
+  src/screenFeedback.c   <- pantalla de contacto (archivo nuevo)
+  src/screenConfig.c     <- boton "Feedback" agregado al panel de config
+  src/ui.h               <- declaracion de screenFeedback()
+  Makefile               <- agregado src/screenFeedback.c a SRC
+
+POR QUE GITHUB ISSUES Y NO WHATSAPP O MAIL PERSONAL
+-----------------------------------------------------
+GitHub Issues es la forma estandar de recibir reportes de bugs en software:
+  - El reporte queda registrado con fecha, descripcion y quien lo manda
+  - Se puede responder, cerrar y etiquetar (bug, sugerencia, etc.)
+  - Otros usuarios ven si su bug ya fue reportado — no se duplican
+  - Es gratis y el repo ya existe en GitHub
+
+WhatsApp: demasiado personal, no escala, no queda registro ordenado.
+Mail personal: mezcla mensajes del juego con lo personal.
+Mail dedicado: buena opcion secundaria para los que no tienen GitHub.
+
+CONTACTO CONFIGURADO
+---------------------
+  GitHub Issues: github.com/BrianKalbermatter/VimMon/issues
+  Mail:          ctejant@gmail.com
+
+DISEÑO: SIN CUADRADO, OVERLAY SEMITRANSPARENTE
+------------------------------------------------
+A diferencia de otras pantallas, screenFeedback no dibuja un panel/cuadrado.
+En su lugar dibuja un overlay negro semitransparente sobre TODA la pantalla:
+
+  SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
+  SDL_SetRenderDrawColor(renderer, 0, 0, 0, 190);
+  SDL_RenderFillRect(renderer, NULL);   <- NULL = toda la pantalla
+
+El alpha 190 (de 255) deja ver ligeramente lo que habia detras.
+El texto flota centrado sobre ese fondo oscuro — sin bordes ni marcos.
+
+CENTRADO HORIZONTAL DE CADA ELEMENTO
+--------------------------------------
+Cada texto se centra midiendo su ancho con TTF_SizeUTF8:
+
+  int tw; TTF_SizeUTF8(fuente, texto, &tw, NULL);
+  int x = cx - tw/2 - 10;   <- cx es ancho/2 (centro de pantalla)
+
+El -10 compensa el padding interno de dibujadoTextoColor (que agrega +10 al x).
+Asi cada linea queda perfectamente centrada sin importar su largo.
+
+LINK CLICKEABLE CON SDL_OpenURL
+---------------------------------
+SDL_OpenURL() es una funcion de SDL2 (disponible desde SDL 2.0.14) que
+abre una URL en el navegador por defecto del sistema operativo.
+
+  SDL_OpenURL("https://github.com/BrianKalbermatter/VimMon/issues");
+
+En Linux usa xdg-open internamente.
+En Windows usa ShellExecute internamente.
+El juego NO se pausa ni se cierra — el navegador abre en paralelo
+y el game loop sigue corriendo normalmente.
+
+DETECCION DE CLICK EN EL LINK
+-------------------------------
+El link no es un widget de SDL — es solo texto renderizado.
+Para detectar si el usuario hizo click encima se usa un SDL_Rect
+que se actualiza cada frame con la posicion y tamaño real del texto:
+
+  int tw, th;
+  TTF_SizeUTF8(fuente, URL_ISSUES, &tw, &th);
+  link_rect.x = lx + 10;   <- x real donde empieza el texto (con padding)
+  link_rect.y = cy + 12;
+  link_rect.w = tw;
+  link_rect.h = th;
+
+Luego al detectar click:
+  if (click_x >= link_rect.x && click_x <= link_rect.x + link_rect.w &&
+      click_y >= link_rect.y && click_y <= link_rect.y + link_rect.h)
+      SDL_OpenURL(URL_ISSUES);   <- abre el navegador, NO cierra el juego
+
+Si el click fue fuera del link → cierra la pantalla de feedback.
+
+SUBRAYADO DEL LINK
+-------------------
+SDL2 no tiene texto con subrayado nativo.
+Se dibuja manualmente con SDL_RenderDrawLine:
+
+  SDL_RenderDrawLine(renderer,
+      link_rect.x, link_rect.y + th + 1,        <- inicio: debajo del texto
+      link_rect.x + link_rect.w, link_rect.y + th + 1);  <- fin
+
+th es el alto del texto en pixeles — la linea queda exactamente 1px
+debajo de la ultima fila del texto.
+
+ESTADOS DEL LINK (hover / normal)
+-----------------------------------
+  Normal:  RGB(60, 160, 255)   <- azul medio
+  Hover:   RGB(120, 220, 255)  <- celeste claro
+
+Al hacer hover ademas aparece:
+  - Fondo suave semitransparente detras del link (alpha 30)
+  - Texto "click para abrir en el navegador" debajo del link
+
+La deteccion de hover usa SDL_GetMouseState(&mx, &my) cada frame
+y compara con link_rect igual que el click.
+
+LOGICA DE CIERRE
+-----------------
+  Click SOBRE el link  → SDL_OpenURL() pero NO cierra — el juego sigue
+  Click FUERA del link → corriendo = 0 → vuelve a screenConfig
+  ESC                  → corriendo = 0 → vuelve a screenConfig
+
+BOTON "FEEDBACK" EN screenConfig
+----------------------------------
+Boton pequeno en la esquina inferior derecha del panel de configuracion.
+
+  fb_w = 130, fb_h = 28
+  fb_x = panel_x + panel_w - 130 - 16
+  fb_y = panel_y + panel_h - 28  - 10
+
+Al hacer click llama screenFeedback() directamente desde el loop de
+screenConfig, sin pasar por main.c. Es una sub-pantalla interna.
+
+VERSION DEL JUEGO
+------------------
+  PseudoGames v0.1 - aed_pseudo
+
+Para actualizar la version: cambiar el string en src/screenFeedback.c.
+
+
+================================================================================
+SECCION 26 — ARANDELA (ENGRANAJE) DIBUJADA CON SDL2 PURO
+================================================================================
+
+OBJETIVO
+---------
+Reemplazar el boton de configuracion que mostraba el texto "cfg" por un
+engranaje real dibujado con primitivas SDL2, sin ninguna imagen externa.
+
+FUNCION: dibujarArandela()
+---------------------------
+Ubicacion: src/ui.c  |  Declaracion: src/ui.h
+
+  void dibujarArandela(SDL_Renderer *renderer,
+                       int cx, int cy,
+                       int radio,
+                       SDL_Color color,
+                       SDL_Color bg);
+
+Parametros:
+  cx, cy  → centro del engranaje en pantalla
+  radio   → radio exterior (punta de los dientes)
+  color   → color del metal (cambia en hover)
+  bg      → color del agujero central (debe coincidir con el fondo)
+
+COMO ESTA CONSTRUIDA
+---------------------
+La funcion dibuja en tres pasos con SDL_RenderDrawLine:
+
+  1. CUERPO CIRCULAR
+     Radio = radio * 0.64 (interior de los dientes).
+     Relleno con scanlines horizontales:
+       for y de -rb a +rb:
+         xw = sqrt(rb*rb - y*y)
+         SDL_RenderDrawLine(cx-xw, cy+y, cx+xw, cy+y)
+
+  2. DIENTES (8 piezas)
+     Cada diente es un trapecio con 4 esquinas:
+       - 2 puntos en el radio del cuerpo (r_body)
+       - 2 puntos en el radio exterior   (r_ext)
+     Los angulos de cada diente se calculan con:
+       ang = i * 2*PI / 8
+       a1 = ang - 0.25   (borde izquierdo del diente)
+       a2 = ang + 0.25   (borde derecho del diente)
+     El trapecio se rellena con fill_quad() — una funcion estatica
+     que hace scanlines sobre un cuadrilatero convexo de 4 puntos.
+
+  3. AGUJERO CENTRAL
+     Radio = radio * 0.22.
+     Se pinta con el color bg (el fondo detras del engranaje).
+     Mismo metodo de scanlines que el cuerpo.
+
+FUNCION AUXILIAR fill_quad()
+-----------------------------
+Estatica (solo visible en ui.c). Recibe SDL_Point p[4] y rellena el
+cuadrilatero convexo con scanlines horizontales. Para cada fila Y
+encuentra los dos extremos X buscando las intersecciones con cada arista.
+
+  for cada arista (p[k] -> p[k+1]):
+    si la fila Y cruza la arista → calcular x de interseccion
+    actualizar xmin y xmax
+  SDL_RenderDrawLine(xmin, y, xmax, y)
+
+No requiere SDL_gfx ni ninguna libreria externa.
+
+INTEGRACION EN screenMenu.c
+-----------------------------
+El hitbox del boton es el mismo cuadrado 48x48 de antes.
+El centro se calcula como:
+  gear_cx = gear_x + gear_size / 2
+  gear_cy = gear_y + gear_size / 2
+
+Se llama con radio = gear_size/2 - 2 (un poco de margen al borde).
+
+Colores:
+  Normal  → {120, 120, 160, 255}  (gris azulado)
+  Hover   → {220, 220, 255, 255}  (casi blanco)
+  Agujero → {10,  10,  14,  255}  (fondo oscuro del menu)
+
+El click sigue devolviendo opcion = 7 hacia main.c → screenConfig().
+
+CORRECCIONES RELACIONADAS EN screenConfig.c
+---------------------------------------------
+1. Espaciado entre opciones: i*80 → i*100, primer item en panel_y+80.
+   El highlight row_bg tambien crece: alto 52 → 62px.
+
+2. Boton Feedback movido FUERA del panel:
+     fb_x = (ancho - fb_w) / 2    (centrado horizontalmente)
+     fb_y = panel_y + panel_h + 18
+
+3. Texto "Feedback" centrado dentro del boton compensando el offset
+   interno de dibujadoTextoColor (+10x, +12y):
+     texto_x = fb_x + (fb_w - fbw) / 2 - 10
+     texto_y = fb_y + (fb_h - fbh) / 2 - 12
+
+CORRECCIONES EN screenFeedback.c
+----------------------------------
+  - Solo ESC cierra la pantalla (se elimino el cierre por click fuera del link).
+  - Texto del pie actualizado a "[ESC] para volver".
+  - Click en el link → SDL_OpenURL() y sigue en pantalla.
+  - Click en cualquier otro lugar → no hace nada.
+
+================================================================================
+SECCION 27 — POMODORO NATIVO EN WINDOWS + FIX CLIP RECT
+================================================================================
+
+PROBLEMA DETECTADO: TEXTO CORTADO AL SALIR DE SCREENDOC
+---------------------------------------------------------
+Causa: screenDOC activa SDL_RenderSetClipRect() para recortar el render
+de cada panel (izquierdo y derecho). Cuando el usuario presiona ESC con
+el foco en el panel de capitulos, la funcion hacia "return 0" directamente
+SIN resetear el clip rect.
+
+Ese clip rect quedaba activo en el renderer para la siguiente pantalla.
+El panel izquierdo tiene ancho 300px, entonces cualquier texto que se
+renderizara despues se cortaba a 300px de ancho. "POMODORO" en la barra
+del pomodoro se cortaba a ~4 caracteres visibles ("POMO").
+
+Fix aplicado en screenDOC.c:
+  Antes de cada "return 0" dentro del loop de eventos se agrega:
+    SDL_RenderSetClipRect(renderer, NULL);
+  Esto garantiza que al salir de screenDOC el clip quede siempre limpio.
+
+POMODORO EN WINDOWS — REDISENO VISUAL
+---------------------------------------
+Archivo: src/screenPomodoro.c  (bloque #ifdef _WIN32)
+
+La version anterior usaba la barra de titulo chica (28px) con dibujadoTexto()
+que agrega +10x y +12y internamente, haciendo que el texto fuera dificil de
+centrar y propenso a quedar cortado por el bug de clip rect.
+
+La nueva version:
+
+1. FUENTES GRANDES
+   TTF_OpenFont("assets/fonts/main.ttf", 34) → f_titulo  (para "POMODORO")
+   TTF_OpenFont("assets/fonts/main.ttf", 72) → f_timer   (para MM:SS)
+   Se abren al entrar a la pantalla y se cierran al salir.
+
+2. HELPER LOCAL pom_txt()
+   Renderiza texto directamente SIN el offset +10/+12 de dibujadoTextoColor:
+     SDL_Rect pos = {x, y, sup->w, sup->h};
+   Permite centrar con precision: x = cx - tw/2
+
+3. LAYOUT CENTRADO
+   - Marco exterior doble con SDL_RenderDrawRect
+   - Titulo "POMODORO" en f_titulo (34pt), centrado, con fondo semitransparente
+     y borde verde
+   - Fase "[ TRABAJO ]" / "[ DESCANSO ]" en fuente normal, centrada
+   - Separador horizontal con SDL_RenderDrawLine
+   - Timer MM:SS en f_timer (72pt), centrado, con sombra desplazada +2px
+   - Ciclos completados en fuente normal
+   - "** PAUSADO **" parpadeante (SDL_GetTicks()/500)%2 cuando esta pausado
+   - Ayuda en el pie centrada
+
+4. CONTROLES (sin cambios)
+   ESC → salir    p → pausar/reanudar    0 → reiniciar desde 0
+
+5. SDL_RenderSetClipRect(renderer, NULL) al inicio de cada frame
+   Como medida de seguridad adicional.
+
+SCREENDOC — SOPORTE DE MOUSE Y TECLADO
+----------------------------------------
+Archivo: src/screenDOC.c
+
+Antes: solo teclado (flechas, ENTER, ESC, PageUp/Down, rueda en contenido)
+Ahora: teclado + mouse funcionan simultaneamente
+
+Clicks agregados:
+  - Panel izquierdo (capitulos): click selecciona el capitulo
+  - Panel derecho esquema (episodios): click abre el episodio directamente
+    (episodio_sel = i, foco = 1, vista = 1, scroll = 0)
+  - Scrollbar (vista contenido): click en cualquier punto del track calcula
+    la posicion proporcional:
+      float t = (float)(click_y - 4) / (alto - 8);
+      scroll = (int)(t * max_scroll);
+
+Rueda del mouse ampliada:
+  - En vista contenido: scroll -= wheel.y * 3  (ya existia)
+  - En vista esquema, sobre panel izquierdo: cambia capitulo_sel
+  - En vista esquema, sobre panel derecho: cambia episodio_sel
+
+Deteccion de click: variable clicked/click_x/click_y reseteada cada frame,
+seteada en SDL_MOUSEBUTTONDOWN. La comprobacion se hace dentro del loop de
+render al dibujar cada item, comparando click_y contra el rango [ey-2, ey+h].
+
+================================================================================
+ 24. Editor de texto nativo en C - editorText.c
+================================================================================
+
+Contexto
+--------
+Se reemplazo el editor bim.sh (bash via forkpty/PTY) por un editor nativo en C
+usando SDL2 directamente. Mas simple, mas rapido, sin dependencias de bash.
+
+Archivos nuevos:
+  src/editorText.c   la implementacion completa
+  src/editorText.h   header con las dos funciones publicas
+
+Dos funciones publicas:
+
+  void drawEditorText(SDL_Renderer*, TTF_Font*, SDL_Rect area)
+    Dibuja el editor en un rect dado, sin loop propio.
+    Sirve para embeber el editor en cualquier pantalla (ej: panel derecho
+    de screenEditorLvl). Es una funcion "pasiva" - solo dibuja, no captura input.
+
+  int screenEditorText(SDL_Renderer*, TTF_Font*, int ancho, int alto)
+    Pantalla completa con su propio loop de eventos. Captura todo el teclado.
+    La usa screenFreeEditor() directamente:
+      return screenEditorText(renderer, fuente, ancho, alto);
+
+Layout de la pantalla
+---------------------
+  ┌─────────────────────────────────────────┐  edit_h = alto - out_h
+  │ gutter │ contenido del editor           │
+  │  50px  │                               │
+  │        │                               │
+  ├─────────────────────────────────────────┤  edit_h
+  │ SALIDA           [F5] ejecutar [F9] gua │  out_h = line_h * 6 + 24
+  │ > output de paed                       │
+  └─────────────────────────────────────────┘
+
+Gutter
+------
+  Ancho fijo GUTTER_W = 50px.
+  Fondo mas oscuro que el editor (#1d2021 vs #282828).
+  Numeros de linea alineados a la derecha: GUTTER_W - num_w - 8.
+  Separador: linea vertical de 1px en color #665c54.
+
+Buffer multi-linea
+------------------
+  static char buf[MAX_LINES][512];   // MAX_LINES = 500
+  int n_lines    = 1;
+  int cursor_row = 0;
+  int cursor_col = 0;
+  int offset_row = 0;   // primera linea visible (scroll)
+
+  Se usa static para evitar stack overflow (500 * 512 = 250KB en el stack).
+
+Operaciones de edicion
+----------------------
+  Insertar caracter (SDL_TEXTINPUT):
+    memmove(buf[row] + col + add, buf[row] + col, len - col + 1);
+    memcpy(buf[row] + col, texto, add);
+    // memmove primero porque los rangos se solapan
+
+  Borrar caracter (BACKSPACE, cursor_col > 0):
+    memmove(buf[row] + col - 1, buf[row] + col, len - col + 1);
+    cursor_col--;
+
+  ENTER - partir linea en cursor_col:
+    1. guardar todo lo que esta despues del cursor en `resto`
+    2. truncar la linea actual en cursor_col
+    3. shift hacia abajo de todas las lineas siguientes
+    4. buf[cursor_row + 1] = resto
+    5. n_lines++; cursor_row++; cursor_col = 0;
+
+  BACKSPACE al inicio de linea (cursor_col == 0, cursor_row > 0):
+    1. guardar prev_len = strlen(buf[cursor_row - 1])
+    2. strcat(buf[cursor_row - 1], buf[cursor_row])
+    3. shift hacia arriba de todas las lineas siguientes
+    4. n_lines--; cursor_row--; cursor_col = prev_len;
+
+Scroll
+------
+  vis_lines = (edit_h - 8) / line_h   // cuantas lineas entran en pantalla
+  Despues de cada movimiento de cursor:
+    if (cursor_row < offset_row) offset_row = cursor_row;
+    if (cursor_row >= offset_row + vis_lines)
+        offset_row = cursor_row - vis_lines + 1;
+  Al dibujar: iterar de 0 a vis_lines, usando row = offset_row + i.
+
+Flechas izquierda/derecha con wrap
+-----------------------------------
+  LEFT:  si col > 0: col--   /  sino: row--, col = fin de linea anterior
+  RIGHT: si col < len: col++ /  sino: row++, col = 0
+  Asi se puede navegar como en cualquier editor real.
+
+Flechas arriba/abajo
+--------------------
+  UP/DOWN mueven cursor_row y ajustan cursor_col si la nueva linea es
+  mas corta (no puede quedar mas alla del fin de la linea).
+
+Syntax highlighting
+-------------------
+  Funcion: render_highlighted(renderer, fuente, text, x, y)
+  Escanea el texto caracter por caracter, clasifica cada token y lo dibuja
+  con su color correspondiente usando TTF_RenderUTF8_Blended.
+
+  Categorias (de data/sintaxis.json, hardcodeadas en editorText.c):
+    KEYWORD   rosa    #fb4934  SI MIENTRAS ACCION FIN_ACCION PROCESO...
+    TIPO      azul    #458588  ENTERO REAL CARACTER VAR ARREGLO...
+    OPERADOR  verde   #b8bb26  Y O NO
+    FUNCION   amaril  #fabd2f  MOD TRUNC ABSO REDOND
+    COMENTAR  gris    #928374  // hasta fin de linea
+    IO        celest  #8ec07c  ESCRIBIR LEER
+    STRING    naranja #fe8019  "texto entre comillas"
+    NUMERO    purpura #d3869b  42 3.14
+    NORMAL    crema   #ebdbb2  variables y resto
+
+  Tokenizador:
+    - Espacios: avanza x sin dibujar (TTF_SizeUTF8(" ", &sw))
+    - //: toma el resto de la linea como un solo token gris
+    - "...": escanea hasta la " de cierre
+    - [0-9]: escanea digitos y punto decimal
+    - [a-zA-Z_]: escanea letras/digitos/guion_bajo, luego get_token_color()
+    - Resto (,:;()=): un caracter en color normal
+
+  El cursor se calcula sobre el string completo con TTF_SizeUTF8, que mide
+  pixeles reales sin importar los colores internos.
+
+Guardar archivo (F9)
+--------------------
+  Al presionar F9 se activa modo guardando = 1.
+  El teclado deja de escribir codigo y escribe el nombre del archivo.
+  Al presionar Enter:
+    guardar_archivo(buf, n_lines, "saves/<nombre>.paed")
+    que escribe cada linea del buffer con fprintf(f, "%s\n", buf[i]).
+
+  El nombre activo se muestra arriba a la derecha (dim, color gutter).
+  Por defecto en modo libre: "sin guardar" (nombre_arch vacio hasta F9).
+
+Ejecutar paed (F5)
+------------------
+  1. guardar_archivo() → saves/<nombre>.paed
+  2. ejecutar_paed("saves/<nombre>.paed", out_buf, OUT_MAX)
+     que hace: popen("cd Frankly && ./paed '../saves/<nombre>.paed' 2>&1", "r")
+     y lee linea por linea con fgets()
+  3. El output se muestra en el panel SALIDA
+
+  popen() abre un proceso como si fuera un archivo:
+    FILE *fp = popen(comando, "r");
+    fgets(buf, sizeof(buf), fp);   // lees su stdout igual que un archivo
+    pclose(fp);
+  2>&1 redirige stderr a stdout para capturar errores tambien.
+
+  paed necesita correr desde Frankly/ porque sourcea ./flags.sh.
+  Por eso el comando es "cd Frankly && ./paed '../<path>'"
+  y el path al archivo es relativo a la raiz del proyecto.
+
+Paleta de colores del editor
+-----------------------------
+  BG_R   40,  40,  40   #282828  fondo del editor
+  GT_R   29,  32,  33   #1d2021  fondo del gutter
+  LN_R  102,  92,  84   #665c54  numeros de linea
+  PH_R   80,  73,  69   #504945  placeholder
+  TX_R  235, 219, 178   #ebdbb2  texto normal / cursor
+
+================================================================================
+SECCION 25 — editorText: dirty flag, dialogo F10, guardar con lista, eliminar
+================================================================================
+
+dirty flag
+----------
+  Variable int dirty = 0 dentro de screenEditorText().
+  Se pone en 1 en cualquier modificacion del buffer:
+    - SDL_TEXTINPUT (caracter tipeable)
+    - BACKSPACE (col > 0 o merge de linea)
+    - ENTER (partir linea)
+  Se pone en 0 cuando se guarda exitosamente con F9.
+
+  Uso:
+    if (dirty) → hay cambios sin guardar desde el ultimo F9.
+
+Dialogo "Salir sin guardar?" (F10)
+------------------------------------
+  Al presionar F10:
+    si dirty == 0 → salir directamente
+    si dirty == 1 → confirm_salir = 1 (mostrar dialogo)
+
+  El dialogo bloquea toda la entrada normal del editor (se chequea primero
+  en el evento SDL_KEYDOWN antes de cualquier otra logica).
+
+    [S / Enter] → corriendo = 0 (salir igual)
+    [N / ESC]   → confirm_salir = 0 (cancelar, volver al editor)
+
+  Render del dialogo:
+    1. Fondo semitransparente sobre toda la pantalla:
+         SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
+         SDL_SetRenderDrawColor(renderer, 0, 0, 0, 160);
+         SDL_RenderFillRect(renderer, &sombra);
+         SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_NONE);
+    2. Caja centrada en el panel del editor (no en la pantalla completa
+       cuando hay consigna):
+         int bx = editor_x + (editor_w - bw) / 2;
+    3. Borde rojo gruvbox #fb4934, texto crema y gris.
+
+nombre_fijo — modo nivel vs modo libre
+----------------------------------------
+  screenEditorText() recibe const char *nombre_fijo.
+
+  Si nombre_fijo == NULL o "":  modo LIBRE
+    - nombre_arch empieza vacio
+    - La barra superior muestra "sin guardar"
+    - F9 abre la pantalla de guardado con lista de archivos
+    - Una vez guardado, la barra muestra "nombre.paed"
+
+  Si nombre_fijo != "":  modo NIVEL (ej. "nivel_3")
+    - nombre_arch = nombre_fijo al entrar
+    - Se carga saves/nivel_3.paed al inicio si existe:
+        FILE *f = fopen("saves/nivel_3.paed", "r");
+        fgets() linea por linea → llena buf[]
+    - F9 guarda directamente sin ningun overlay:
+        guardar_archivo(buf, n_lines, "saves/nivel_3.paed");
+        dirty = 0;
+    - Siempre sobreescribe el mismo archivo.
+
+cons_titulo / cons_texto — panel consigna
+------------------------------------------
+  screenEditorText() recibe tambien const char *cons_titulo y *cons_texto.
+
+  Si cons_titulo != NULL y no vacio → tiene_consigna = 1:
+    editor_x = ancho / 2    (el editor ocupa la mitad derecha)
+    editor_w = ancho / 2
+
+  Si cons_titulo == NULL:
+    editor_x = 0
+    editor_w = ancho         (editor ocupa toda la pantalla)
+
+  Panel izquierdo (solo cuando tiene_consigna):
+    - Fondo oscuro verde (10, 18, 10)
+    - Titulo con dibujadoTextoColor()
+    - Linea separadora horizontal
+    - Enunciado con dibujadoTextoMultilineaColor()
+    - Linea separadora vertical entre los dos paneles
+
+  Todas las coordenadas del editor se offsetean con editor_x:
+    gutter:    { editor_x, 0, GUTTER_W, edit_h }
+    clip:      { editor_x, 0, editor_w, edit_h }
+    text_x:    editor_x + GUTTER_W + 12
+    out area:  { editor_x, edit_h+2, editor_w, out_h-2 }
+    overlays:  centrados en editor_x + editor_w
+
+screenLvLEditor — uso del editor con consigna
+----------------------------------------------
+  Antes: usaba drawEditorText() (pasivo, sin teclado) en mitad derecha.
+  Ahora: llama screenEditorText() con nombre_fijo y cons_titulo/texto:
+
+    char nombre[32];
+    snprintf(nombre, sizeof(nombre), "nivel_%d", nivel_num);
+    screenEditorText(renderer, fuente, ancho, alto,
+                     nombre, n->titulo, n->enunciado);
+    marcar_completado(nivel_num);
+
+  Esto le da al jugador:
+    - Consigna visible a la izquierda siempre
+    - Editor completo con teclado a la derecha
+    - F9 guarda a saves/nivel_X.paed (sobreescribe, sin prompt)
+    - Al volver a entrar al nivel, carga el codigo guardado
+
+Pantalla de guardado (overlay F9 en modo libre)
+------------------------------------------------
+  Se muestra cuando guardando == 1 (solo en modo libre).
+
+  Estructura visual:
+    - Fondo semitransparente sobre toda la pantalla
+    - Caja centrada en el panel editor (editor_x + 20, ancho editor_w - 40)
+    - Cabecera "Guardar archivo" con linea separadora
+    - Campo de texto "Nombre:" con cursor parpadeante
+    - Subtitulo "Archivos guardados:" con lista de .paed de saves/
+    - Hint inferior: [↑↓] seleccionar   [Enter] guardar   [ESC] cancelar
+
+  Escaneo de archivos con opendir/readdir (dirent.h):
+    static int escanear_saves(char lista[][64], int max) {
+        DIR *d = opendir("saves");
+        struct dirent *e;
+        while ((e = readdir(d))) {
+            if termina en ".paed" → copiar nombre sin extension a lista[]
+        }
+        closedir(d);
+        // ordenar alfabeticamente con bubble sort
+    }
+  Se llama una vez al abrir el overlay (saves_n = escanear_saves(...)).
+
+  Navegacion con flechas:
+    UP/DOWN → saves_sel sube/baja
+    Al cambiar sel → prompt_buf = saves_lista[sel]  (prellenar el campo)
+    Scroll de lista: si sel < saves_offset → saves_offset = sel
+                     si sel >= saves_offset + 8 → saves_offset = sel - 7
+
+  Escribir a mano → saves_sel = -1 (se deselecciona la lista)
+
+  Enter:
+    strncpy(nombre_arch, prompt_buf, ...)
+    guardar_archivo(buf, n_lines, "saves/<nombre>.paed")
+    dirty = 0; guardando = 0;
+
+Boton [X] para eliminar archivos
+----------------------------------
+  Cada fila de la lista muestra un boton [X] rojo a la derecha:
+    SDL_Rect btn_x = { bx + bw - 36, fy - 2, 28, line_h + 4 };
+    fondo: (100, 15, 15)  borde: (200, 30, 30)  letra: #fb4934
+
+  Dos formas de eliminar:
+
+  1. Click con el mouse (SDL_MOUSEBUTTONDOWN):
+       Se recalcula el layout igual que en render para saber donde estan
+       los botones. Si mx,my cae dentro del SDL_Rect del boton:
+         remove("saves/<nombre>.paed");
+         saves_n = escanear_saves(...)   // refrescar lista
+
+  2. Teclado (SDLK_DELETE con saves_sel >= 0):
+         remove("saves/<saves_lista[saves_sel]>.paed");
+         saves_n = escanear_saves(...)
+         if (saves_sel >= saves_n) saves_sel = saves_n - 1;
+
+  En ambos casos:
+    - La lista se refresca al instante (escanear_saves de nuevo)
+    - Si el sel quedo fuera de rango, se ajusta al ultimo elemento
+    - Si la lista quedo vacia, prompt_buf queda vacio
+
+Llamadas actualizadas
+----------------------
+  screenEditorFree.c:
+    return screenEditorText(renderer, fuente, ancho, alto, NULL, NULL, NULL);
+
+  screenEditorLvl.c:
+    screenEditorText(renderer, fuente, ancho, alto, nombre, n->titulo, n->enunciado);
+
+  Firma completa en editorText.h:
+    int screenEditorText(SDL_Renderer *renderer, TTF_Font *fuente,
+                         int ancho, int alto, const char *nombre_fijo,
+                         const char *cons_titulo, const char *cons_texto);
+
+================================================================================
+26. SISTEMA DE SUBRAYADO CON COLORES - screenDOC.c
+================================================================================
+
+Que es
+------
+  Sistema de highlight (resaltado) interactivo dentro de la pantalla DOC.
+  El usuario arrastra el mouse sobre texto, aparece una paleta de colores
+  flotante, elige un color, y el texto queda marcado con un rectangulo de
+  color por detras. Todo se guarda automaticamente en saves/highlights.json.
+
+Flujo completo
+--------------
+  1. El usuario arrastra el mouse sobre el texto (drag)
+  2. Al soltar, si hay seleccion valida, aparece el popup encima del cursor
+  3. El usuario hace click en un color
+  4. El highlight se aplica, se guarda, el popup desaparece
+  5. Al volver al DOC, los highlights se cargan desde el JSON
+
+Estructura de datos
+-------------------
+  typedef struct {
+      int linea_absoluta;  // indice en el array lineas[] del wiki.txt
+      int char_ini;        // posicion del primer caracter seleccionado
+      int char_fin;        // posicion del ultimo caracter seleccionado
+      int color_idx;       // indice en paleta[] (0..7)
+  } Highlight;
+
+  static Highlight highlights[MAX_HIGHLIGHTS];  // hasta 500 highlights
+  static int       total_highlights = 0;
+
+  Los highlights son estaticos (static) porque screenDoc() se llama cada
+  vez que entrас al DOC, y los datos tienen que persistir entre llamadas.
+
+Guardado - saves/highlights.json
+---------------------------------
+  Formato del archivo:
+  {
+      "highlights": [
+          {"linea": 42, "ini": 5,  "fin": 18, "color": 0},
+          {"linea": 67, "ini": 0,  "fin": 12, "color": 3}
+      ]
+  }
+
+  Funciones:
+    guardar_highlights()  — escribe el JSON con cJSON_Print
+    cargar_highlights()   — lee el JSON al entrar al DOC
+    aplicar_highlight()   — agrega o actualiza un highlight, llama a guardar
+    quitar_highlight()    — elimina un highlight del array, llama a guardar
+
+  El guardado es automatico: ocurre inmediatamente despues de cada cambio,
+  no hay boton de guardar manual.
+
+Seleccion de texto con el mouse
+--------------------------------
+  Variables de estado:
+    sel_activa      — hay una seleccion valida (drag completado)
+    sel_arrastrando — el mouse esta siendo arrastrado ahora
+    sel_lin_ini / sel_char_ini  — donde empezo el drag
+    sel_lin_fin / sel_char_fin  — donde termino (o esta) el drag
+
+  Eventos involucrados:
+    SDL_MOUSEBUTTONDOWN  → graba inicio, limpia seleccion anterior
+    SDL_MOUSEMOTION      → actualiza fin mientras se arrastra
+    SDL_MOUSEBUTTONUP    → fija la seleccion, muestra popup si es valida
+
+  Funcion pixel_a_char():
+    Convierte pixeles X desde el inicio del texto a indice de caracter.
+    Itera caracter por caracter midiendo el ancho con TTF_SizeUTF8()
+    hasta que supera el pixel clickeado. Cuenta letras, espacios, y
+    cualquier otro caracter — todo.
+
+    static int pixel_a_char(TTF_Font *fuente, const char *texto, int px_rel)
+    {
+        int len = (int)strlen(texto);
+        for (int i = 1; i <= len; i++) {
+            char tmp[512];
+            strncpy(tmp, texto, i);
+            tmp[i] = '\0';
+            int w;
+            TTF_SizeUTF8(fuente, tmp, &w, NULL);
+            if (w > px_rel) return i - 1;
+        }
+        return len;
+    }
+
+Calculo de posicion Y exacta (line_y[])
+-----------------------------------------
+  Problema que habia: las lineas vacias usan alto_linea/2 en vez de
+  alto_linea completo. Si se calcula la fila con division simple:
+    row = (my - 10) / alto_linea
+  el resultado es incorrecto cuando hay lineas vacias arriba.
+
+  Solucion: precalcular el Y real de cada linea antes del render:
+
+    int y = 10;
+    for (int i = ep_linea_desde + scroll; i < ep_linea_hasta; i++) {
+        line_y[i] = y;
+        y += (tmp[0] == '\0') ? alto_linea / 2 : alto_linea;
+    }
+
+  Ahora tanto el render como la deteccion de clicks usan line_y[i],
+  garantizando que siempre coinciden.
+
+El offset +10/+12 de dibujadoTextoColor
+-----------------------------------------
+  dibujadoTextoColor() internamente suma +10 a x y +12 a y:
+    SDL_Rect pos_txt = {x + 10, y + 12, sup->w, sup->h};
+
+  Entonces si le paso texto_param_x = contenido_x + 6,
+  el texto REALMENTE aparece en:
+    texto_real_x = contenido_x + 6 + 10 = contenido_x + 16
+
+  Todos los rects de seleccion y highlight usan texto_real_x para
+  que coincidan con la posicion visual del texto.
+
+El popup de colores
+-------------------
+  Variables:
+    popup_visible  — si el popup esta en pantalla
+    popup_x/y      — posicion (calculada en MOUSEBUTTONUP)
+    popup_lin      — linea absoluta que se va a colorear
+    popup_cs/ce    — char_ini y char_fin de la seleccion
+
+  Posicion: se calcula con las coordenadas reales del mouse al soltar:
+    popup_x = evento.button.x;
+    popup_y = evento.button.y - popup_h - 8;
+    // Si se sale por arriba: popup_y = evento.button.y + 10;
+    // Si se sale por derecha: popup_x = ancho - popup_w - 4;
+
+  Paleta de 8 colores + boton X:
+    [Amarillo] [Verde] [Cyan] [Rosa] [Naranja] [Violeta] [Rojo] [Blanco] [X]
+
+  El boton X llama a quitar_highlight() para volver al texto normal.
+
+Bug critico resuelto: popup que reaparecia
+-------------------------------------------
+  Secuencia del bug:
+    1. MOUSEBUTTONDOWN en color → popup_visible=0, sel_activa=0 ✓
+    2. MOUSEBUTTONUP del mismo click → recalcula:
+       sel_activa = (sel_lin_ini != sel_lin_fin || sel_char_ini != sel_char_fin)
+       Como sel_char_ini y sel_char_fin todavia tenian valores del drag:
+       = (false || 5 != 12) = true → popup reaparecia
+
+  Solucion: al aplicar o cerrar el popup, resetear los 4 valores:
+    sel_lin_ini = -1;  sel_lin_fin = -1;
+    sel_char_ini = 0;  sel_char_fin = 0;
+
+Bug critico resuelto: popup cerraba antes de procesar el click
+--------------------------------------------------------------
+  El handler de MOUSEBUTTONDOWN tenia:
+    if (popup_visible) { cerrar si afuera }
+    if (en area de contenido) { popup_visible = 0; ... }  // siempre ejecutaba
+
+  El popup esta en el area de contenido, entonces la segunda condicion
+  ponia popup_visible = 0 antes de que el render procesara el click en
+  el color → aplicar_highlight nunca se llamaba.
+
+  Solucion: convertir a if/else if/else if mutuamente excluyentes:
+    if (popup visible Y click adentro)  → aplicar color
+    else if (popup visible Y click afuera) → cerrar
+    else if (click en contenido) → iniciar drag
+
+Render de texto en 3 segmentos
+--------------------------------
+  Problema: si se dibujan todos los caracteres en blanco y despues se
+  dibuja el rango highlight en negro ENCIMA, hay texto doble aunque
+  esten en el mismo pixel (alineacion imperfecta).
+
+  Solucion: render en 3 segmentos con render_texto_xy() que usa
+  TTF_RenderUTF8_Blended directamente sin offsets internos:
+
+    Segmento 1: chars 0 .. cs-1    → color normal
+    Segmento 2: chars cs .. ce-1   → negro (15,15,15)
+    Segmento 3: chars ce .. fin    → color normal
+
+  Cada parte se dibuja UNA sola vez. No hay sobreposicion.
+
+  El X de cada segmento se calcula con TTF_SizeUTF8 sobre la
+  subcadena previa (los caracteres antes del segmento).
+
+================================================================================
+27. CLIPBOARD MULTI-LINEA EN EL EDITOR (editorText.c)
+================================================================================
+
+Se implementaron tres funciones separadas reutilizables para manejar el
+portapapeles dentro del editor libre. Estas funciones viven FUERA de
+screenEditorText para poder usarse en otros modulos si hace falta.
+
+  #define MAX_LINES 500
+  #define CB_MAX    50
+  static char cb_buf[CB_MAX][512];   // buffer interno
+  static int  cb_n = 0;              // cuantas lineas hay copiadas
+
+Las tres funciones:
+
+  editor_copiar(buf, r0, r1)
+  ──────────────────────────
+  Copia las lineas desde r0 hasta r1 (inclusive) en cb_buf.
+  Tambien construye un string con \n entre lineas y lo manda al
+  portapapeles del sistema con SDL_SetClipboardText().
+
+  editor_cortar(buf, &n_lines, r0, r1, &cursor_row, &cursor_col)
+  ───────────────────────────────────────────────────────────────
+  Llama editor_copiar internamente y despues elimina las lineas
+  del buffer shiftando todo hacia arriba con memmove/memcpy.
+  Si queda 0 lineas fuerza n_lines=1 con buf[0]="".
+
+  editor_pegar(buf, &n_lines, &cursor_row, &cursor_col)
+  ──────────────────────────────────────────────────────
+  Lee primero el portapapeles del SISTEMA con SDL_GetClipboardText().
+  Si tiene contenido, lo parsea linea por linea separando por '\n'
+  y actualiza cb_buf. Esto permite pegar texto de otras apps.
+  Si cb_n == 0 no hace nada.
+  Inserta las lineas DESPUES de cursor_row desplazando el buffer.
+  Deja el cursor al final de la ultima linea pegada.
+
+Atajos en el editor:
+  Ctrl+C  →  editor_copiar(buf, cursor_row, cursor_row)
+  Ctrl+X  →  editor_cortar(...)  + dirty=1
+  Ctrl+V  →  editor_pegar(...)   + dirty=1
+
+Por que son funciones separadas:
+  Para poder llamarlas desde screenEditorLvl u otros modulos en el futuro
+  sin duplicar codigo. Las variables cb_buf y cb_n son static globales
+  al archivo, por eso persisten entre llamadas.
+
+
+================================================================================
+28. BOTON |> RUN Y MINI MENU EN EL EDITOR (editorText.c)
+================================================================================
+
+En el header del panel de salida (zona inferior del editor) se agregaron
+dos botones interactivos con deteccion de hover via SDL_GetMouseState().
+
+BOTON |> RUN
+────────────
+Posicion: extremo derecho del header del panel de salida.
+
+  int btn_run_w = 72;
+  SDL_Rect btn_run = { editor_x + editor_w - btn_run_w - 6,
+                       edit_h + 3, btn_run_w, line_h };
+
+Click → hace exactamente lo mismo que F5:
+  guardar_archivo(buf, n_lines, path)
+  n_out = ejecutar_paed(path, out_buf, OUT_MAX)
+
+Hover: verde claro (60,220,90) vs verde oscuro (20,160,55).
+Texto "|> RUN" centrado con TTF_SizeUTF8 para calcular el X exacto:
+  int lbl_w; TTF_SizeUTF8(fuente, "|> RUN", &lbl_w, NULL);
+  int lbl_x = btn_run.x + (btn_run.w - lbl_w) / 2;
+
+BOTON MENU ≡
+────────────
+Cuadrado de 30px a la izquierda del RUN. Muestra "=" centrado.
+Click → toggle de mini_menu (0/1).
+Cuando mini_menu=1 se ilumina mas brillante para indicar que esta activo.
+
+DROPDOWN DEL MINI MENU
+───────────────────────
+  const char *menu_items[] = { "Volver al menu principal",
+                                "Guardar", "Cargar" };
+  int mitem_h = line_h + 6;
+  int mdrop_w = 260;
+  int mdrop_h = mitem_h * 3 + 6;
+
+Aparece ENCIMA del boton menu (mdrop.y = edit_h - mdrop_h - 4).
+Cada item tiene highlight verde oscuro al pasar el mouse.
+Separador horizontal entre items dibujado con SDL_RenderDrawLine.
+
+Prioridad de eventos en SDL_MOUSEBUTTONDOWN (con !guardando && !cargando):
+  1. Click en btn_run  → ejecutar
+  2. Click en btn_menu → toggle dropdown
+  3. Click dentro del dropdown → ejecutar item
+  4. Click fuera del dropdown → cerrar
+
+Items del dropdown:
+  item 0 "Volver al menu principal" → igual que F10
+  item 1 "Guardar"  → abre overlay de guardado con nombre precargado
+  item 2 "Cargar"   → abre overlay de carga (ver seccion 29)
+
+
+================================================================================
+29. SISTEMA GUARDAR / CARGAR ARCHIVOS .paed (editorText.c)
+================================================================================
+
+GUARDAR (F9 o menu Guardar)
+────────────────────────────
+Logica de F9:
+  - Si nombre_arch ya tiene un nombre → guarda DIRECTO sin overlay.
+    Esto evita sobreescribir accidentalmente con buffer vacio.
+  - Si nombre_arch esta vacio → abre el overlay para elegir nombre.
+
+El mini menu "Guardar" SIEMPRE abre el overlay con el nombre actual
+precargado en el campo. Funciona como "Guardar como...".
+
+Estado: int guardando = 0/1
+Variables compartidas (tambien usadas por Cargar):
+  char prompt_buf[64]       ← campo de texto del overlay
+  int  prompt_len           ← longitud del texto
+  char saves_lista[][64]    ← lista de archivos .paed en saves/
+  int  saves_n, saves_sel, saves_offset
+
+En el overlay:
+  - Flechas arriba/abajo navegan la lista, autocompletan prompt_buf
+  - ENTER guarda en saves/{nombre}.paed y actualiza nombre_arch
+  - ESC cancela
+  - Delete sobre un item elimina el archivo del disco
+
+Guardado fisico en guardar_archivo():
+  FILE *f = fopen(path, "w");
+  for (int i = 0; i < n; i++) fprintf(f, "%s\n", buf[i]);
+  fclose(f);
+
+CARGAR (menu Cargar)
+──────────────────────
+Estado: int cargando = 0/1  (nunca activo al mismo tiempo que guardando)
+
+Misma interfaz visual que guardar, titulo cambia a "Cargar archivo"
+y el hint inferior dice "[Enter] cargar" en vez de "[Enter] guardar".
+
+Al presionar ENTER con prompt_len > 0:
+  - Abre saves/{prompt_buf}.paed
+  - Si existe: limpia buf con memset, carga linea por linea
+  - Actualiza nombre_arch y libre_ultimo (static, recuerda para proxima vez)
+  - Resetea cursor_row=0, cursor_col=0, offset_row=0, dirty=0
+  - Cierra el overlay
+
+Variable persistente entre sesiones:
+  static char libre_ultimo[64] = "";
+  Se actualiza cada vez que el editor libre carga un archivo exitosamente.
+  (Reservado para uso futuro — no auto-carga al entrar, el usuario decide)
+
+El boton [X] en la lista funciona identico en ambos overlays: elimina
+el .paed del disco y refresca la lista con escanear_saves().
+
+
+================================================================================
+30. ICONO EN EL EJECUTABLE WINDOWS (app.rc + windres)
+================================================================================
+
+Para que el .exe tenga icono en el Explorador de Windows se usa un
+archivo de recursos de Windows (.rc) que se compila con windres
+(parte del toolchain MinGW).
+
+ARCHIVO src/app.rc
+──────────────────
+  1 ICON "assets/icon.ico"
+
+El ID numerico "1" es obligatorio. Windows Explorer busca el icono
+con el ID mas bajo al mostrar el ejecutable. Si se usa un nombre
+simbolico como IDI_ICON1 puede no funcionar con windres/MinGW.
+
+GENERACION DEL .ico
+────────────────────
+El .ico se genera desde el PNG del proyecto con Python + Pillow.
+Un archivo ICO es un contenedor que almacena la misma imagen en
+multiples tamaños para que Windows use el mas adecuado segun contexto
+(16px en listas, 32px en escritorio, 256px en vista grande):
+
+  Estructura binaria manual del ICO:
+    Header:    6 bytes  (magic 0x0001, tipo 1, cantidad de imagenes)
+    Directory: 16 bytes por imagen (ancho, alto, offset, tamaño)
+    Data:      cada imagen como PNG comprimido
+
+  Tamaños incluidos: 16, 32, 48, 64, 128, 256 px
+
+  Nota: para 256px el campo ancho/alto del directorio va como 0
+  (convencion del formato ICO para indicar 256).
+
+COMPILACION EN MAKEFILE
+────────────────────────
+  WIN_RC_OBJ = $(BUILDDIR)/app.win.o
+
+  $(WIN_RC_OBJ): src/app.rc assets/icon.ico | $(BUILDDIR)
+      x86_64-w64-mingw32-windres src/app.rc -o $@
+
+  $(WIN_TARGET): $(WIN_OBJ) $(WIN_RC_OBJ)
+      $(WIN_CC) $(WIN_OBJ) $(WIN_RC_OBJ) -o $@ $(WIN_LDFLAGS)
+
+windres convierte el .rc en un objeto .o que el linker trata igual
+que cualquier otro .o. El icono queda embebido en el seccion de
+recursos del PE (Portable Executable).
+
+
+================================================================================
+31. LINKING ESTATICO DE SDL2 EN WINDOWS
+================================================================================
+
+Por defecto el proyecto linkea contra las DLL de SDL2 (import libs .dll.a).
+Para distribuir el .exe con menos archivos sueltos se puede linkear SDL2
+estaticamente (el codigo de SDL2 queda DENTRO del .exe).
+
+QUE SE PUEDE HACER ESTATICO
+─────────────────────────────
+  SDL2     → SI. Libreria oficial provee libSDL2.a para MinGW.
+  SDL2_ttf → NO facilmente. Su version estatica incluye FreeType + HarfBuzz
+             que tienen dependencias del runtime de MSVC (_setjmp, UuidCreate)
+             que generan conflictos con el runtime de MinGW.
+
+RESULTADO FINAL
+────────────────
+  SDL2      → linkeado estatico  (libSDL2.a, 15MB)
+  SDL2_ttf  → sigue como DLL    (SDL2_ttf.dll, 1 archivo)
+  El exe pasa de ~330KB a ~13MB pero ya no necesita SDL2.dll.
+
+Las libs estaticas se obtienen del release oficial de SDL2 para MinGW:
+  https://github.com/libsdl-org/SDL/releases
+  Archivo: SDL2-devel-X.X.X-mingw.tar.gz
+  Dentro:  x86_64-w64-mingw32/lib/libSDL2.a
+
+FLAGS EN EL MAKEFILE
+─────────────────────
+  WIN_LDFLAGS = -L $(WIN_LIBS)/lib             \
+    -lmingw32 -lSDL2main                       \
+    -Wl,-Bstatic -lSDL2                        \  ← estatico desde aqui
+    -Wl,-Bdynamic -lSDL2_ttf -lm               \  ← dinamico desde aqui
+    -mwindows                                  \
+    -lole32 -loleaut32 -limm32 -lwinmm         \  ← APIs de Windows que
+    -lversion -lsetupapi -lgdi32 -lcomdlg32    \  ← SDL2 usa internamente
+    -static-libgcc -static-libstdc++              ← runtime GCC adentro
+
+  -Wl,-Bstatic   le dice al linker: a partir de aqui usá .a (estatico)
+  -Wl,-Bdynamic  le dice al linker: a partir de aqui usá .dll.a (dinamico)
+
+  Las APIs de Windows (ole32, winmm, etc.) son parte del sistema y
+  siempre estan disponibles en cualquier Windows moderno, no se incluyen
+  en el exe.
+
+  -static-libgcc / -static-libstdc++  meten el runtime de GCC adentro
+  del exe para no depender de libgcc_s_seh-1.dll y similares.
+
+
+================================================================================
+32. SCRIPT DE RELEASE AUTOMATICO (scripts/release.sh)
+================================================================================
+
+Script bash que compila, empaqueta y publica una nueva version en
+GitHub Releases con un solo comando:
+
+  ./scripts/release.sh v0.3
+
+PASOS QUE EJECUTA
+──────────────────
+  1. touch src/*.c       → fuerza recompilacion de todos los fuentes
+  2. make windows        → compila el .exe con linking estatico
+  3. python3             → empaqueta PseudoGames.exe + SDL2_ttf.dll en ZIP
+  4. git add -f + commit → sube el nuevo exe al repositorio
+  5. git push            → sincroniza con GitHub
+  6. gh release delete   → borra la release anterior con el mismo tag (si existe)
+  7. git tag delete      → limpia el tag local y remoto
+  8. gh release create   → crea la nueva release y sube el ZIP
+  9. rm ZIP local        → limpia el archivo temporal
+
+CONTENIDO DEL ZIP
+──────────────────
+  PseudoGames_v0.X.zip
+    ├── PseudoGames.exe     ← exe con SDL2 estatico + icono
+    └── SDL2_ttf.dll        ← unica DLL necesaria
+
+El usuario descarga el ZIP, lo extrae en cualquier carpeta y ejecuta
+PseudoGames.exe. No requiere instalacion ni dependencias adicionales.
+
+HERRAMIENTAS QUE USA EL SCRIPT
+────────────────────────────────
+  make                → compilar (Makefile del proyecto)
+  python3 + zipfile   → empaquetar (modulo estandar, sin dependencias)
+  git                 → control de versiones
+  gh (GitHub CLI)     → crear releases en GitHub
+
+El script usa "set -e" al inicio: si cualquier paso falla, el script
+se detiene inmediatamente en vez de continuar con un estado roto.
+
+================================================================================
+33. EL BUG DEL HEAP DOBLE: STATIC SDL2 + SDL2_TTF.DLL
+================================================================================
+
+Este bug costo varios dias de debug. Se documenta en detalle porque es
+un error clasico en Windows que no existe en Linux y no da ningun mensaje
+de error util.
+
+SINTOMA
+────────
+  El juego arranca, pasa la animacion de inicio, entra a screenMenu(),
+  llama a SDL_FreeSurface() y explota. Sin mensaje. Sin razon aparente.
+  En Linux funciona perfecto.
+
+QUE ES UN HEAP
+───────────────
+  Cuando hacemos malloc() el sistema nos da memoria de un area llamada
+  "heap". En Linux hay un solo runtime de C (glibc) compartido por todos.
+  En Windows cada modulo (exe o DLL) puede tener su PROPIO heap si usa
+  un runtime de C diferente.
+
+  Windows tiene dos runtimes principales:
+    msvcrt.dll   → viejo, incluido en todas las Windows
+    ucrtbase.dll → nuevo (UCRT), desde Windows 10
+
+  Si una DLL aloca con msvcrt malloc y otra libera con UCRT free
+  → CRASH, porque cada runtime no reconoce bloques del otro.
+
+EL PROBLEMA: DOS COPIAS DE SDL2
+─────────────────────────────────
+  Con -Wl,-Bstatic -lSDL2 el exe incluye SDL2 compilado adentro.
+  Pero SDL2_ttf.dll en tiempo de ejecucion carga SDL2.dll por separado.
+  Resultado: dos copias de SDL2 vivas en memoria con heaps distintos.
+
+  RAM cuando el juego corria:
+  ┌─────────────────────────────────────────┐
+  │  PseudoGames.exe                        │
+  │  ┌───────────────────────────────────┐  │
+  │  │  SDL2 (estatico, dentro del exe)  │  │
+  │  │  runtime: UCRT                    │  │
+  │  │  SDL_FreeSurface() → UCRT free    │  │
+  │  └───────────────────────────────────┘  │
+  │                                         │
+  │  SDL2_ttf.dll → depende de SDL2.dll     │
+  │  ┌───────────────────────────────────┐  │
+  │  │  SDL2.dll                         │  │
+  │  │  runtime: msvcrt                  │  │
+  │  │  SDL_CreateRGBSurface() → msvcrt  │  │
+  │  └───────────────────────────────────┘  │
+  └─────────────────────────────────────────┘
+
+EL CRASH PASO A PASO
+─────────────────────
+  // TTF llama internamente a SDL2.dll que usa msvcrt malloc
+  SDL_Surface *sup = TTF_RenderUTF8_Blended(fuente, "TEXTO", color);
+  //   sup = 0x1A2B3C4D  <- bloque en heap de msvcrt
+
+  // Nuestro exe llama a su SDL2 estatico que usa UCRT free
+  SDL_FreeSurface(sup);
+  //   UCRT free(0x1A2B3C4D)
+  //   UCRT busca ese bloque en SU heap... no lo encuentra
+  //   → Access Violation → CRASH
+
+  La analogia: pedir un envase en un local y devolverlo en otro.
+  El segundo no lo reconoce y explota.
+
+POR QUE EN LINUX NO PASABA
+───────────────────────────
+  Linux tiene un solo runtime (glibc). Tanto el exe como SDL2 y SDL2_ttf
+  comparten el mismo malloc/free. No hay heaps separados. Nunca crashea.
+  Por eso el bug era invisible hasta probar en Windows.
+
+LA SOLUCION
+────────────
+  No mezclar static y dynamic SDL2. Si SDL2_ttf usa SDL2.dll, el exe
+  tambien tiene que usar SDL2.dll. Todos sobre el mismo heap.
+
+  Makefile ANTES (roto):
+    -Wl,-Bstatic -lSDL2 \
+    -Wl,-Bdynamic -lSDL2_ttf
+
+  Makefile DESPUES (correcto):
+    -lSDL2 -lSDL2_ttf
+
+  Ahora SDL2_ttf.dll y el exe usan la misma SDL2.dll.
+  Un solo heap. Cero crashes.
+
+REGLA GENERAL EN WINDOWS
+──────────────────────────
+  La memoria SIEMPRE la tiene que liberar el mismo modulo que la aloco.
+  Si una DLL aloca → esa misma DLL (o la biblioteca dinamica compartida)
+  tiene que liberar. Nunca cruzar runtimes de C.
+
+  Aplica a: malloc/free, new/delete, fopen/fclose, y cualquier estructura
+  que SDL/TTF aloca internamente y devuelve un puntero para que vos liberes.
+
+
+================================================================================
+SECCION 34 - VERIFICADOR DE NIVELES + FIX VENTANA WSLg (2026-03-19)
+================================================================================
+
+QUE SE HIZO
+───────────
+  1. Verificador de niveles (screenVerificador.c / screenVerificador.h)
+  2. Dificultad en tarjetas de nivel (JSON + struct + render)
+  3. Fix de ventana invisible en WSLg
+  4. Fix de crash al poner pantalla completa en Linux
+
+──────────────────────────────────────────────────────────────────────────────
+34.1 ARQUITECTURA DEL VERIFICADOR
+──────────────────────────────────────────────────────────────────────────────
+
+  POR QUE NO ES UN SCRIPT BASH
+  ─────────────────────────────
+  La primera idea era tener scripts/verificar.sh que validara el pseudocodigo.
+  Eso esta MAL porque:
+    - El pseudocodigo del jugador vive en memoria RAM (buffer del editor SDL)
+    - Un script bash no puede leer la RAM de otro proceso
+    - El juego ya tiene los casos_prueba en niveles.json con esperado + tolerancia
+
+  LA SOLUCION CORRECTA
+  ─────────────────────
+  El verificador vive DENTRO del juego como una pantalla mas (screenVerificador.c).
+
+  Flujo:
+    screenEditorLvl (jugador escribe pseudocodigo)
+        → [cierra editor]
+        → screenVerificador (muestra cada caso_prueba del nivel)
+            → jugador ingresa su respuesta numerica
+            → se compara con "esperado" dentro de "tolerancia" con strtod()
+            → TODOS OK → marcar_completado()
+            → FALLO    → mensaje de error, puede reintentar
+
+  COMPARACION NUMERICA
+  ─────────────────────
+  Se usa strtod() para convertir el string a double y comparar con tolerancia:
+
+    double vR = strtod(respuesta, &endR);
+    double vE = strtod(esperado,  &endE);
+    if (fabs(vR - vE) <= tol) → PASA
+
+  Si el string no es numerico (endR == respuesta), cae a strcasecmp() para
+  comparacion de texto exacto (sin importar mayusculas).
+
+  ARCHIVOS MODIFICADOS
+  ─────────────────────
+    src/screenVerificador.c   ← nuevo: la pantalla de verificacion
+    src/screenVerificador.h   ← nuevo: declaracion de screenVerificador()
+    src/screenEditorLvl.c     ← llama al verificador en vez de marcar directo
+    Makefile                  ← agrega screenVerificador.c a la compilacion
+
+  ANTES (malo - marcaba completado sin verificar):
+    screenEditorText(...);
+    marcar_completado(nivel_num);   ← siempre, sin importar si resolvio bien
+
+  DESPUES (correcto):
+    screenEditorText(...);
+    int aprobado = screenVerificador(renderer, fuente, ancho, alto, n);
+    if (aprobado)
+        marcar_completado(nivel_num);
+
+──────────────────────────────────────────────────────────────────────────────
+34.2 DIFICULTAD EN TARJETAS DE NIVEL
+──────────────────────────────────────────────────────────────────────────────
+
+  Se agrego el campo "dificultad" al JSON de niveles y se muestra en la tarjeta
+  con color segun el valor:
+    "Facil"  → verde  (80, 220, 100)
+    "Medio"  → amarillo (255, 200, 50)
+    "Dificil"→ rojo   (255, 80, 80)
+
+  CADENA DE CAMBIOS (dato importante: siempre se hace en este orden):
+    1. data/niveles.json    → agregar "dificultad": "Facil" en cada nivel
+    2. src/niveles.h        → agregar char dificultad[32] al struct Nivel
+    3. src/niveles.c        → agregar copiar_str(n->dificultad, ...) al parser
+    4. src/screenLvLs.c     → leer nv->dificultad y dibujarlo con strcmp()
+
+  REGLA APRENDIDA: el JSON es la fuente de verdad de los datos.
+  El C no decide que es facil o dificil — lo define el archivo de datos.
+  El C solo lee y muestra.
+
+──────────────────────────────────────────────────────────────────────────────
+34.3 BUG: VENTANA INVISIBLE EN WSLg
+──────────────────────────────────────────────────────────────────────────────
+
+  SINTOMA
+  ────────
+  El juego aparecia en la barra de tareas de Windows pero al hacer click
+  no se veia nada — ventana invisible / contenido negro.
+
+  CAUSA
+  ──────
+  En WSL2 con WSLg coexisten dos servidores de display:
+    - DISPLAY=:0         → X11 via XWayland
+    - WAYLAND_DISPLAY=0  → Wayland via Weston
+
+  SDL2 en Linux prefiere Wayland, pero el compositor Weston de WSLg
+  no puede pasar contenido OpenGL/hardware-acelerado al compositor
+  de Windows (DWM). El resultado: ventana existente pero invisible.
+
+  DIAGNOSTICO REALIZADO
+  ──────────────────────
+  Se agrego fprintf(stderr, "[DBG] ...") en main.c para rastrear:
+    [DBG] SDL_Init OK. Driver: x11
+    [DBG] Ventana creada OK
+    [DBG] Renderer OK
+    [DBG] Tamano ventana: 1920x1080
+
+  Todo OK tecnicamente pero sin contenido visible. El proceso corria
+  (5 segundos, 120MB RAM, sockets abiertos) pero sin nada en pantalla.
+
+  INTENTOS FALLIDOS
+  ──────────────────
+  - SDL_WINDOW_FULLSCREEN_DESKTOP sin BORDERLESS → no funciono
+  - SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE | SDL_WINDOW_MAXIMIZED → no
+  - SDL_RENDERER_SOFTWARE con fullscreen → no
+  - setenv("SDL_VIDEODRIVER", "x11", 1) → x11 ya se usaba, no cambio nada
+  - setenv("LIBGL_ALWAYS_SOFTWARE", "1", 1) → muy tarde, Mesa ya cargo
+
+  SOLUCION FINAL
+  ───────────────
+  Dos cambios en main.c:
+
+  1. Cambiar SDL_RENDERER_ACCELERATED → SDL_RENDERER_SOFTWARE
+     El renderer acelerado usa OpenGL que XWayland no puede compositar.
+     El renderer de software usa CPU puro de SDL2, sin Mesa ni OpenGL.
+
+  2. Cambiar SDL_WINDOW_FULLSCREEN_DESKTOP | SDL_WINDOW_BORDERLESS
+     → SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE (800x600)
+     Las ventanas fullscreen en WSLg no se mapean correctamente al
+     escritorio de Windows. Una ventana normal si funciona.
+
+  3. Agregar SDL_ShowWindow + SDL_RestoreWindow + SDL_RaiseWindow
+     para asegurarse que la ventana arranca visible y al frente.
+
+  4. SDL_RenderSetLogicalSize(renderer, 800, 600)
+     El juego siempre renderiza en coordenadas 800x600 y SDL escala
+     automaticamente al tamaño real de la ventana (con letterboxing
+     si la proporcion no coincide). Ningun otro archivo necesito cambios.
+
+  CODIGO FINAL en main.c:
+    SDL_Window *ventana = SDL_CreateWindow("PseudoGames",
+        SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 800, 600,
+        SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE);
+
+    SDL_Renderer *renderer = SDL_CreateRenderer(ventana, -1,
+        SDL_RENDERER_SOFTWARE);
+
+    SDL_RenderSetLogicalSize(renderer, 800, 600);
+    SDL_ShowWindow(ventana);
+    SDL_RestoreWindow(ventana);
+    SDL_RaiseWindow(ventana);
+
+    int ancho = 800, alto = 600;  // logico, no fisico
+
+──────────────────────────────────────────────────────────────────────────────
+34.4 BUG: CRASH AL ACTIVAR PANTALLA COMPLETA EN LINUX
+──────────────────────────────────────────────────────────────────────────────
+
+  SINTOMA
+  ────────
+  En screenConfig, activar "Pantalla completa: Si" cerraba el juego
+  (crash sin mensaje de error).
+
+  CAUSA
+  ──────
+  screenConfig.c llamaba SDL_SetWindowFullscreen(ventana, SDL_WINDOW_FULLSCREEN_DESKTOP).
+  En WSLg con SDL_RENDERER_SOFTWARE, cambiar a modo fullscreen en runtime
+  causa un crash en la capa XWayland/Weston.
+
+  SOLUCION
+  ─────────
+  En Linux, en vez de fullscreen real se usa maximizar/restaurar la ventana,
+  que da el mismo efecto visual sin el crash:
+
+    #ifdef _WIN32
+        SDL_SetWindowFullscreen(ventana, SDL_WINDOW_FULLSCREEN_DESKTOP);
+    #else
+        SDL_MaximizeWindow(ventana);   // "pantalla completa" en Linux/WSLg
+    #endif
+
+    #ifdef _WIN32
+        SDL_SetWindowFullscreen(ventana, 0);
+    #else
+        SDL_RestoreWindow(ventana);    // volver a ventana normal
+    #endif
+
+  En Windows sigue funcionando con fullscreen real (Direct3D/OpenGL ok).
+  En Linux usa maximize que es compatible con todos los compositors.
+
+──────────────────────────────────────────────────────────────────────────────
+35. RENDERER GPU CON FALLBACK A SOFTWARE
+──────────────────────────────────────────────────────────────────────────────
+
+  PROBLEMA
+  ─────────
+  SDL_RENDERER_SOFTWARE es el mas lento posible: usa solo CPU.
+  SDL_RENDERER_ACCELERATED usa la GPU (OpenGL/Vulkan/Metal segun plataforma)
+  pero en WSLg puede fallar si XWayland no tiene soporte OpenGL.
+
+  SOLUCION: intentar GPU primero, caer a SOFTWARE si falla
+  ──────────────────────────────────────────────────────────
+
+    SDL_Renderer *renderer = SDL_CreateRenderer(ventana, -1,
+        SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
+    if (!renderer)
+        renderer = SDL_CreateRenderer(ventana, -1, SDL_RENDERER_SOFTWARE);
+
+  VENTAJAS
+  ─────────
+  - En sistemas con GPU disponible (Windows nativo, Linux con Mesa):
+    SDL_RenderCopy va directo a VRAM. Mucho mas rapido.
+  - SDL_RENDERER_PRESENTVSYNC sincroniza al refresh del monitor.
+    Sin el SDL_Delay(16) impreciso — el frame espera exactamente
+    hasta el proximo vsync.
+  - En WSLg sin OpenGL: fallback silencioso a SOFTWARE, sin crash.
+
+  CON GPU ACTIVA: fullscreen real funciona en todos los OS
+  ─────────────────────────────────────────────────────────
+  Con SOFTWARE renderer, SDL_SetWindowFullscreen crasheaba en WSLg.
+  Con ACCELERATED, OpenGL puede manejar el cambio de modo → no crash.
+  Ya no se necesita el #ifdef WIN32 en fullscreen.
+
+──────────────────────────────────────────────────────────────────────────────
+36. FULLSCREEN UNIFICADO Y FOCO AUTOMATICO
+──────────────────────────────────────────────────────────────────────────────
+
+  PROBLEMA ANTERIOR
+  ──────────────────
+  Al cambiar a pantalla completa el usuario tenia que hacer click extra
+  en la ventana para que el juego recibiera inputs de teclado/mouse.
+  Ademas el codigo tenia #ifdef WIN32 duplicado en cada lugar.
+
+  SOLUCION: funcion aplicar_fullscreen() en screenConfig.c
+  ──────────────────────────────────────────────────────────
+
+    static void aplicar_fullscreen(SDL_Window *ventana, int activar) {
+        if (activar) {
+            if (SDL_SetWindowFullscreen(ventana, SDL_WINDOW_FULLSCREEN_DESKTOP) != 0) {
+                // fallback si el renderer no soporta fullscreen real
+                SDL_SetWindowBordered(ventana, SDL_FALSE);
+                SDL_MaximizeWindow(ventana);
+            }
+        } else {
+            SDL_SetWindowFullscreen(ventana, 0);
+            SDL_SetWindowBordered(ventana, SDL_TRUE);
+            SDL_RestoreWindow(ventana);
+        }
+        SDL_RaiseWindow(ventana);
+        SDL_SetWindowInputFocus(ventana);  // foco automatico, sin click extra
+    }
+
+  SDL_GetWindowSize DENTRO DEL LOOP DE screenConfig
+  ───────────────────────────────────────────────────
+  ancho/alto se pasan por valor a screenConfig.
+  Al cambiar de modo la ventana cambia de tamaño pero las variables
+  quedaban desactualizadas → layout roto.
+  Fix: llamar SDL_GetWindowSize al inicio de cada frame del loop.
+
+──────────────────────────────────────────────────────────────────────────────
+37. MENU ESTILO RPG + EFECTO GLITCH
+──────────────────────────────────────────────────────────────────────────────
+
+  DISEÑO
+  ───────
+  El menu anterior usaba rectangulos azules grandes que tapaban la lluvia.
+  Nuevo diseño inspirado en Final Fantasy / RPG retro:
+
+  - Panel pequeno con doble borde (borde exterior neon, interior oscuro)
+  - Fondo del panel semitransparente: la lluvia se ve detras (como vidrio)
+  - Sobre la lluvia: velo oscuro semitransparente (rgba 0,4,0,140)
+    Efecto "lluvia detras de una ventana empanada"
+  - Colores: verde neon (0, 230, 70) normal / verde brillante (180,255,180) hover
+  - Cursor > que pulsa horizontalmente con sinf()
+  - Numeros [1]-[7] en verde oscuro dim a la izquierda
+
+  CACHE DE TEXTURAS (optimizacion)
+  ─────────────────────────────────
+  Todos los textos se pre-renderizan UNA vez antes del loop:
+    - rain[2][3]  : 6 texturas para la lluvia (0/1 x cabeza/cuerpo/cola)
+    - lbl_n[7]    : labels en color normal
+    - lbl_h[7]    : labels en color hover
+    - num_t[7]    : numeros [1]-[7]
+    - tex_cur     : cursor >
+    - tex_titulo  : "PSEUDOGAMES"
+  En el loop solo se llama SDL_RenderCopy → cero llamadas TTF por frame.
+
+  EXPLOSION DE LETRAS AL SELECCIONAR
+  ────────────────────────────────────
+  Al hacer click o presionar una tecla, antes de retornar:
+    1. Se crean particulas (una por letra del label)
+    2. Cada particula tiene velocidad (vx,vy) random y gravedad
+    3. Loop de ~380ms: mover + fade out con alpha decreciente
+    4. Recien entonces retorna el numero de opcion
+  Implementado en funcion explosion() al inicio de screenMenu.c
+
+  EFECTO GLITCH / CORRUPCION
+  ───────────────────────────
+  Estado: glitch_activo + glitch_frames + next_glitch (timestamp)
+  Cada 1.2 a 6.2 segundos (random) se activa el glitch:
+    - Dura 3 a 10 frames (~50-170ms)
+    - Dibuja 2-7 scanlines horizontales verdes con alpha y posicion random
+    - Cada label no-hover tiene probabilidad de:
+        * gx_off: desplazarse 1-4px horizontal
+        * g_alpha: volverse casi transparente (40-120 de 255)
+    - El label con hover NO se corrompe (siempre visible al usuario)
+  Efecto: parece que el menu tiene corrupcion de datos, como un CRT viejo.
+
+──────────────────────────────────────────────────────────────────────────────
+38. SISTEMA DE VERIFICACION DE NIVELES (screenVerificador)
+──────────────────────────────────────────────────────────────────────────────
+
+  ARQUITECTURA
+  ─────────────
+  El verificador NO es un script externo (bash/python).
+  Es una pantalla SDL2 dentro del juego porque:
+    - El pseudocodigo del jugador vive en RAM (buffer del editor)
+    - Un script externo no puede acceder a esa RAM
+    - La validacion tiene que ser interactiva (pantalla, input, feedback)
+
+  FLUJO
+  ──────
+  screenEditorLvl → [Enter/Verificar] → screenVerificador(nivel) → resultado
+    Si aprobado: marcar_completado(nivel_num)
+    Si no: volver al editor
+
+  DATOS DE TEST EN niveles.json
+  ──────────────────────────────
+  Cada nivel tiene un array "casos_prueba":
+    {
+      "datos": "descripcion de la entrada",
+      "pregunta": "Que debe devolver tu funcion con entrada X?",
+      "esperado": "42",
+      "tolerancia": "0"
+    }
+  tolerancia > 0 permite comparacion numerica aproximada (para floats).
+
+  COMPARACION INTELIGENTE
+  ────────────────────────
+    static int comparar(respuesta, esperado, tolerancia) {
+        // intenta parsear ambos como double con strtod()
+        // si ambos son numeros: |vR - vE| <= tol
+        // si alguno es texto: strcasecmp() case-insensitive
+    }
+
+  CAMPO DIFICULTAD EN NIVELES
+  ────────────────────────────
+  Agregado a niveles.json: "dificultad": "Facil" / "Medio" / "Dificil"
+  Propagado a struct Nivel (char dificultad[32]) en niveles.h y niveles.c
+  Mostrado en screenLvLs con color:
+    Facil  → verde  (80, 220, 100)
+    Medio  → amarillo (255, 200, 50)
+    Dificil → rojo  (255, 80, 80)
+
+──────────────────────────────────────────────────────────────────────────────
+39. SCROLL EN SELECCION DE NIVELES + CANDADO EN NIVELES BLOQUEADOS
+──────────────────────────────────────────────────────────────────────────────
+
+  SCROLL CON RUEDA DEL MOUSE
+  ───────────────────────────
+  Variable: scroll_y (int, inicializada en 0)
+  Evento: SDL_MOUSEWHEEL → scroll_y -= evento.wheel.y * 45
+    evento.wheel.y > 0 = rueda hacia arriba = contenido sube
+  Teclas: SDLK_UP / SDLK_DOWN también modifican scroll_y (±40px)
+  Clamp: scroll_max = contenido_h - alto; si scroll_y > scroll_max → clamp
+
+  Cada tarjeta calcula su cy con el offset:
+    cy = start_y + row * (card_h + gap_y) - scroll_y
+
+  Tarjetas fuera de pantalla se saltean con continue (sin dibujar ni procesar).
+  SDL_RenderSetClipRect() evita que nada se dibuje fuera del viewport.
+
+  BARRA INDICADORA DE SCROLL
+  ───────────────────────────
+  Solo aparece cuando scroll_max > 0.
+  bar_h = alto * alto / contenido_h   (proporcional al viewport)
+  bar_y = scroll_y * (alto - bar_h) / scroll_max
+
+  CANDADO EN NIVELES BLOQUEADOS
+  ──────────────────────────────
+  Antes: nivel bloqueado mostraba "[BLOQUEADO]" en texto dim.
+  Ahora: se dibuja un candado con primitivas SDL:
+    - Argolla: 3 SDL_RenderFillRect (lado izq, lado der, techo)
+    - Cuerpo:  1 SDL_RenderFillRect (rectangulo mas ancho)
+    - Ojo:     1 SDL_RenderFillRect pequeño con color de fondo
+  Centrado en (cx + card_w/2, cy + card_h/2).
+  El numero de nivel se muestra igual pero en gris muy oscuro.
+
+──────────────────────────────────────────────────────────────────────────────
+40. MENU RPG — OVERLAY DE BIENVENIDA
+──────────────────────────────────────────────────────────────────────────────
+
+  CONCEPTO
+  ─────────
+  La pantalla de bienvenida NO es una pantalla separada.
+  Es un overlay que se dibuja ENCIMA del menu normal en la primera llamada.
+  El menu (lluvia + panel RPG) se renderiza primero, luego el overlay encima.
+  Esto da la sensacion de una sola pantalla cohesiva.
+
+  IMPLEMENTACION
+  ───────────────
+  static int bienvenida_activa = 1;  // static: se inicializa una vez en toda la sesion
+
+  En cada frame, si bienvenida_activa:
+    1. Dibujar overlay oscuro: SDL_SetRenderDrawColor(0,0,0,170) + FillRect NULL
+    2. Dibujar panel con borde doble neon
+    3. Titulo pulsante (reutiliza tex_titulo del menu, a escala reducida)
+    4. Version "v0.14-alpha" arriba a la derecha del panel
+    5. Lineas de descripcion del juego
+    6. Texto parpadeante "[ Presiona cualquier tecla... ]"
+  Si (tecla || clicked) → bienvenida_activa = 0
+
+  BLOQUEO DE INPUTS AL MENU
+  ──────────────────────────
+  Mientras bienvenida_activa == 1:
+    - SDL_KEYDOWN → solo cierra la bienvenida (break del inner while)
+    - SDL_MOUSEBUTTONDOWN → solo cierra la bienvenida (break del inner while)
+    - Los shortcuts [1]-[7] y clicks en botones NO se procesan
+
+  VACIADO DE COLA (flush de eventos)
+  ────────────────────────────────────
+  Cuando screenBienvenida era pantalla separada (eliminada), el evento
+  que la cerraba "rebotaba" al menu siguiente.
+  Solucion original: while (SDL_PollEvent(&flush)) {} despues de la funcion.
+  Solucion actual: al integrarla en screenMenu, el mismo loop consume
+  y bloquea el evento correctamente sin necesitar flush externo.
+
+──────────────────────────────────────────────────────────────────────────────
+41. INTEGRACION DE FRANKLY/PAED COMO VERIFICADOR AUTOMATICO
+──────────────────────────────────────────────────────────────────────────────
+
+  QUE ES FRANKLY/PAED
+  ─────────────────────
+  Frankly es el interprete/compilador del lenguaje .paed creado por el usuario.
+  Archivo: Frankly/paed (script bash ejecutable)
+  Lenguaje: .paed (pseudocodigo estilo AED de UTN)
+
+  Estructura valida de un archivo .paed:
+    ACCION nombre ES
+        AMBIENTE
+            variable: TIPO;
+        PROCESO
+            instrucciones
+    FIN_ACCION
+
+  Tipos: ENTERO, REAL, BOOLEANO, AN(n), N(n)
+  Asignacion: :=
+  Salida: ESCRIBIR(variable)
+
+  EXTENSION DE PAED: ARITMETICA CON BC
+  ──────────────────────────────────────
+  Problema original: el ejecutor de paed almacenaba el RHS como string
+  sin evaluar. P := C * (1 + R) ^ anios almacenaba la cadena literal.
+
+  Solucion: en el case := de ejecutar():
+    1. Sustituir variables conocidas en el RHS
+       for var in "${!variables[@]}"; do rhs="${rhs//$var/${variables[$var]}}"; done
+    2. Evaluar con bc:
+       resultado=$(echo "scale=6; $rhs" | bc -l 2>/dev/null)
+    3. Si bc tiene exito → guardar resultado numerico
+       Si no → guardar como texto (quitar comillas)
+
+  BUG RESUELTO: GLOB EXPANSION DEL ASTERISCO
+  ─────────────────────────────────────────────
+  Problema: set -- $linea en bash expande * como glob de archivos.
+  La linea P := C * (1 + R) ^ anios se convertia en lista de archivos.
+  Solucion: set -f antes del while read (deshabilita glob) + set +f al salir.
+
+  ARQUITECTURA DE VERIFICACION
+  ──────────────────────────────
+  Flujo:
+    Editor → F9 guarda saves/nivel_N.paed
+    screenEditorLvl → llama screenVerificador(n, "nivel_N")
+    screenVerificador → para cada caso de prueba:
+      1. preparar_archivo(): copia saves/nivel_N.paed a /tmp/sol_verificar.paed
+         inyectando las variables de datos despues de PROCESO:
+           "C=100, R=0.04" → "    C := 100;\n    R := 0.04;\n"
+      2. popen("./Frankly/paed /tmp/sol_verificar.paed 2>&1", "r")
+      3. Captura stdout completo
+      4. Extrae la ultima linea no vacia como resultado
+      5. Evalua tipo: "real" = es_numero(), "entero" = es_entero(), "texto" = non-empty
+      6. PASS si exit_code==0 y tipo correcto
+
+  CAMBIO EN NIVELES.JSON / STRUCT
+  ──────────────────────────────────
+  Antes:
+    "esperado": "112.4864", "tolerancia": "0.01", "pregunta": "Cual es P?"
+  Ahora:
+    "tipo_salida": "real"
+  El verificador NO chequea el valor exacto, solo el TIPO del output.
+  Esto es correcto pedagogicamente: el alumno demuestra que sabe
+  escribir el algoritmo, no que memorizo un resultado.
+
+  TIPOS DE SALIDA VALIDOS
+  ────────────────────────
+  "real"   → strtod() parsea sin error y la cadena se consume completa
+  "entero" → igual que real pero sin punto decimal en el string
+  "texto"  → cualquier output no vacio (AN, mensajes, etc.)
+
+  INYECCION DE DATOS
+  ───────────────────
+  La funcion preparar_archivo() en C:
+    1. Lee el .paed del alumno linea por linea
+    2. Detecta la linea "PROCESO"
+    3. Inserta inmediatamente despues las asignaciones de datos
+    4. El alumno no necesita inicializar esas variables en su algoritmo
+
+──────────────────────────────────────────────────────────────────────────────
+42. DIFICULTAD POR ESTRELLAS
+──────────────────────────────────────────────────────────────────────────────
+
+  Los niveles usan caracteres Unicode ★ en vez de texto.
+  Cada ★ ocupa 3 bytes en UTF-8 (E2 98 85).
+  Para contar estrellas: estrellas = strlen(dificultad) / 3
+
+  Colores en screenLvLs:
+    1 estrella  → verde   ( 80, 220, 100)
+    2 estrellas → amarillo (255, 200,  50)
+    3 estrellas → naranja  (255, 130,  20)
+    4 estrellas → rojo     (255,  50,  50) — BOSS
+
+================================================================================
+FIN DE LA DOCUMENTACION
+================================================================================

@@ -1,0 +1,403 @@
+================================================================================
+  PRIMEROS PARCIALES RESUELTOS — AED
+  UTN Facultad Regional Resistencia
+  Compilado de: solutions/TodosLosParciales/Parciales_1_2_3/PrimerosParciales/
+================================================================================
+
+AVISO IMPORTANTE:
+  Estos archivos son modelos RESUELTOS por estudiantes.
+  Contienen errores propios de práctica (variables no declaradas, lógica
+  incompleta, etc.). Usarlos como referencia de ESTRUCTURA, no de corrección.
+
+  NIVEL DE DIFICULTAD: Secuencias de caracteres + Archivos secuenciales
+  → Corresponden a 2do o 3er parcial, NO al primer parcial de la materia.
+
+================================================================================
+  EJERCICIO — Parcial.tema7 (Centro Bioquímico)
+================================================================================
+CONTEXTO:
+  Secuencia de caracteres con análisis del día.
+  Estructura: CódigoProtocolo(5) + ApellidoNombre(hasta ',') +
+              CantEstudios(2) + CódigosCadaEstudio(4 c/u)
+  Tipos de estudio por primera vocal: A=$300, E=$420, I=$670
+  Fin de secuencia: "*"
+
+  Ejemplo: //A2462Reina Isabel,03A123E345E333P2342Rey Leon,01E888*
+
+SE PIDE:
+  a) Generar secuencia de salida con estudios tipo "A" de pacientes con > 2 estudios
+  b) Total recaudado en el día
+  c) Promedio de estudios por paciente
+
+SOLUCIÓN:
+  Accion tema7 es
+   Ambiente
+   sec: secuencia de caracteres
+   v: caracter
+   sal: secuencia de caracteres
+   prom, tot_rec, cant_est, cant_estudios, cant_cli: entero
+   funcion conv_entero(v:caracter):entero
+       segun v hacer
+        ="1": conv_entero:= 1
+        ="2": conv_entero:= 2
+        ="3": conv_entero:= 3
+        ="4": conv_entero:= 4
+        ="5": conv_entero:= 5
+        ="6": conv_entero:= 6
+        ="7": conv_entero:= 7
+        ="8": conv_entero:= 8
+        ="9": conv_entero:= 9
+        ="0": conv_entero:= 0
+       FinSegun
+   FinFuncion
+   Proceso
+    Arr(sec)
+    Avz(sec,v)
+    Crear(sal)
+    prom:= 0
+    tot_rec:= 0
+    cant_est:= 0
+    cant_cli:= 0
+    cant_estudios:= 0
+    Mientras v <> "*" hacer
+     Mientras v <> "," hacer
+      Avz(sec,v)
+     FinMientras
+     Avz(sec,v)
+     cant_cli:= cant_cli + 1
+     cant_estudios:= cant_estudios + (conv_entero(v) * 10)
+     Avz(sec,v)
+     cant_estudios:= cant_estudios + conv_entero(v)
+     cant_est:= cant_est + cant_estudios
+     Si cant_estudios > 2 entonces
+      Para i:= 1 a (cant_estudios*4) hacer
+       Segun v hacer
+        "A": tot_rec:= tot_rec + 300
+         Para i:= 1 a 4 hacer
+          Grabar(sal,v)
+          Avz(sec,v)
+         FinPara
+        "E": tot_rec:= tot_rec + 420
+         Para i:= 1 a 4 hacer
+          Avz(sec,v)
+         FinPara
+        "I": tot_rec:= tot_rec + 670
+         Para i:= 1 a 4 hacer
+          Avz(sec,v)
+         FinPara
+       FinSegun
+      FinPara
+     FinSi
+     cant_estudios:= 0
+    FinMientras
+    Cerrar(sec)
+    Cerrar(sal)
+    prom:= prom + (cant_est/cant_cli)
+    Escribir("El total recaudado en el dia es de",tot_rec,"$")
+    Escribir("El promedio de estudios por paciente es de",prom)
+   FinProceso
+  FinAccion
+
+================================================================================
+  EJERCICIO — Parcial 1.3 (Jubilaciones Docentes)
+================================================================================
+CONTEXTO:
+  Dos secuencias con correspondencia 1 a 1:
+    - DOCENTES (chars): REGIONAL(3) + SEXO(1) + LEGAJO(5) + NOMBRE(hasta '#')
+      Fin de regional: '+'
+      Ejemplo: //FRMM22711PedroGonzalez#FRMF19245MonicaMartinez+FRC...
+    - EDAD (enteros): edad(2 dígitos) + años_aporte(2 dígitos)
+      Ejemplo: //6720,5030...FDS
+
+  Condiciones jubilación:
+    Hombres: edad entre 65 y 70, aportes >= 30 años
+    Mujeres: edad entre 60 y 70, aportes >= 30 años
+
+SE PIDE:
+  a) Generar secuencia JUBILAR para una regional ingresada por usuario:
+     legajo + nombre de docentes que cumplen condición
+  b) Informar por regional: cantidad que puede y no puede jubilarse
+
+SOLUCIÓN:
+  Accion Parcial es
+   Ambiente
+   doc: secuencia de caracteres
+   v1: caracter
+   edad: secuencia de enteros
+   v2: entero
+   salida: secuencia de caracteres
+   reg: AN
+   cant_si, cant_no, ap, ed: entero
+   bandera: booleano
+   Proceso
+    Arr(doc); Arr(edad); Crear(salida)
+    Avz(doc,v1); Avz(edad,v2)
+    cant_si:= 0; cant_no:= 0; ap:= 0; ed:= 0; bandera:= falso
+    Esc("Ingrese una regional"); Leer(reg)
+    Mientras NFDS(doc) Y NFDS(edad) hacer
+     Avz(doc,v1); Avz(doc,v1)   // saltar FR
+     Si v1 = reg entonces
+      ed:= ed + (v2 DIV 100)
+      ap:= ap + (v2 MOD 100)
+      Avz(doc,v1)
+      Segun v1 hacer
+       "M":
+        Si (ed > 65) Y (ed < 70) entonces
+         Si ap >= 30 entonces
+          Mientras v1 <> "#" hacer
+           Mientras v1 <> "+" hacer
+            Grabar(salida,v1); Avz(doc,v1)
+           FinMientras
+           Avz(doc,v1)
+          FinMientras
+          cant_si:= cant_si + 1
+         Sino
+          cant_no:= cant_no + 1; bandera:= verdadero
+          Mientras v1 <> "#" hacer Avz(doc,v1) FinMientras
+         FinSi
+        Sino
+         cant_no:= cant_no + 1; bandera:= verdadero
+         Mientras v1 <> "#" hacer Avz(doc,v1) FinMientras
+        FinSi
+       "F":
+        Si (ed > 60) Y (ed < 70) entonces
+         Si ap >= 30 entonces
+          Mientras v1 <> "#" hacer
+           Mientras v1 <> "+" hacer
+            Grabar(salida,v1); Avz(doc,v1)
+           FinMientras
+           Avz(doc,v1)
+          FinMientras
+          cant_si:= cant_si + 1
+         Sino
+          cant_no:= cant_no + 1; bandera:= verdadero
+          Mientras v1 <> "#" hacer Avz(doc,v1) FinMientras
+         FinSi
+        Sino
+         bandera:= verdadero
+         Mientras v1 <> "#" hacer Avz(doc,v1) FinMientras
+        FinSi
+      FinSegun
+     Sino
+      bandera:= verdadero
+      Mientras v1 <> "#" hacer Avz(doc,v1) FinMientras
+     FinSi
+     ed:= 0; ap:= 0
+     Si bandera entonces Avz(edad,v2) FinSi
+    FinMientras
+    Cerrar(edad); Cerrar(doc); Cerrar(salida)
+    Esc("Docentes que pueden jubilarse:",cant_si)
+    Esc("Docentes que NO pueden jubilarse:",cant_no)
+   FinProceso
+  FinAccion
+
+================================================================================
+  EJERCICIO — Parcial 1.2 (Supermercado — Archivo Secuencial)
+================================================================================
+CONTEXTO:
+  Archivo secuencial STOCK ordenado por: CodSucursal, Rubro, CodArticulo
+  | CodSuc N(2) | Rubro AN(20) | CodArt N(5) | FechaUltRep | StockSeg | StockAct |
+
+SE PIDE:
+  1. Informe totales por sucursal, rubro y total general de artículos con
+     FechaUltRep anterior a fecha ingresada por usuario
+  2. Archivo de salida con artículos del rubro "Bazar" con FechaUltRep anterior
+     a esa fecha → | CodSuc | CodArt |
+
+SOLUCIÓN (con cortes de control):
+  Accion Parcial es
+   Ambiente
+   fecha = registro
+    dia: N(2); mes: N(2); anio: N(4)
+   FinRegistro
+   articulos = registro
+    cod_suc: N(2); rubro: AN(20); cod_art: N(5)
+    FechaUltRep: fecha; stock_seguridad: N(5); stock_actual: N(5)
+   FinRegistro
+   salida = registro
+    cod_suc: N(2); cod_art: N(5)
+   FinRegistro
+   arch: archivo de articulo; reg: articulos
+   arch_sal: archivo de salida; reg_sal: salida
+   resg_art, resg_rubro, resg_suc, dd, mm, aaaa: AN
+   cant_art, cant_rubro, cant_suc, total: entero
+   Procedimiento corte_art() es
+    Si reg.rubro = "bazar" entonces
+     reg_sal.cod_suc:= resg_suc
+     reg_sal.cod_art:= resg_art
+    FinSi
+    cant_rubro:= cant_rubro + cant_art
+    cant_art:= 0
+    resg_art:= reg.cod_art
+   FinProcedimiento
+   Procedimiento corte_rubro() es
+    corte_art()
+    Esc("Total rubro",resg_rubro,":",cant_rubro)
+    cant_suc:= cant_suc + cant_rubro
+    cant_rubro:= 0
+    resg_rubro:= reg.rubro
+   FinProcedimiento
+   Procedimiento corte_sucursal() es
+    corte_rubro()
+    Esc("Total sucursal",resg_suc,":",cant_suc)
+    total:= total + cant_suc
+    cant_suc:= 0
+    resg_suc:= reg.cod_suc
+   FinProcedimiento
+   Proceso
+    Abrir E/(arch); Abrir S/(arch_sal)
+    Leer(arch,reg)
+    cant_art:=0; cant_rubro:=0; cant_suc:=0; total:=0
+    resg_art:= reg.cod_art; resg_rubro:= reg.rubro; resg_suc:= reg.cod_suc
+    Esc("Ingrese dia"); Leer(dd)
+    Esc("Ingrese mes"); Leer(mm)
+    Esc("Ingrese anio"); Leer(aaaa)
+    Mientras NFDA(arch) hacer
+     Si resg_suc <> reg.cod_suc entonces
+      corte_sucursal()
+     Sino
+      Si resg_rubro <> reg.rubro entonces
+       corte_rubro()
+      Sino
+       Si resg_art <> reg.cod_art entonces
+        corte_art()
+       FinSi
+      FinSi
+     FinSi
+     Si (reg.FechaUltRep.dia < dd Y reg.FechaUltRep.mes = mm) O
+        (reg.FechaUltRep.mes < mm) entonces
+      cant_art:= cant_art + 1
+     FinSi
+     Leer(arch,reg)
+    FinMientras
+    corte_sucursal()  // último corte
+    Cerrar(arch); Cerrar(arch_sal)
+    Esc("Total general:",total)
+   FinProceso
+  FinAccion
+
+================================================================================
+  EJERCICIO — Parcial2024.E1F1 (Peaje — Secuencia + Archivo)
+================================================================================
+CONTEXTO:
+  Secuencia: DíaDía(2c) + FeriNorm(1c: S/N) + [vehículos hasta '!']
+  Por vehículo: Categoría(1c) + Patente(5c) + ...
+  Fin del día: '!'
+
+SE PIDE:
+  1. Secuencia de salida con vehículos de viernes/sábado/domingo
+     → usar función DiaDeLaSemana(dia,mes,anio)
+  2. Por día: cantidad de vehículos por categoría (1-5)
+  3. Cantidad en feriados + total recaudado en feriados
+
+================================================================================
+  EJERCICIO — Parcial2024.E1F2 (Peaje — dos secuencias)
+================================================================================
+CONTEXTO:
+  Dos secuencias paralelas con datos de peaje.
+  sec1: días + datos de fecha
+  sec2: vehículos por día (termina con '-')
+
+SE PIDE:
+  1. Secuencia de salida con patentes de vehículos con descuento en mes ingresado
+  2. Total recaudado por categoría y cantidad total de vehículos
+
+================================================================================
+  EJERCICIO — Parcial2024.1 (Rescate de Mascotas — dos secuencias)
+================================================================================
+CONTEXTO:
+  Dos secuencias con correspondencia:
+    - res: datos de mascotas (ID 2c + Tipo 1c "C"=canino/"F"=felino + Nombre hasta '#' + Raza 3c)
+    - adop: datos de adopciones (ID 2c + datos hasta '%')
+
+SE PIDE:
+  1. Secuencia de salida con nombre de mascota + datos del adoptante,
+     solo para caninos adoptados
+  2. % de perros y gatos no adoptados
+
+  Ejercicio 2 — Archivo indexado ADOPTADOS:
+  Cortes por departamento, localidad, barrio
+  Informar cantidad de perros y gatos por barrio/localidad
+
+================================================================================
+  EJERCICIO — Recu2024 (Atletas — dos secuencias)
+================================================================================
+CONTEXTO:
+  Dos secuencias:
+    - histo: historial de atletas (tipo "P"=presente/"A"=ausente + datos hasta '#')
+    - info: información adicional (hasta '@' por deportista)
+
+SE PIDE:
+  Generar secuencia de salida con atletas presentes cuyo nombre inicia con vocal
+  y comparar edades
+
+  Ejercicio 2 — Archivo ATLETAS ordenado por delegacion, deporte, credencial
+  Cortes de control por delegación y deporte
+  Archivo de salida con delegaciones + conteo mayores/menores de 25 años
+
+================================================================================
+  EJERCICIO — Recu2025 (Atletas — versión simplificada)
+================================================================================
+CONTEXTO:
+  Dos secuencias:
+    - hist: historial (tipo "O"/"X" + datos hasta '#')
+    - datos: info atletas (nombre 3c + edad 2c + historial hasta '#', termina en '@')
+
+SE PIDE:
+  Para atletas con tipo "O" cuyo nombre inicia con vocal:
+  grabar en secuencia de salida + comparar con edad ingresada por usuario
+
+================================================================================
+  TEMAS QUE APARECEN EN TODOS ESTOS EJERCICIOS
+================================================================================
+1. Secuencias de caracteres paralelas (dos secuencias con correspondencia 1 a 1)
+2. Función conv_entero() — convertir carácter a entero con SEGUN
+3. Generación de secuencia de salida (CREAR + GRABAR)
+4. Cortes de control en archivos secuenciales (2 o 3 niveles)
+5. Archivos indexados con CLAVE compuesta
+6. Procedimientos de corte anidados
+7. Banderas booleanas para control de flujo
+8. Contadores y acumuladores por nivel (sucursal/rubro/artículo)
+
+================================================================================
+  PATRÓN ESTÁNDAR — SECUENCIA DE CARACTERES
+================================================================================
+  Accion nombre es
+   Ambiente
+   sec: secuencia de caracteres
+   v: caracter
+   sal: secuencia de caracteres
+   // variables
+   Proceso
+    Arr(sec); Avz(sec,v)
+    Crear(sal)
+    // inicializar variables
+    Mientras NFDS(sec) [Y NFDS(sec2)] hacer
+     // procesar carácter actual
+     Avz(sec,v)
+    FinMientras
+    Cerrar(sec); Cerrar(sal)
+    // resultados
+   FinProceso
+  FinAccion
+
+================================================================================
+  PATRÓN ESTÁNDAR — ARCHIVO SECUENCIAL CON CORTE DE CONTROL
+================================================================================
+  Abrir E/(arch)
+  Leer(arch,reg)
+  resg_clave1:= reg.clave1
+  resg_clave2:= reg.clave2
+  Mientras NFDA(arch) hacer
+   Si resg_clave1 <> reg.clave1 entonces
+    corte_nivel1()
+   Sino
+    Si resg_clave2 <> reg.clave2 entonces
+     corte_nivel2()
+    FinSi
+   FinSi
+   // acumular
+   Leer(arch,reg)
+  FinMientras
+  corte_nivel1()  // ← NUNCA olvidar el último corte fuera del Mientras
+  Cerrar(arch)

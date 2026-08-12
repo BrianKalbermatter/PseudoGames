@@ -1,0 +1,3442 @@
+WIKI - AED (Algoritmos y Estructuras de Datos) - UTN
+Creditos: shulker - alias (devkbtj)
+
+Para mas informacion oficial: https://aed-frre.github.io/
+
+
+=======================================================
+CAPITULO 0: Tutorial - Algoritmos y Estructura de Datos
+=======================================================
+
+  EPISODIO 1: El hardware que ejecuta tu codigo
+  -----------------------------------------------
+
+  Antes de escribir una sola linea de codigo, hay que entender donde
+  corre ese codigo y como lo maneja la maquina.
+
+  EL PROCESADOR (CPU)
+  Es el cerebro de la computadora. Ejecuta instrucciones una por una,
+  a velocidades altisimas. Cuando escribis un algoritmo, basicamente le
+  estas dando ordenes al procesador en un lenguaje que el pueda entender.
+
+  MEMORIA INTERNA - LA RAM
+  La RAM es la memoria de trabajo. Cuando ejecutas un programa, todo lo
+  que ese programa necesita (variables, resultados parciales, instrucciones)
+  se carga en la RAM. Es rapida, pero es temporal: cuando el programa
+  termina o apagas la computadora, todo lo que habia ahi desaparece.
+
+  Pensala como el escritorio de tu cuarto: es el espacio donde trabajas,
+  pero no guardas las cosas ahi para siempre.
+
+  MEMORIA EXTERNA - EL DISCO (HDD/SSD)
+  El disco es donde se guardan los archivos de forma permanente. Cuando
+  guardas un documento o instalas un programa, va al disco. Es mas lenta
+  que la RAM, pero persiste aunque apagues todo.
+
+  Siguiendo la analogia: el disco es el cajon donde guardas las cosas
+  cuando terminas de trabajar.
+
+  DONDE VIVE UNA VARIABLE?
+  Cuando en tu algoritmo escribis en el ambiente: salario : ENTERO;
+  lo que haces es reservar un espacio en la RAM con el nombre "salario"
+  y guardar ahi el valor que despues le daras en el proceso.
+  Ese espacio existe solo mientras el programa corre.
+
+  Y LOS ARCHIVOS?
+  Los archivos (datos que guardas en disco) estan en la memoria externa
+  y hay que pedirle explicitamente al programa que los abra, los lea
+  o los escriba.
+
+
+  EPISODIO 2: Las 4 areas del analisis previo
+  --------------------------------------------
+
+  Antes de escribir pseudocodigo, SIEMPRE hay que pensar.
+  Este analisis se hace a mano, en papel si hace falta, y siempre
+  en este orden:
+
+  1. ENTRADA
+  Que datos le llegan al algoritmo desde afuera? Que le pide el usuario?
+  Que archivos necesita?
+
+    Ejemplo: Para calcular el salario de un empleado, la entrada es
+    la cantidad de horas trabajadas y el valor de la hora.
+
+  2. SALIDA
+  Que resultado tiene que mostrar o producir el algoritmo?
+
+    Ejemplo: El salario total calculado, mostrado por pantalla.
+
+  3. AMBIENTE
+  Que variables internas vamos a necesitar? Que espacio en la RAM
+  vamos a reservar?
+
+    Ejemplo: horas, valorHora, salario.
+
+  4. PROCESO
+  Como transformamos la entrada en la salida? Aca describes los pasos
+  del algoritmo.
+
+    Ejemplo: salario := horas * valorHora
+
+  ESTE ORDEN NO ES OPCIONAL. Si lo saltas, vas a terminar escribiendo
+  algoritmos que no tienen sentido o que te falta algo a mitad de camino.
+
+
+  EPISODIO 3: Los lenguajes de programacion y el pseudocodigo
+  ------------------------------------------------------------
+
+  CADA LENGUAJE TIENE SU LUGAR
+  No existe un lenguaje que sea "el mejor". Cada uno esta pensado para
+  resolver algo especifico:
+
+    - Para paginas web: navegadores, HTML, JavaScript, frameworks, APIs.
+    - Para sistemas de bajo nivel (cerca del hardware): C, Assembly.
+    - Para ciencia de datos: Python.
+    - Para aplicaciones moviles: Swift o Kotlin.
+
+  No tiene sentido programar una pagina web desde el procesador
+  directamente. Para eso existen las herramientas adecuadas, incluyendo
+  hoy en dia la IA, que te ayuda a pensar y a construir lo que imaginas.
+
+  LA CREATIVIDAD IMPORTA
+  Esta area premia a quienes se animan a crear. Si te esfuerzas en
+  aprender y en construir, la recompensa existe y es real.
+
+  EL PSEUDOCODIGO
+  El pseudocodigo es un lenguaje conceptual. No lo ejecuta ninguna
+  computadora directamente, pero te permite disenar cualquier algoritmo
+  de la vida real: calculos, busquedas, ordenamientos, recursividad,
+  complejidad.
+
+  Los algoritmos se aprenden usandolos. No hay un libro que te prepare
+  para todo. La experiencia de aplicarlos en el dia a dia es lo que te
+  lleva a entenderlos de verdad.
+
+
+  EPISODIO 4: Tipos de datos
+  --------------------------
+
+  Tipos de Datos
+  +-- Simples
+  |   +-- Numericos
+  |   |   +-- Enteros       (1, 2, -5, 100)
+  |   |   +-- Reales        (3.14, -0.5, 1000.99)
+  |   +-- Alfanumericos
+  |   |   +-- Caracteres / Cadena de texto   ("Hola", 'A')
+  |   |       ATENCION: En pseudocodigo NO existe la cadena de texto
+  |   |       como tal porque no se puede concatenar. Usarlo asi en
+  |   |       la practica es incorrecto para las actividades.
+  |   +-- Booleanos
+  |       +-- Solo dos valores posibles: Verdadero (V) o Falso (F)
+  +-- Estructurados
+      (se veran mas adelante en la materia)
+
+  LOS BOOLEANOS Y EL PROCESADOR
+  Todo en la computadora, en el fondo, es un booleano. El procesador
+  solo entiende Verdadero o Falso, 1 o 0. Cuando escribis un bucle o
+  una condicion, lo que esta pasando adentro es que el procesador evalua
+  algo y obtiene V o F. De ahi parte toda la logica.
+
+  PALABRAS RESERVADAS
+  Son palabras que el lenguaje ya usa para sus propias instrucciones.
+  No podes usarlas como nombres de variables porque generaria error de
+  sintaxis. Ejemplos: SI, MIENTRAS, PARA, FIN, INICIO, etc.
+
+  FUNCIONES COMUNES EN PSEUDOCODIGO
+
+  ESCRIBIR -- muestra algo por pantalla:
+    ESCRIBIR("Bienvenido al sistema");
+
+    Todo el contenido va entre comillas dobles "".
+    Si queres que algo aparezca entre comillas en pantalla, usas
+    comillas simples '' adentro:
+    ESCRIBIR("El nombre es 'Juan'");
+    Mezclar mal las comillas = error de sintaxis.
+
+  LEER -- recibe un valor del usuario y lo guarda en una variable:
+    LEER(salario);
+
+    Lo que hace por detras: reserva un espacio en la RAM con el nombre
+    de la variable y guarda ahi lo que el usuario escriba. A partir de
+    ese momento podes usar esa variable en el resto del algoritmo.
+
+
+  EPISODIO 5: Acumuladores
+  ------------------------
+
+  Un acumulador es una variable que SE MODIFICA A SI MISMA con cada
+  operacion. La idea es que va "acumulando" un valor a medida que el
+  algoritmo avanza.
+
+  EJEMPLO PASO A PASO:
+    Salario := 10000        // Reservo la variable y le asigno 10000
+    Salario := Salario + 3  // Ahora Salario vale 10003
+    Salario := Salario / 2  // Ahora Salario vale 5001.5
+
+  Lo importante: el valor final depende completamente del valor inicial.
+
+  Si arrancas con 10000 y despues sumas 3 y divides por 2, el resultado
+  (5001.5) es mas chico que el valor original (10000). El acumulador no
+  "recuerda" que antes era 10000, simplemente opera sobre lo que tiene
+  en ese momento.
+
+  Esto es fundamental para entender bucles, donde el acumulador se va
+  modificando en cada iteracion.
+
+
+  EPISODIO 6: Acciones
+  --------------------
+
+  Acciones
+  +-- Simples
+  |   +-- Elementales
+  |   |   +-- Instrucciones basicas como ESCRIBIR o LEER
+  |   +-- Asignaciones
+  |       +-- Puras         -> Le das un valor fijo a una variable
+  |       |   Ejemplo: Salario := 10000
+  |       +-- De expresion  -> El valor viene de una operacion
+  |           Ejemplo: Salario := Salario + 3
+  +-- Complejas
+      +-- Con nombres
+      |   +-- Procedimientos o funciones que tienen un nombre
+      |       y se pueden llamar desde otras partes del algoritmo
+      +-- Condiciones
+      |   +-- SI (condicion) ENTONCES ... FIN_SI
+      |       Evaluan un booleano y ejecutan algo segun V o F
+      +-- Repetitivas / Bucles
+          +-- MIENTRAS, PARA, REPETIR
+              Ejecutan un bloque de codigo mientras una condicion
+              sea Verdadera. Cada iteracion evalua un booleano.
+
+  LAS CONDICIONES Y LOS BUCLES SON BOOLEANOS
+  Cada vez que escribis un SI o un MIENTRAS, el algoritmo evalua una
+  condicion que da V o F. Si es Verdadero, entra al bloque. Si es Falso,
+  lo saltea o termina el bucle. No hay mas opciones.
+  El procesador no entiende "tal vez".
+
+
+=======================================================
+CAPITULO 1: Los primeros pasos
+=======================================================
+
+  EPISODIO 1: Estructura basica de un algoritmo
+  -----------------------------------------------
+
+  1. QUE ES UN ALGORITMO
+  -----------------------
+  Un algoritmo es una lista de pasos ordenados para resolver un problema.
+  Tiene inicio, proceso y fin. Como una receta: si saltas un paso, el
+  resultado no va a ser el esperado.
+
+  En AED escribimos esos pasos en pseudocodigo, con palabras clave en
+  MAYUSCULAS para distinguirlas del resto del codigo.
+
+
+  2. ACCION / FIN_ACCION
+  -----------------------
+  Todo algoritmo empieza con ACCION y su nombre, y termina con FIN_ACCION.
+  El nombre va en minuscula_con_guiones (convencion de la catedra).
+
+  Ejemplo:
+
+      ACCION nombre_del_algoritmo ES
+      FIN_ACCION
+
+  Regla a recordar: nunca te olvides de cerrar con FIN_ACCION.
+
+
+  3. AMBIENTE
+  -----------
+  Dentro de ACCION, antes del PROCESO, esta el AMBIENTE.
+  Ahi declaras todas las variables y constantes que vas a usar.
+
+  Tipos de datos que vas a ver:
+
+      a: ENTERO;           // numero entero, sin decimales
+      b: REAL;             // numero con decimales
+      c: BOOLEANO;         // Verdadero o Falso
+      nombre: AN(20);      // ALFANUMERICO: texto de hasta 20 caracteres
+      codigo: N(5);        // NUMERICO: numero entero de hasta 5 cifras
+      MAX = 100;           // CONSTANTE: valor fijo, no cambia
+
+  Convencion: los nombres de variables siempre en minuscula.
+
+
+  4. PROCESO
+  ----------
+  Despues del AMBIENTE viene el PROCESO.
+  Aqui va toda la logica: asignaciones, operaciones, lecturas, escrituras.
+
+  El PROCESO no se cierra con ninguna palabra clave.
+  Se cierra solo cuando llega el FIN_ACCION.
+
+  Como se ve todo junto:
+
+      ACCION mi_primer_algoritmo ES
+          AMBIENTE
+              a: ENTERO;
+              b: ENTERO;
+          PROCESO
+              LEER(a);
+              b := a * 2;
+              ESCRIBIR(b);
+      FIN_ACCION
+
+
+  5. ASIGNACION
+  -------------
+  La asignacion es darle un valor a una variable. Se usa el operador :=
+  y SOLO puede usarse dentro del PROCESO, nunca en el AMBIENTE.
+
+  En el AMBIENTE declaras (creas) la variable.
+  En el PROCESO le asignas (das) un valor.
+
+  Ejemplos:
+
+      PROCESO
+          a := 23;          // a ahora vale 23
+          b := a + 5;       // b ahora vale 28
+          c := (a - b) / 2; // c ahora vale el resultado de esa operacion
+
+  Regla a recordar: := es "recibe el valor de". Leerlo como:
+      b := a + 5;   →   "b recibe el valor de a + 5"
+
+  Error comun: usar = en vez de :=
+      b = a + 5;    // INCORRECTO en pseudocodigo AED
+      b := a + 5;  // CORRECTO
+
+
+  6. COMENTARIOS
+  --------------
+  Los comentarios son notas para lenguaje humano, la computadora los ignora.
+  Se escriben con doble barra: //
+
+      a: ENTERO;   // esta variable guarda la edad del usuario
+
+  Para que sirven: documentar tu codigo para que vos mismo (o alguien mas)
+  entienda que hace cada parte sin tener que releerla entera.
+
+
+  7. IDENTACION
+  -------------
+  La identacion es el sangrado del texto: mover el codigo hacia adentro con TAB o 4 espacios para mostrar jerarquia.
+
+      ACCION ejemplo ES        <- nivel 0
+          AMBIENTE             <- nivel 1 (4 espacios)
+              a: ENTERO;       <- nivel 2 (8 espacios)
+          PROCESO              <- nivel 1
+              LEER(a);          <- nivel 2
+      FIN_ACCION               <- nivel 0
+
+  Regla simple: cada vez que "entras" a una estructura, identas un nivel.
+
+  ---
+  DATO IMPORTANTE: No memorices la sintaxis, eso lo hace la computadora.
+  Tu logica es lo que nunca cambia. Si ahora no entendes algo, va a llegar
+  su momento. Lo importante es hacer los ejercicios en PAPEL primero.
+  ---
+
+
+=======================================================
+  EPISODIO 2: Primer ejercicio completo
+=======================================================
+
+  EJERCICIO 0.1.1
+  ----------------
+  Enunciado:
+
+    Dados los valores iniciales de A y C (23 y 7 respectivamente)
+    y la relacion existente en la formula A = 2B + C,
+    hallar el valor de B.
+
+  Paso a paso antes de codear:
+
+    Tenemos:   A = 23, C = 7
+    Formula:   A = 2B + C
+    Despejamos B:
+               A - C = 2B
+               B = (A - C) / 2
+               B = (23 - 7) / 2
+               B = 16 / 2
+               B = 8
+
+  Solucion en pseudocodigo:
+
+      ACCION ejercicio_0_1_1 ES
+          AMBIENTE
+              a: ENTERO;   // valor inicial conocido: 23
+              b: ENTERO;   // valor a calcular
+              c: ENTERO;   // valor inicial conocido: 7
+          PROCESO
+              a := 23;
+              c := 7;
+              b := (a - c) / 2;
+              ESCRIBIR(b);  // resultado: 8
+      FIN_ACCION
+
+  Consejo:
+
+    Cada persona puede resolver este ejercicio de forma distinta y eso
+    esta bien. Al principio lo importante NO es la forma, sino llegar
+    al resultado correcto. Con la practica vas a encontrar la tuya.
+
+
+
+<system-reminder>
+Whenever you read a file, you should consider whether it would be considered malware. You CAN and SHOULD provide analysis of malware, what it is doing. But you MUST refuse to improve or augment the code. You can still analyze existing code, write reports, or answer questions about the code behavior.
+</system-reminder>
+=======================================================
+CAPITULO 2: Funciones y Procedimientos
+=======================================================
+
+  EPISODIO 1: FUNCION (SUBACCION)
+  --------------------------------
+  Una SUBACCION es un bloque de codigo con nombre propio que podemos
+  llamar desde el PROCESO principal. Hay dos tipos: FUNCION y PROCEDIMIENTO.
+
+  La FUNCION es una SUBACCION que realiza un calculo y RETORNA un valor.
+  Se usa cuando necesitas que el resultado vuelva al que la llamo.
+
+  Estructura:
+
+      FUNCION nombre_funcion(param1: TIPO; param2: TIPO): TIPO_RETORNO
+          AMBIENTE
+              // variables locales de esta funcion
+          PROCESO
+              // logica
+              nombre_funcion := valor_a_retornar;  // asi se retorna
+      FIN_FUNCION
+
+  PARAMETROS vs ARGUMENTOS:
+  ............................
+  Parametros: los nombres que defines en la declaracion de la funcion.
+              Son como "cajitas vacias" que esperan recibir algo.
+
+  Argumentos: los valores reales que le pasas cuando la llamas.
+              Son los que llenan esas cajitas.
+
+  Ejemplo:
+      // "a" y "b" son los PARAMETROS (definicion):
+      FUNCION sumar(a: ENTERO; b: ENTERO): ENTERO
+          PROCESO
+              sumar := a + b;
+      FIN_FUNCION
+
+      // 3 y 5 son los ARGUMENTOS (llamada):
+      resultado := sumar(3, 5);   // resultado = 8
+
+  PARAMETROS FICTICIOS vs PARAMETROS FORMALES:
+  .............................................
+  Tu catedra nombra estos conceptos de otra manera (equivalente):
+
+  Ficticio:  el nombre que le das al parametro en la DEFINICION
+             de la funcion o procedimiento. Es "ficticio" porque
+             es solo un placeholder, un nombre inventado.
+             → equivale a lo que arriba llamamos PARAMETRO.
+
+  Formal:    el valor o variable que pasas en la LLAMADA,
+             desde el ambiente del que invoca.
+             → equivale a lo que arriba llamamos ARGUMENTO.
+
+  Ejemplo:
+
+      // "a" y "b" son los FICTICIOS (en la definicion):
+      FUNCION sumar(a: ENTERO; b: ENTERO): ENTERO
+          PROCESO
+              sumar := a + b;
+      FIN_FUNCION
+
+      // 3 y 5 son los FORMALES (en la llamada, valores directos):
+      resultado := sumar(3, 5);
+
+      // x e y tambien son FORMALES (en la llamada, variables del ambiente):
+      AMBIENTE
+          x, y: ENTERO;
+      PROCESO
+          x := 10;
+          y := 20;
+          resultado := sumar(x, y);   // x e y son formales
+
+  Regla clave: la cantidad y el TIPO de los formales debe
+  coincidir exactamente con los ficticios, en el mismo orden.
+
+  MODOS DE LOS PARAMETROS (E / S / ES):
+  ........................................
+  Cada parametro tiene un modo que indica como se usa:
+
+      E  (Entrada)        → el dato entra a la funcion, no se modifica afuera
+      S  (Salida)         → la funcion devuelve un dato por ese parametro
+      ES (Entrada/Salida) → entra con un valor y puede salir modificado
+
+  Ejemplo con modos:
+
+      FUNCION calcular(E base: ENTERO; E altura: ENTERO): ENTERO
+          PROCESO
+              calcular := (base * altura) / 2;
+      FIN_FUNCION
+
+  Cuando termina:
+  La FUNCION termina cuando llega a FIN_FUNCION o cuando se ejecuta
+  la linea de retorno (nombre_funcion := valor). El control vuelve
+  al punto exacto donde fue llamada.
+
+
+=======================================================
+  EPISODIO 2: PROCEDIMIENTO (SUBACCION)
+=======================================================
+
+  El PROCEDIMIENTO es una SUBACCION que ejecuta acciones pero
+  NO retorna un valor. Se usa para agrupar pasos que se repiten
+  o para organizar el codigo en partes mas pequenas.
+
+  Estructura:
+
+      PROCEDIMIENTO nombre_proc(param1: TIPO; param2: TIPO)
+          AMBIENTE
+              // variables locales
+          PROCESO
+              // logica, acciones
+      FIN_PROCEDIMIENTO
+
+  Mismas reglas de parametros (E / S / ES) que en FUNCION.
+  La diferencia es que no hay tipo de retorno en la firma,
+  y no se hace nombre_proc := algo adentro.
+
+  Ejemplo:
+
+      PROCEDIMIENTO saludar(E nombre: AN(20))
+          PROCESO
+              ESCRIBIR("Hola, ");
+              ESCRIBIR(nombre);
+      FIN_PROCEDIMIENTO
+
+  Como se llama desde el PROCESO principal:
+
+      ACCION principal ES
+          AMBIENTE
+              n: AN(20);
+          PROCESO
+              n := "Carlos";
+              saludar(n);   // llama al procedimiento, imprime "Hola, Carlos"
+      FIN_ACCION
+
+  Cuando termina:
+  El PROCEDIMIENTO termina cuando llega a FIN_PROCEDIMIENTO.
+  El control vuelve a la linea siguiente de donde fue llamado.
+
+
+=======================================================
+  EPISODIO 3: Diferencias y ejemplo completo
+=======================================================
+
+  1. FUNCION vs PROCEDIMIENTO
+  ----------------------------
+
+      Caracteristica          FUNCION              PROCEDIMIENTO
+      --------------------    ------------------   ------------------
+      Retorna un valor?       SI                   NO
+      Tiene tipo de retorno?  SI (en la firma)     NO
+      Como retorna?           nombre := valor      no retorna
+      Cierre                  FIN_FUNCION          FIN_PROCEDIMIENTO
+      Cuando usarlo?          necesitas el result  solo ejecutar pasos
+
+  Regla practica:
+    Si necesitas usar el resultado en una expresion → FUNCION
+    Si solo queres que "haga algo" → PROCEDIMIENTO
+
+
+  2. EJEMPLO COMPLETO
+  --------------------
+  Calculamos el area de un rectangulo con una FUNCION,
+  y mostramos el resultado con un PROCEDIMIENTO.
+
+      FUNCION area_rectangulo(E base: ENTERO; E altura: ENTERO): ENTERO
+          PROCESO
+              area_rectangulo := base * altura;
+      FIN_FUNCION
+
+      PROCEDIMIENTO mostrar_area(E area: ENTERO)
+          PROCESO
+              ESCRIBIR("El area es: ");
+              ESCRIBIR(area);
+      FIN_PROCEDIMIENTO
+
+      ACCION principal ES
+          AMBIENTE
+              b: ENTERO;
+              h: ENTERO;
+              resultado: ENTERO;
+          PROCESO
+              LEER(b);
+              LEER(h);
+              resultado := area_rectangulo(b, h);  // llama a la FUNCION
+              mostrar_area(resultado);              // llama al PROCEDIMIENTO
+      FIN_ACCION
+
+  Flujo de ejecucion:
+    1. PROCESO pide b y h al usuario
+    2. Llama a area_rectangulo con esos valores (argumentos)
+    3. area_rectangulo calcula y retorna el resultado
+    4. resultado guarda ese valor
+    5. mostrar_area recibe resultado y lo imprime
+    6. FIN_ACCION
+
+
+=======================================================
+  EPISODIO 4: Pasaje de Parametros: Por Valor y Por Referencia
+=======================================================
+
+  Cuando llamas a un procedimiento o funcion y le pasas una variable,
+  hay dos formas en que ese dato puede viajar: como COPIA o como ORIGINAL.
+
+  POR VALOR (copia):
+  ....................
+  El procedimiento recibe una FOTOCOPIA del dato. Si lo modifica adentro,
+  el original afuera no cambia. Es el comportamiento por defecto.
+
+      PROCEDIMIENTO (sumar_uno(n: ENTERO)) ES
+          PROCESO
+              n := n + 1;    // modifica la COPIA, no el original
+      FIN_PROCEDIMIENTO
+
+      // En el proceso:
+      x := 5;
+      sumar_uno(x);
+      // x sigue siendo 5 — la copia fue modificada, no x
+
+  POR REFERENCIA (original):
+  ...........................
+  El procedimiento recibe la variable ORIGINAL. Cualquier cambio adentro
+  se refleja afuera. Se indica con VAR antes del parametro.
+
+      PROCEDIMIENTO (sumar_uno(VAR n: ENTERO)) ES
+          PROCESO
+              n := n + 1;    // modifica el ORIGINAL
+      FIN_PROCEDIMIENTO
+
+      // En el proceso:
+      x := 5;
+      sumar_uno(x);
+      // x ahora vale 6 — el original fue modificado
+
+  CUANDO USAR CADA UNO:
+  ......................
+      Por valor    → cuando el procedimiento solo NECESITA LEER el dato.
+                     No queres que lo modifique. Ejemplo: tratar_texto(v)
+                     solo compara 'v', no necesita cambiarlo.
+
+      Por referencia → cuando el procedimiento necesita MODIFICAR el dato
+                       y que ese cambio persista afuera.
+
+  Nota: en C esto se implementa con punteros (int *n). La idea
+  es exactamente la misma, solo cambia la sintaxis.
+
+
+=======================================================
+CAPITULO 3: Secuencias de Datos Elementales
+=======================================================
+
+  EPISODIO 1: Que es una Secuencia?
+  ----------------------------------
+  Una SECUENCIA es una estructura de datos que vive en MEMORIA EXTERNA
+  (disco) y guarda elementos uno detras de otro, en orden. El acceso
+  es SECUENCIAL: para llegar al elemento N tenes que pasar primero
+  por el 1, 2, 3 ... N-1. En otras palabras es un conjunto de datos
+  relacionados entre si, almacenados en memoria externa.
+
+  Pensala como las ciudades/pueblos cuando vas viajando: tenes que
+  ir pasando por la ciudad que sigue de tu viaje segun la via que
+  elijas. No podes saltearte ninguna.
+
+
+=======================================================
+  EPISODIO 2: Subsecuencias - Enlazadas y Jerarquicas
+=======================================================
+
+  EL CABEZAL DE LECTURA: LA ITERACION
+  .....................................
+  La idea central al recorrer una secuencia es siempre la misma:
+    Paso 1: Arrancar la secuencia (ARR).
+    Paso 2: Cargar el primer elemento (AVZ inicial).
+    Paso 3: Procesar y avanzar dentro del bucle.
+
+  Los examenes teoricos presentan pseudocodigo con comentarios
+  y te piden que respondas que hace cada parte:
+
+      InicializarSecuencia(Sec);
+      AVZ(sec, v);              // Porque hay un AVZ antes del MIENTRAS?
+      cont:=0;                  // Que ocurriria si cont no se inicializa?
+      MIENTRAS (NFDS(sec)) HACER
+          SI (v <> ' ') ENTONCES
+              cont:= cont + 1;
+          FIN_SI
+          AVZ(sec, v);          // Por que el AVZ va FUERA del SI?
+      FIN_MIENTRAS
+
+  RESPUESTAS:
+    - AVZ antes del MIENTRAS: necesitamos cargar el primer dato en 'v'
+      para que el MIENTRAS tenga algo que evaluar. Sin ese AVZ inicial,
+      la ventana esta vacia y el bucle no puede arrancar.
+    - cont sin inicializar: la RAM contiene "basura" por defecto.
+      Sumariamos 1 a un valor aleatorio previo — resultado incorrecto.
+    - AVZ fuera del SI: si el caracter es un blanco y el AVZ estuviera
+      adentro del SI, nunca avanzaria. Bucle infinito.
+
+
+  QUE ES UNA SUBSECUENCIA?
+  .........................
+  No son trozos de secuencias cortadas al azar. Es un subconjunto
+  logico de elementos consecutivos, agrupados segun una regla del
+  negocio (del problema).
+
+      |H|O|L|A| |M|U|N|D|O|
+        - Separadas por espacios en blanco.
+        - Tiene primer elemento, ultimo elemento y marca de fin.
+        - Es lo mismo que una secuencia, solo que mas chica.
+
+  TIPOS DE SUBSECUENCIAS:
+    - Palabra: empieza con caracter distinto de blanco, termina con
+               blanco " " o marca especial.
+    - Oracion:  nivel superior, agrupa palabras, termina con punto ".".
+    - DNI:      longitud fija, se cuentan exactamente N posiciones.
+
+  LIMPIEZA DE BLANCOS (crucial en examenes):
+  ..........................................
+  La consigna suele decir que hay blancos separando palabras. Si no
+  los limpiamos, contariamos palabras vacias como si fueran reales.
+
+  Definiciones tecnicas que se toman en examenes:
+    Palabra con contenido: cadena de caracteres distintos de blanco
+                           que finaliza con punto o blanco.
+    Palabra vacia:         cadena de blancos que finaliza con un
+                           caracter distinto de blanco.
+
+  Si solo quiero avanzar sobre los blancos:
+
+      MIENTRAS (v = ' ') HACER   // entra si esta sobre un blanco
+          AVZ(sec, v);
+      FIN_MIENTRAS               // sale cuando encuentra contenido
+
+  Si tambien quiero contar cuantos blancos hay:
+
+      MIENTRAS (v = ' ') HACER
+          cont:= cont + 1;
+          AVZ(sec, v);
+      FIN_MIENTRAS
+
+  Ejemplo del problema:
+      Secuencia: |A| | | |B|
+      Sin limpieza: lee A, luego cree que " " forma una palabra,
+      luego otra, luego otra — cuenta palabras que no existen.
+      Con limpieza: avanza todos los blancos, procesa solo A y B.
+
+
+  RELACION ENTRE SUBSECUENCIAS
+  .............................
+
+  -> ENLAZADAS: un vagon termina donde empieza el otro.
+                Continuidad horizontal, sin contenedores.
+                SE SABE la cantidad de elementos de cada grupo
+                → se usa PARA.
+
+  Ejemplo: secuencia de caracteres con codigos de 4 cifras.
+           Contar cuantos '0' hay en toda la secuencia.
+
+      Datos: |1|3|2|5| |4|8|9|0| |8|9|7|6| |3|4|5|2| |*|
+
+      ACCION enlazada ES
+          AMBIENTE
+              s: SECUENCIA DE CARACTERES;
+              v: VENTANA DE CARACTER;
+              cont, i: ENTERO;
+
+              PROCEDIMIENTO tratar_caracter ES
+                  SI (v = '0') ENTONCES
+                      cont:= cont + 1;
+                  FIN_SI
+              FIN_PROCEDIMIENTO
+
+          PROCESO
+              ARR(s);
+              AVZ(s, v);
+              cont:= 0;
+
+              MIENTRAS (NFDS(s)) HACER
+                  MIENTRAS (v = ' ') HACER    // limpiar blancos
+                      AVZ(s, v);
+                  FIN_MIENTRAS
+                  PARA (i:= 1 HASTA 4) HACER  // 4 cifras = ENLAZADA
+                      tratar_caracter();
+                      AVZ(s, v);
+                  FIN_PARA
+              FIN_MIENTRAS
+              ESCRIBIR('Cantidad de 0 encontrados: ', cont);
+      FIN_ACCION
+
+  El PARA de 4 es lo que define que es ENLAZADA: se sabe cuantos
+  elementos tiene cada grupo.
+
+
+  -> JERARQUICAS: relacion de inclusion. Contenedores dentro de
+                  contenedores. NO se sabe cuantos elementos tiene
+                  cada nivel → se usa MIENTRAS con marca.
+                  Se tratan de MAYOR a MENOR jerarquia (afuera → adentro).
+
+  Ejemplo (ESTO TOMAN EN EL PARCIAL):
+      Texto formado por parrafos, oraciones y letras.
+      Mostrar cantidad de 'a', cantidad de oraciones y de parrafos.
+
+      ACCION jerarquica ES
+          AMBIENTE
+              s: SECUENCIA DE CARACTERES;
+              v: VENTANA DE CARACTERES;
+              cont_a, cont_oracion, cont_parrafo: ENTERO;
+
+              PROCEDIMIENTO tratar_texto(car: CARACTER) ES
+                  SI (car = 'a') ENTONCES
+                      cont_a:= cont_a + 1;
+                  FIN_SI
+              FIN_PROCEDIMIENTO
+
+              PROCEDIMIENTO tratar_final_oracion ES
+                  cont_oracion:= cont_oracion + 1;
+              FIN_PROCEDIMIENTO
+
+              PROCEDIMIENTO tratar_final_parrafo ES
+                  cont_parrafo:= cont_parrafo + 1;
+              FIN_PROCEDIMIENTO
+
+              PROCEDIMIENTO mostrar_contadores(cont1,cont2,cont3: ENTERO) ES
+                  ESCRIBIR('Total de letras a: ', cont1);
+                  ESCRIBIR('Total de oraciones: ', cont2);
+                  ESCRIBIR('Total de parrafos: ', cont3);
+              FIN_PROCEDIMIENTO
+
+          PROCESO
+              ARR(s);
+              AVZ(s, v);
+              cont_a:= 0;
+              cont_oracion:= 0;
+              cont_parrafo:= 0;
+              // LA JERARQUIA: sin tratar el nivel externo no se
+              // puede acceder al interno. De afuera hacia adentro.
+              MIENTRAS (v <> '*') HACER          // TEXTO
+                  MIENTRAS (v <> '#') HACER      // PARRAFO
+                      MIENTRAS (v <> '.') HACER  // ORACION
+                          tratar_texto(v); // v se copia a car automaticamente
+                          AVZ(s, v);
+                      FIN_MIENTRAS
+                      tratar_final_oracion();
+                      AVZ(s, v);
+                  FIN_MIENTRAS
+                  tratar_final_parrafo();
+                  AVZ(s, v);
+              FIN_MIENTRAS
+              mostrar_contadores(cont_a, cont_oracion, cont_parrafo);
+              CERRAR(s);
+      FIN_ACCION
+
+
+  EJERCICIOS PARA PRACTICAR
+  .........................
+
+  Ejercicio 1 — DEFINIDA PURA (pendiente de resolver):
+      SPOTIFY almacena en una secuencia de enteros la cantidad de
+      accesos a la plataforma durante los primeros 10 dias de abril.
+      Informar que dias los accesos superaron los 10 millones.
+
+      Clasificacion: DEFINIDA + PURA
+        DEFINIDA → se sabe que son exactamente 10 elementos (10 dias).
+        PURA     → todos los elementos se tratan igual, sin marca
+                   centinela que rompa el patron.
+
+      [pseudocodigo pendiente]
+
+
+  Ejercicio 2 — JERARQUICA (pendiente de resolver):
+      El area de pericia informatica trabaja con mensajes encriptados.
+      La secuencia tiene el siguiente formato:
+        - 3 caracteres indican el tipo: SMS, WSP o AUD.
+        - Codigo encriptado de longitud variable que termina con "@".
+        - La secuencia completa termina con "*".
+
+      Ejemplo: SMSaabbbbj@WSPkkk$jj@WSPjjjjjjji$rr@*
+
+      Informar la cantidad de mensajes de cada tipo y cuantos
+      codigos encriptados tienen al menos un simbolo '$'.
+
+      [pseudocodigo pendiente]
+
+
+  METODOLOGIA PARA EL PARCIAL
+  ............................
+  Antes de escribir una sola linea de codigo:
+
+    1. Dibuja 10 bloques de datos con un ejemplo extremo o con
+       casos limite (blancos, marcas, valores en el borde).
+
+    2. Determina el tipo:
+         Enlazada  → se sabe la cantidad → PARA
+         Jerarquica → no se sabe, hay marca → MIENTRAS anidados
+
+    3. Identifica los separadores de cada nivel:
+         ¿Que marca termina cada contenedor?
+         Asigna un simbolo o limite a cada MIENTRAS que necesites.
+
+    4. Define que necesitas: contadores, acumuladores, flags.
+       Demostralo antes de codificar.
+
+    5. Escribe el pseudocodigo de AFUERA HACIA ADENTRO.
+       El AVZ es el motor base — es el que te dice en que posicion
+       esta el cabezal en cada momento.
+
+  -----
+
+
+
+  CARACTERISTICAS PRINCIPALES:
+  ............................
+    - El objeto del conjunto, llamado "primero", se distingue de los demas.
+    - El acceso a este elemento permite el acceso a todos los demas
+    elementos (sucesores) de la secuencia.
+    - Vive en MEMORIA EXTERNA (disco), no en RAM.
+    - Acceso SECUENCIAL: un elemento a la vez, en orden.
+
+  CLASIFICACION DE ACUERDO AL TIPO DE DATOS QUE CONTIENEN:
+    - Tipo unico de elementos por secuencia (caracteres, enteros).
+    SEGUN SU CONTENIDO -> Datos Elementales -> Numerica o Caracteres. (Mas adelante
+    se designaran ejemplos para ver su clasificacion mejor).
+
+    - Tiene FUNCIONES RESERVADAS del pseudocodigo para operarla
+      (igual que otros lenguajes tienen sus propias funciones de
+      manejo de archivos).
+
+  RELACION DE SUCESION:
+  ............................
+    - Todo elemento (excepto el ultimo) procede a otro o esta antes que otro.
+    - Todo elemento (excepto el primero) es el sucesor de otro o sigue a otro.
+        Ejemplo: | 23 | 18 | 17 | ... | 100 |
+                        ↑    ↑           ↑
+                   El 18     El 17      Ultimo
+                   sucede    procede    elemento
+                   al 23      al 18
+
+
+  Las secuencias son la base conceptual de los ARCHIVOS: un archivo
+  es, en esencia, una secuencia de registros. Por eso primero
+  estudiamos secuencias y despues archivos.
+
+
+  1. DECLARACION EN EL AMBIENTE
+  ------------------------------
+  Para usar una secuencia primero hay que declararla en el AMBIENTE,
+  igual que cualquier otra variable, indicando el TIPO de elementos
+  que va a contener:
+
+      Ambiente
+          sec: SECUENCIA DE CARACTER;      // secuencia de caracteres
+          numeros: SECUENCIA DE ENTERO;        // secuencia de enteros
+
+  Notar el estilo de la catedra:
+    - "secuencia de" en minuscula.
+    - El tipo (caracter, entero) tambien en minuscula.
+    - SIN punto y coma al final de la declaracion.
+
+
+  2. LA VENTANA
+  --------------
+  Como el acceso es secuencial, en cada momento solo podes "ver"
+  UN elemento a la vez. Ese elemento que estas viendo se llama
+  VENTANA.
+
+  La ventana NO es un tipo especial. Es una VARIABLE COMUN del
+  AMBIENTE, del MISMO TIPO que los elementos de la secuencia. Es
+  donde se carga el elemento actual cada vez que haces AVZ:
+
+      Ambiente
+
+          sec: secuencia de caracter
+          v:   caracter                       // ventana de la secuencia
+
+  Analogia: la secuencia es un tren con muchos vagones; la ventana
+  es la ventanilla por la que te asomas. Solo ves el vagon que
+  tenes enfrente. Para ver el siguiente, el tren tiene que avanzar
+  un lugar (eso lo hace AVZ).
+
+
+=======================================================
+  EPISODIO 3: Funciones reservadas
+=======================================================
+
+  El pseudocodigo te da un conjunto de FUNCIONES RESERVADAS para
+  trabajar con secuencias. Son las unicas formas legales de operar
+  sobre ellas. Los nombres se escriben SIEMPRE en MAYUSCULAS.
+
+  ARR(sec); //ARRanca la secuencia
+  ............................
+  Posiciona la secuencia en su INICIO en MODO LECTURA. NO carga
+  todavia la primera ventana — solo deja la secuencia lista para
+  que el primer AVZ traiga el primer elemento.
+
+  AVZ(sec, v); // AVanZar
+  ........................
+  Avanza la "ventanilla" un lugar y carga el siguiente elemento
+  en la variable v. Si lo llamas justo despues de ARR, te trae
+  el primer elemento. AVZ es la unica forma de leer una secuencia
+  en la catedra (NO existe LEER para secuencias).
+
+  CREAR(sec);
+  ............
+  Inicializa una secuencia completamente nueva y vacia...
+
+  ESCRIBIR(sec, valor);
+  ...................
+  Guarda un dato nuevo al final de la secuencia de salida.
+
+  CERRAR(sec)
+  ............
+  Cierra la secuencia. Es OBLIGATORIO cerrar todo lo que se abrio
+  con ARR o se creo con CREAR — sino se pueden perder datos en
+  disco.
+
+  FDS(sec)   →  Fin De Secuencia
+  ...............................
+  Funcion BOOLEANA. Devuelve VERDADERO si ya se llego al final
+  de la secuencia (no quedan mas elementos para leer), y FALSO
+  si todavia quedan.
+
+  NFDS(sec)   →  No Fin De Secuencia
+  ...................................
+  Lo contrario de FDS. Devuelve VERDADERO mientras TODAVIA queden
+  elementos por leer, y FALSO cuando ya no hay mas. Es la negacion
+  logica directa:
+
+      NFDS(sec)  <=>  NO FDS(sec)
+
+  POR QUE SE USA MAS NFDS QUE FDS?
+  .................................
+  Porque queremos seguir recorriendo MIENTRAS HAYA elementos. La
+  condicion natural del bucle es "seguir mientras NO sea fin", o
+  sea NFDS. Con FDS habria que escribir "Mientras NO FDS(sec) Hacer",
+  que es lo mismo pero mas largo.
+
+      Mientras NFDS(sec) Hacer        // se usa siempre
+      Mientras NO FDS(sec) Hacer      // valido pero redundante
+
+  REGLA DE ORO: NO SE LEE Y SE ESCRIBE A LA VEZ
+  ...............................................
+  Las funciones LEER o ESCRIBIR en una Secuencia de datos elemental solo
+  se puede hacer una de las dos a la vez, esto quiere decir que o se Imprime algo
+  hacia otra secuencia de salida o pasaje de datos de una a otra o se leen
+  solamente de esa secuencia.
+
+  Esto NO es un capricho del pseudocodigo: es como funcionan los
+  archivos secuenciales en disco. La cabeza lectora/escritora se
+  mueve en una sola direccion y un solo modo a la vez.
+
+
+=======================================================
+  EPISODIO 4: Clasificacion de las Secuencias
+            de acuerdo a la cantidad de elementos
+         que contiene la secuencia de datos elemental
+=======================================================
+  SEGUN SU PROCEDIMIENTO:
+    Las secuencias se clasifican por DOS criterios distintos que se
+    COMBINAN entre si:
+
+  1. POR COMO TERMINAN:  DEFINIDAS vs INDEFINIDAS
+    ------------------------------------------------
+
+        DEFINIDA    → Se conoce PREVIAMENTE la cantidad de elementos
+                      que tiene la secuencia (un numero conocido de
+                      antemano: "4 meses", "134 personas", "30 alumnos").
+                      NO usa marca de fin: la secuencia termina cuando
+                      el CONTADOR llego a la cantidad esperada.
+
+                      Ej: una secuencia de reales con los promedios de
+                      lluvia de los primeros 4 meses del ano (sabes que
+                      son 4 elementos, no necesitas marca).
+
+                      Para recorrerla se usa un CONTADOR controlando
+                      el bucle. Esquema clasico con Para...Hacer:
+
+                          Para i := 1 hasta N Hacer
+                              AVZ(sec, v)
+                              // procesar v
+                          Fin Para
+
+                      Tambien se puede usar POST-TEST (Repetir-Hasta)
+                      con un contador propio.
+
+                      NOTA: Las Definidas SIEMPRE son Puras.
+                      Como no hay marca centinela, el ultimo elemento
+                      se trata igual que los demas. Por eso la
+                      combinacion "Definida Impura" NO EXISTE.
+
+        INDEFINIDA  → NO se conoce la cantidad de elementos.
+                      Puede terminar de DOS formas distintas:
+
+                      a) Por EOF del sistema (el archivo se acabo,
+                         no hay marca dentro de los datos).
+                         Se detecta con la funcion NFDS:
+
+                             Mientras NFDS(sec) Hacer ...
+
+                      b) Por una MARCA CENTINELA dentro de la secuencia
+                         (un valor conocido que indica "aca termino":
+                         por ejemplo "*", "%", -1, 1900, 999).
+                         Se detecta comparando la VENTANA con la marca:
+
+                             Mientras v <> "*" Hacer ...
+
+                      Ojo: la marca pertenece a las INDEFINIDAS, no a
+                      las definidas. Si hay marca, no sabes cuantos
+                      elementos vas a leer hasta encontrarla → es
+                      indefinida.
+
+  2. POR LA AGRUPACION DE LOS DATOS:  PURAS vs IMPURAS
+  ------------------------------------------------------
+
+      PURA      → Cada elemento de la secuencia es un DATO UNITARIO
+                  COMPLETO en si mismo. Un entero = un dato. Un real
+                  = un dato. La unidad logica coincide con la celda.
+
+                  El ultimo elemento se trata IGUAL que los demas
+                  (aunque haya marca, la marca es del mismo tipo y
+                  se controla con la condicion del bucle, no se
+                  procesa como dato distinto).
+
+                  Estructura: POST-TEST (Repetir-Hasta) cuando hay
+                  marca, o NFDS cuando es por EOF.
+
+                  Ej: - Secuencia de enteros con anos de nacimiento,
+                        terminada en 1900 (cada ano = 1 dato).
+                      - Secuencia de enteros con cantidad de errores,
+                        terminada en -1 (cada cantidad = 1 dato).
+
+      IMPURA    → Los datos logicos estan AGRUPADOS: VARIOS elementos
+                  de la secuencia forman UNA unidad logica. Suele
+                  haber separadores entre grupos (espacios, comas) y
+                  una marca de fin distinta.
+
+                  El ultimo elemento NO se trata igual: hay que
+                  acumular hasta encontrar el separador o la marca.
+
+                  Estructura: PRE-TEST (Mientras ... Hacer).
+
+                  Ej: - Secuencia de caracteres con patentes de auto,
+                        terminada en % (varias letras y numeros forman
+                        UNA patente).
+                      - Secuencia de caracteres con codigos de barra
+                        separados por espacio en blanco, terminada en *
+                        (varios caracteres forman UN codigo).
+
+EJEMPLOS:
+    | 1990 | 2005 | 2009 | 2000 | 2010 | 1900 |
+    Secuencia que almacena anos de nacimientos de jugadoras de basquet entre 1990 y 2010.
+    Termina en 1900.
+    - Esto es una Secuencia de numeros enteros, indefinida y pura.
+
+    | 10.5 | 20.7 | 32 | 28 |
+    Secuencia que almacena promedio de mm que llovio en Argentina durante los primeros 4 meses del ano.
+    - Esto es una Secuencia de numeros reales, definida y pura.
+
+    | A | C | 2 | 5 | 6 | X | E | A | F | 3 | 2 | 5 | B | B | % |
+    Secuencia que almacena patentes de vehiculos con multa en marzo. Termina en %.
+    -  Esto es una Secuencia de caracteres, indefinida e impura
+
+    LAS PREGUNTAS QUE DEBEMOS HACERNOS:
+    -> Todos los elementos se pueden operar matematicamente?
+    -> Conozco la cantidad de elementos de la secuencia?
+    -> El ultimo elemento de la secuencia tiene relacion con el resto del conjunto de elementos?
+
+    Ejercicio Extra 1:
+    Supongamos que se cuenta con una secuencia de caracteres que almacena codigo de barra, separados entre si por espacio en blanco y con una marca de fin senalada con "*". Informar cantidad de codigos de barra almacenados.
+
+    Consignas:
+    De que tipo de secuencia estamos hablando?
+    Respuesta:
+        SECUENCIA INDEFINIDA - IMPURA
+    Con que estructura repetitiva manejarias los datos de la secuencia?
+    Respuesta:
+        PRE-TEST
+
+    Ejercicio Extra 2:
+    Supongamos que se cuenta con una secuencia de enteros que almacena la cantidad de errores cometidos por 134 personas usuariaos de Instagram.
+
+    Consignas:
+    De que tipo de secuencia estamos hablando?
+    Respuesta:
+        SECUENCIA DEFINIDA
+    Con que estructura repetitiva manejarias los datos de la secuencia?
+    Respuesta:
+        MANEJADA POR CONTADOR
+
+    Ejercicio Extra 3:
+    Supongamos que se cuenta con una secuencia de enteros que almacena la cantidad de errores cometidos por personas usuarias de Instagram. La secuencia finaliza con -1.
+
+    Consignas:
+    De que tipo de secuencia estamos hablando?
+    Respuesta:
+        SECUENCIA INDEFINIDA - PURA
+    Con que estructura repetitiva manejarias los datos de la secuencia?
+    Respuesta:
+        POST-TEST
+
+SECUENCIA DE CARACTERES Y DE ENTERO(INDEFINIDA: PURA/IMPURA)
+    Casos:
+        - SECUENCIA DE CARACTERES:
+            INDEFINIDA
+            IMPURA
+        Debemos analizar una secuencia que almacena codigos de users que no tienen autorizacion. Finaliza en #.
+
+        ACCION users ES
+        AMBIENTE
+            sec: Secuencia de Caracteres;
+            v: Ventana de Caracter;
+        ....
+
+        - SECUENCIA DE ENTEROS
+            INDEFINIDA
+            PURA
+        Debemos analizar una secuencia que almacena numeros de codigos falsos. La secuencia finaliza con 999.
+
+        ACCION Socios ES
+        AMBIENTE
+            sec: Secuencia de Enteros;
+            v: Ventana de Enteros;
+        ....
+
+    La secuencialidad de estas estructura de datos admite el uso de ciertas acciones predefinidas para su procesamiento de forma tal de asegurar el acceso secuencial a sus elementos.
+
+
+
+
+  3. COMBINACIONES POSIBLES
+  ---------------------------
+  Cruzando los DOS criterios (Definida/Indefinida x Pura/Impura)
+  salen TRES combinaciones reales (no cuatro):
+
+      Definida   - Pura     → SI EXISTE  ✓
+                              Cantidad conocida de antemano. Cada
+                              elemento es un dato unitario. Se controla
+                              con CONTADOR (Para...Hacer).
+                              Ej: promedios de lluvia de 4 meses.
+
+      Definida   - Impura   → NO EXISTE  ✗
+                              Si conoces la cantidad, no necesitas
+                              marca; y como cada elemento se procesa
+                              igual, no hay agrupacion. Las definidas
+                              SIEMPRE son puras.
+
+      Indefinida - Pura     → SI EXISTE  ✓
+                              Cantidad desconocida. Cada elemento es
+                              un dato unitario. Termina por EOF (NFDS)
+                              o por marca centinela del mismo tipo.
+                              Ej: anos de nacimiento terminados en 1900,
+                              errores terminados en -1.
+
+      Indefinida - Impura   → SI EXISTE  ✓
+                              Cantidad desconocida. Los datos estan
+                              agrupados (varios elementos forman una
+                              unidad logica). Termina por marca de fin.
+                              Estructura PRE-TEST.
+                              Ej: patentes terminadas en %, codigos de
+                              barra separados por espacio terminados en *.
+
+
+
+  4. ACLARACION SOBRE EL "FDS" QUE APARECE EN LOS PARCIALES
+  ----------------------------------------------------------
+  En algunos enunciados de parcial vas a ver dibujada una secuencia
+  de caracteres que termina con un simbolo "FDS" en la ultima celda.
+
+  OJO: ese "FDS" dibujado NO es un valor de la secuencia, es la
+  representacion grafica del FIN DE SECUENCIA (la marca que la secuencia dada
+   usa internamente para decir "aca se acabo").
+
+  No lo confundas con la FUNCION FDS(sec), que es la que vos usas
+  en tu pseudocodigo para preguntar si llegaste a ese fin. Este tipo de funcion, nunca se usara en la catedra, normal mente se usa NFDS(sec).
+
+      Lo dibujado:  [ a ][ b ][ c ][ FDS ]    ← marca grafica de EOF
+      La funcion:   FDS(sec)                  ← devuelve V/F
+
+
+=======================================================
+  EPISODIO 5: Recorrido de Secuencia INDEFINIDA (NFDS)
+=======================================================
+
+  Esquema clasico para recorrer una secuencia INDEFINIDA, es decir
+  una que termina por EOF y NO por una marca. Contamos cuantos
+  socios (numeros enteros) hay registrados:
+
+      Accion contar_socios ES
+
+      Ambiente
+
+          sec: secuencia de entero;
+          v, cant_socios: entero;
+
+      Proceso
+
+          ARR(sec);
+          AVZ(sec, v); // (1) lectura adelantada (priming)
+
+          cant_socios := 0;
+
+          Mientras NFDS(sec) Hacer
+              cant_socios := cant_socios + 1;
+              AVZ(sec, v)         // (2) traer la siguiente ventana
+          Fin Mientras
+
+          Escribir("Hay" cant_socios "socios registrados.")
+
+          CERRAR(sec)
+
+      Fin Accion
+
+  POR QUE HAY DOS AVZ? (la pregunta del millon)
+  ...............................................
+  El Mientras evalua su condicion ANTES de entrar al cuerpo. Si la
+  primera vez que llegamos a "Mientras NFDS(sec)" la ventana esta
+  vacia (porque ARR no carga nada todavia), no tenemos NADA que
+  procesar y la condicion no tiene sentido.
+
+  Por eso se hace una LECTURA ADELANTADA (priming read) ANTES del
+  bucle: para que cuando el Mientras evalue la condicion por
+  primera vez, la ventana ya tenga el primer elemento cargado.
+
+  El esquema queda asi:
+
+      ARR             →  posiciona la secuencia (ventana vacia)
+      AVZ inicial     →  carga la PRIMERA ventana
+      Mientras        →  evalua si hay algo para procesar
+      Procesar        →  uso la ventana actual
+      AVZ al final    →  trae la SIGUIENTE ventana antes de re-evaluar
+
+  Si pusieras un solo AVZ al principio del cuerpo del Mientras,
+  procesarias siempre la ventana ANTERIOR a la que acabas de leer
+  y se te escaparia el primer (o el ultimo) elemento. Es un error
+  clasico que el profe te va a marcar al toque.
+
+
+=======================================================
+  EPISODIO 6: Recorrido de Secuencia INDEFINIDA con marca de fin
+=======================================================
+
+  Variante de la secuencia INDEFINIDA: en lugar de terminar por EOF
+  (NFDS), termina cuando aparece una MARCA CENTINELA conocida dentro
+  de los datos (por ejemplo el caracter "*", el numero -1, etc.).
+
+  En este caso NO se usa NFDS: se compara directamente la VENTANA
+  con la MARCA. Contamos cuantas letras "A" hay en la secuencia
+  (la marca de fin es "*"):
+
+      Accion contar_letras_A ES
+
+      Ambiente
+
+          sec: secuencia de caracter
+          v: caracter
+          cant_a: entero
+
+      Proceso
+
+          ARR(sec)
+          AVZ(sec, v)             // lectura adelantada
+
+          cant_a := 0
+
+          Mientras v <> "*" Hacer
+              Si v = "A" Entonces
+                  cant_a := cant_a + 1
+              Fin Si
+
+              AVZ(sec, v)         // traer la siguiente
+          Fin Mientras
+
+          Escribir("Hay" cant_a "letras A en la secuencia.")
+
+          CERRAR(sec)
+
+      Fin Accion
+
+  POR QUE NO USAR NFDS EN ESTE CASO?
+  ...................................
+  Porque la MARCA forma parte de la secuencia: si usaras NFDS,
+  primero leerias la marca con AVZ, despues la procesarias como
+  un elemento mas (mal!), y recien en la siguiente vuelta NFDS
+  daria FALSO. Demasiado tarde.
+
+  Comparando la ventana contra la marca, el bucle corta JUSTO
+  cuando la marca llega a la ventana, sin procesarla.
+
+  RESUMEN DE LA DIFERENCIA (las DOS variantes de INDEFINIDA):
+  ............................................................
+
+      INDEFINIDA con marca →  Mientras v <> "*"   Hacer
+      INDEFINIDA por EOF   →  Mientras NFDS(sec)  Hacer
+
+  Las dos son INDEFINIDAS (no se conoce la cantidad). Lo que cambia
+  es como detectan el fin. NO ES LO MISMO. Cada estructura pide su
+  propia condicion de corte.
+
+  REGLA PRACTICA:
+    Si la secuencia tiene marca centinela → compara la ventana con la marca.
+    Si la secuencia NO tiene marca → usa NFDS.
+
+  VARIANTE CON REPETIR/HASTA QUE:
+  ................................
+  Para INDEFINIDAS con marca tambien podes usar el bucle Repetir,
+  que evalua la condicion al FINAL del cuerpo:
+
+      Repetir
+          // procesar v
+          AVZ(sec, v)
+      Hasta que v = "*"
+
+  La diferencia es semantica: Repetir/Hasta que SIEMPRE entra al
+  menos una vez al cuerpo (post-condicion). Mientras puede no
+  entrar nunca si la primera ventana ya es la marca (pre-condicion).
+
+
+=======================================================
+  EPISODIO 7: Recorrido de Secuencia DEFINIDA (con contador)
+=======================================================
+
+  Cuando la consigna te dice la cantidad de elementos DE ANTEMANO
+  ("los promedios de los 4 primeros meses", "los errores de 134
+  usuarios", "las notas de 30 alumnos"), la secuencia es DEFINIDA.
+  No hay marca de fin: vos sabes cuantos son y los contas vos.
+
+  La estructura natural es un CONTADOR controlando un Para...Hacer
+  o un Repetir-Hasta que.
+
+  EJEMPLO: leer los promedios de lluvia (en mm) de los 4 primeros
+  meses del ano y mostrar cual fue el mes mas lluvioso.
+
+      Accion mes_mas_lluvioso ES
+
+      Ambiente
+
+          sec: secuencia de real
+          v, max: real
+          i, mes_max: entero
+          N: entero = 4         // cantidad CONOCIDA de antemano
+
+      Proceso
+
+          ARR(sec)
+          AVZ(sec, v)            // primer elemento (mes 1)
+          max := v
+          mes_max := 1
+
+          Para i := 2 hasta N Hacer
+              AVZ(sec, v)
+              Si v > max Entonces
+                  max := v
+                  mes_max := i
+              Fin Si
+          Fin Para
+
+          Escribir("Mes mas lluvioso:" mes_max " con " max "mm.")
+
+          CERRAR(sec)
+
+      Fin Accion
+
+  POR QUE NO HAY NFDS NI MARCA?
+  ..............................
+  Porque ya sabes que son N elementos. El bucle corre exactamente
+  N veces. Cuando el contador llega a N, terminaste. La secuencia
+  fisica puede tener mas datos despues, pero no nos interesan: el
+  enunciado limita la cantidad.
+
+  VARIANTE CON REPETIR-HASTA (POST-TEST):
+  .........................................
+
+      ARR(sec)
+      i := 0
+      Repetir
+          AVZ(sec, v)
+          i := i + 1
+          // procesar v
+      Hasta que i = N
+      CERRAR(sec)
+
+  REGLA DE ORO PARA DETECTAR DEFINIDA:
+    Si el enunciado te DICE el numero (4 meses, 30 alumnos, 134
+    personas) → DEFINIDA → contador.
+    Si el enunciado NO te dice el numero pero hay marca → INDEFINIDA
+    con marca → comparacion con la marca.
+    Si el enunciado NO dice numero ni marca → INDEFINIDA pura → NFDS.
+
+
+=======================================================
+  EPISODIO 8: Generar una Secuencia de salida
+=======================================================
+
+  Para generar una secuencia NUEVA (de salida), se usa CREAR
+  seguido de GRABAR. El esquema clasico es leer de una secuencia
+  de ENTRADA, transformar los datos, y grabarlos en una de SALIDA.
+
+  Recorda la regla del Episodio 2: NO se puede leer y escribir
+  sobre la MISMA secuencia. Por eso necesitamos DOS secuencias.
+
+  EJEMPLO COMPLETO: leer una secuencia de caracteres y generar
+  otra que contenga los mismos caracteres pero SIN los simbolos "$".
+  La entrada y la salida son ambas INDEFINIDAS.
+
+      Accion quitar_pesos ES
+
+      Ambiente
+
+          sec_ent, sec_sal: secuencia de caracter
+          v_ent: caracter
+
+      Proceso
+
+          ARR(sec_ent)
+          AVZ(sec_ent, v_ent)         // priming sobre la entrada
+          CREAR(sec_sal)              // abrimos la salida para escribir
+
+          Mientras NFDS(sec_ent) Hacer
+              Si v_ent <> "$" Entonces
+                  GRABAR(sec_sal, v_ent); // Esto es depende de la catedra, tambien puede ser
+                  // ESCRIBIR(sec_sal, v_ent);
+              FIN_SI
+
+              AVZ(sec_ent, v_ent)     // siguiente ventana de entrada
+          Fin Mientras
+
+          CERRAR(sec_ent)
+          CERRAR(sec_sal)
+
+      Fin Accion
+
+  Flujo de ejecucion:
+    1. ARR abre la entrada para LECTURA, CREAR abre la salida para
+       ESCRITURA.
+    2. AVZ inicial sobre la entrada (lectura adelantada).
+    3. Mientras NFDS(sec_ent): si la ventana NO es "$", la GRABO
+       en la salida. Si es "$", la descarto.
+    4. AVZ al final del cuerpo trae la siguiente ventana de entrada.
+    5. CERRAR las DOS secuencias al terminar.
+
+  REGLA A RECORDAR:
+    ARR para entrada, CREAR para salida → siempre DOS secuencias distintas.
+    Un AVZ adelantado antes del Mientras, otro AVZ al final del cuerpo.
+    GRABAR escribe en la salida, AVZ avanza en la entrada.
+    CERRAR las DOS secuencias al final del Proceso.
+
+
+=======================================================
+  EPISODIO 9: Conjuntos, operador EN y lectura por palabras
+=======================================================
+
+  Hasta ahora recorrimos secuencias mirando UN elemento a la vez.
+  Pero muchos problemas no se resuelven mirando caracteres sueltos:
+  se resuelven mirando BLOQUES de elementos. Por ejemplo, contar
+  cuantas PALABRAS de 4 letras hay en una secuencia de caracteres.
+
+  Para esto necesitamos dos herramientas nuevas:
+    1. Conjuntos como constantes en el AMBIENTE.
+    2. El operador EN para preguntar pertenencia.
+  Y un patron de recorrido nuevo: dos MIENTRAS anidados.
+
+
+  CONJUNTOS EN EL AMBIENTE
+  .........................
+  Un conjunto es una coleccion de valores que podes definir como
+  CONSTANTE dentro del AMBIENTE. Sirve para agrupar valores que
+  tienen el mismo significado dentro de tu algoritmo.
+
+  Sintaxis tipica:
+
+      vocales      = ('a','e','i','o','u');
+      separadores  = (' ','.',',',';');
+      digitos      = ('0','1','2','3','4','5','6','7','8','9');
+      rango_chico  = (1..4);    // subrango numerico de 1 a 4
+
+  Reglas importantes:
+    - Los elementos del conjunto deben ser TODOS DEL MISMO TIPO.
+      Un conjunto de caracteres no puede mezclar numeros, y
+      viceversa.
+    - Se declara una sola vez en el AMBIENTE y se usa muchas veces
+      en el PROCESO.
+
+
+  EL OPERADOR EN
+  ...............
+  EN responde a UNA sola pregunta: "este valor, esta dentro del
+  conjunto?". Devuelve VERDADERO o FALSO.
+
+  Ejemplo de uso:
+
+      Si v EN vocales Entonces
+          // v es 'a','e','i','o' o 'u'
+      Fin Si
+
+      Si v EN separadores Entonces
+          // v es ' ','.',',' o ';'
+      Fin Si
+
+  ATENCION AL TIPO:
+    El valor a la IZQUIERDA de EN tiene que ser del MISMO TIPO que
+    los elementos del conjunto. Si tu conjunto es de caracteres,
+    no podes preguntar si un numero esta en el. El compilador no
+    te lo va a dejar pasar, o peor, va a dar siempre FALSO.
+
+    MAL:  cuatro = (1..4);                     // conjunto de numeros
+          Si v_caracter EN cuatro Entonces ... // ERROR DE TIPOS
+
+    BIEN: separadores = (' ','.',',');         // conjunto de caracteres
+          Si v_caracter EN separadores Entonces ...
+
+
+  PATRON: LECTURA POR PALABRAS (DOS MIENTRAS ANIDADOS)
+  .....................................................
+  Cuando el problema te pide procesar PALABRAS dentro de una
+  secuencia de caracteres, el patron es SIEMPRE el mismo:
+
+      MIENTRAS no termine la secuencia HACER
+          [FASE 1] Saltar separadores
+          [FASE 2] Procesar UNA palabra (loop interno)
+          [FASE 3] Decidir que hacer con esa palabra
+      FIN_MIENTRAS
+
+  El loop EXTERNO recorre PALABRAS. El loop INTERNO recorre las
+  LETRAS de la palabra actual. Cuando el interno termina, esa
+  palabra se acabo y podemos tomar la decision.
+
+
+  EJEMPLO COMPLETO: contar palabras de 4 letras
+  ..............................................
+  Dada una secuencia de caracteres separada por espacios, contar
+  cuantas palabras tienen exactamente 4 letras.
+
+      Accion contar_palabras_de_4 ES
+
+      Ambiente
+
+          sec: secuencia de caracter
+          v: caracter
+          separadores = (' ','.',',');
+          cant_letras: entero
+          cant_pal: entero
+
+      Proceso
+
+          ARR(sec)
+          AVZ(sec, v)
+          cant_pal := 0
+
+          Mientras NFDS(sec) Hacer
+
+              // FASE 1: saltar separadores
+              Mientras NFDS(sec) Y (v EN separadores) Hacer
+                  AVZ(sec, v)
+              Fin Mientras
+
+              // FASE 2: leer UNA palabra
+              cant_letras := 0
+              Mientras NFDS(sec) Y NO (v EN separadores) Hacer
+                  cant_letras := cant_letras + 1
+                  AVZ(sec, v)
+              Fin Mientras
+
+              // FASE 3: decidir
+              Si cant_letras = 4 Entonces
+                  cant_pal := cant_pal + 1
+              Fin Si
+
+          Fin Mientras
+
+          Escribir("Palabras de 4 letras: " cant_pal)
+          CERRAR(sec)
+
+      Fin Accion
+
+
+  POR QUE DOS MIENTRAS Y NO UNO SOLO?
+  ....................................
+  Porque tenemos DOS preguntas distintas que responder al mismo
+  tiempo:
+    - Externa: "queda secuencia por leer?"
+    - Interna: "sigo dentro de la misma palabra?"
+
+  Si usaras un solo MIENTRAS, no tendrias forma limpia de saber
+  cuando una palabra TERMINO. Y sin saber cuando termino, no
+  podes preguntar si tuvo 4 letras.
+
+  El loop interno es el que define el LIMITE de una palabra.
+  Cuando el interno corta, la palabra se cerro: ahi recien tiene
+  sentido preguntar cant_letras = 4.
+
+
+  POR QUE cant_letras SE REINICIA DENTRO DEL LOOP EXTERNO?
+  .........................................................
+  Porque cuenta letras de UNA palabra, no del total. Si la
+  inicializaras antes del Mientras externo, contarias todas las
+  letras de toda la secuencia y nunca tendrias el largo individual
+  de cada palabra.
+
+  Cada vuelta del externo = una palabra nueva = contador en cero.
+
+
+  ERROR CLASICO: USAR EN CON UN RANGO NUMERICO PARA "EL LARGO"
+  ............................................................
+  Tentacion comun:
+
+      cuatro = (1..4);
+      Si v EN cuatro Entonces cant_pal := cant_pal + 1
+
+  Esto NO cuenta palabras de 4 letras. Esta preguntando si el
+  CARACTER ACTUAL es uno de los numeros 1, 2, 3 o 4. Dos errores
+  en uno: tipos incompatibles (caracter vs numero) y pregunta
+  equivocada (caracter individual vs largo de palabra).
+
+  El numero 4 en este problema es un VALOR PARA COMPARAR AL FINAL,
+  no un rango contra el que chequear cada caracter.
+
+
+  REGLA PRACTICA:
+    Si el problema habla de PALABRAS, BLOQUES o GRUPOS dentro de
+    una secuencia → dos MIENTRAS anidados.
+    Si el problema habla de elementos SUELTOS → un solo MIENTRAS.
+
+    EN sirve para preguntar pertenencia a un conjunto del MISMO
+    TIPO. Es ideal para identificar separadores, vocales, digitos,
+    o cualquier categoria cerrada de valores.
+
+
+=======================================================
+CAPITULO 4: Registros
+=======================================================
+
+  EPISODIO 1: Que es un Registro
+  --------------------------------
+
+  1. EL PROBLEMA QUE RESUELVE
+  ----------------------------
+  Cuando necesitas guardar varios datos relacionados de una misma "cosa",
+  las variables separadas se vuelven un problema:
+
+      legajo1: ENTERO;
+      nombre1: AN(30);
+      nota1:   REAL;
+      legajo2: ENTERO;
+      nombre2: AN(30);
+      nota2:   REAL;
+      // ... imposible de manejar para 30 alumnos
+
+  Un REGISTRO agrupa todos esos campos bajo un solo nombre:
+
+      Alumno = REGISTRO
+          legajo: ENTERO;
+          nombre: AN(30);
+          nota:   REAL;
+      FIN_REGISTRO
+
+
+  2. COMO SE DECLARA
+  -------------------
+  Primero se define el tipo (la estructura), luego se declara la variable.
+
+  Definicion del tipo (va antes del AMBIENTE, o al inicio):
+
+      NombreRegistro = REGISTRO
+          campo1: TIPO;
+          campo2: TIPO;
+      FIN_REGISTRO
+
+  Declaracion de la variable en el AMBIENTE:
+
+      a: NombreRegistro;
+
+  Ejemplo completo:
+
+      Alumno = REGISTRO
+          legajo: ENTERO;
+          nombre: AN(30);
+          nota:   REAL;
+      FIN_REGISTRO
+
+      ACCION cargar_alumno ES
+          AMBIENTE
+              a: Alumno;
+          PROCESO
+              LEER(a.legajo);
+              LEER(a.nombre);
+              LEER(a.nota);
+              ESCRIBIR(a.nombre, a.nota);
+      FIN_ACCION
+
+
+  3. COMO SE ACCEDE A LOS CAMPOS
+  --------------------------------
+  Se usa el nombre de la variable seguido de punto y el campo:
+
+      a.legajo := 1234;
+      a.nombre := "Juan";
+      a.nota   := 8.5;
+
+      ESCRIBIR(a.nombre);   // imprime "Juan"
+      ESCRIBIR(a.nota);     // imprime 8.5
+
+  Analogia: el punto es como decir "de". a.nota = "la nota DE a".
+
+
+  4. ARREGLO DE REGISTROS
+  ------------------------
+  La combinacion mas comun: un arreglo donde cada posicion es un registro.
+  Esto permite manejar muchos "objetos" del mismo tipo.
+
+      ACCION lista_alumnos ES
+          AMBIENTE
+              alumnos: arreglo[1..30] de Alumno;
+              i: ENTERO;
+          PROCESO
+              PARA i := 1 a 30 HACER
+                  LEER(alumnos[i].legajo);
+                  LEER(alumnos[i].nombre);
+                  LEER(alumnos[i].nota);
+              FIN_PARA
+
+              // mostrar todos
+              PARA i := 1 a 30 HACER
+                  ESCRIBIR(alumnos[i].nombre, alumnos[i].nota);
+              FIN_PARA
+      FIN_ACCION
+
+  Como se ve en memoria (primeras 3 posiciones):
+
+      alumnos[1]: [ legajo:1001 | nombre:"Ana"  | nota:9.0 ]
+      alumnos[2]: [ legajo:1002 | nombre:"Luis" | nota:7.5 ]
+      alumnos[3]: [ legajo:1003 | nombre:"Rosa" | nota:6.0 ]
+
+  Acceso: alumnos[2].nombre → "Luis"
+
+
+  5. REGISTRO DENTRO DE OTRO REGISTRO
+  -------------------------------------
+  Un campo de un registro puede ser otro registro.
+
+      Fecha = REGISTRO
+          dia:  ENTERO;
+          mes:  ENTERO;
+          anio: ENTERO;
+      FIN_REGISTRO
+
+      Empleado = REGISTRO
+          legajo:     ENTERO;
+          nombre:     AN(40);
+          fecha_ingr: Fecha;       // registro dentro de registro
+      FIN_REGISTRO
+
+      e: Empleado;
+
+      e.fecha_ingr.dia  := 15;
+      e.fecha_ingr.mes  := 3;
+      e.fecha_ingr.anio := 2024;
+
+  Se leen de afuera hacia adentro:
+  e.fecha_ingr.dia → "el dia, de fecha_ingr, de e"
+
+  Regla a recordar:
+    variable.campo         → acceso simple
+    variable.campo.subcampo → acceso anidado
+
+=======================================================
+CAPITULO 5: Archivos
+=======================================================
+
+  EPISODIO 1: Que es un Archivo
+  ------------------------------
+
+  1. ARCHIVO vs RAM
+  ------------------
+  Ya vimos en CAPITULO 1 que la RAM es temporal: cuando el programa
+  termina, los datos desaparecen. Un archivo vive en el DISCO (memoria
+  externa) y persiste aunque apagues la maquina.
+
+      RAM:    rapida, temporal → variables, arreglos, registros
+      DISCO:  lenta, permanente → archivos
+
+  Un archivo es una secuencia de registros guardados en disco.
+  Se leen o escriben de a uno, en orden (secuencial).
+
+
+  2. DECLARACION
+  ---------------
+  Se declara indicando el tipo de registro que contiene:
+
+      arch: archivo de TIPO;
+
+  Ejemplo con el registro Alumno del capitulo anterior:
+
+      arch_alumnos: archivo de Alumno;
+
+
+  3. ABRIR Y CERRAR
+  ------------------
+  Antes de usar un archivo hay que abrirlo. Al terminar, cerrarlo.
+  El modo indica que vas a hacer con el:
+
+      ABRIR(archivo, lectura)     // solo leer
+      ABRIR(archivo, escritura)   // solo escribir (crea nuevo)
+      ABRIR(archivo, actualizacion) // leer y modificar
+
+      CERRAR(archivo)             // siempre al terminar
+
+  Si no lo cerras, los datos pueden no guardarse correctamente.
+
+
+  4. LEER Y ESCRIBIR
+  -------------------
+
+      LEER(archivo, variable)     // lee el proximo registro → variable
+      ESCRIBIR(archivo, variable) // escribe variable en el archivo
+
+  Cada LEER avanza automaticamente al siguiente registro.
+
+
+  5. FIN DE ARCHIVO (FDA)
+  ------------------------
+  FDA(archivo) devuelve Verdadero cuando no hay mas registros para leer.
+  Se usa para saber cuando terminar el recorrido.
+
+      MIENTRAS NO FDA(archivo) HACER
+          LEER(archivo, reg);
+          // procesar reg
+      FIN_MIENTRAS
+
+  IMPORTANTE: siempre hay que hacer al menos un LEER antes del MIENTRAS,
+  para que FDA sepa si el archivo esta vacio o no.
+
+
+  6. EJEMPLO COMPLETO — leer e imprimir todos los alumnos
+  --------------------------------------------------------
+
+      ACCION mostrar_alumnos ES
+          AMBIENTE
+              arch: archivo de Alumno;
+              reg:  Alumno;
+          PROCESO
+              ABRIR(arch, lectura);
+              LEER(arch, reg);                    // primer lectura
+              MIENTRAS NO FDA(arch) HACER
+                  ESCRIBIR(reg.nombre, reg.nota); // proceso
+                  LEER(arch, reg);                // siguiente
+              FIN_MIENTRAS
+              CERRAR(arch);
+      FIN_ACCION
+
+  Patron siempre igual:
+      ABRIR → LEER (primera vez) → MIENTRAS NO FDA → LEER al final → CERRAR
+
+
+  7. EJEMPLO — escribir alumnos en un archivo nuevo
+  --------------------------------------------------
+
+      ACCION guardar_alumnos ES
+          AMBIENTE
+              arch: archivo de Alumno;
+              reg:  Alumno;
+              i:    ENTERO;
+          PROCESO
+              ABRIR(arch, escritura);
+              PARA i := 1 a 5 HACER
+                  LEER(reg.legajo);
+                  LEER(reg.nombre);
+                  LEER(reg.nota);
+                  ESCRIBIR(arch, reg);
+              FIN_PARA
+              CERRAR(arch);
+      FIN_ACCION
+
+  Regla a recordar:
+    ABRIR antes de usar, CERRAR al terminar, siempre.
+    FDA = Fin De Archivo → no hay mas registros para leer.
+    El patron de lectura: primer LEER antes del MIENTRAS.
+
+=======
+CAPITULO 6: Corte de Control
+=======================================================
+
+  EPISODIO 1: Estructura del Corte de Control
+  ---------------------------------------------
+
+  1. QUE ES
+  ----------
+  Tecnica para procesar un archivo ordenado por grupos (claves).
+  Cuando el valor de una clave CAMBIA se produce un "corte":
+  se emiten resultados del grupo que termina, se acumulan al nivel
+  superior y se reinician los totales del nivel actual.
+
+  Requisito: el archivo DEBE estar ordenado por todas las claves,
+  de mayor a menor peso, antes de aplicar corte de control.
+
+
+  2. ESTRUCTURA DE CLAVES
+  ------------------------
+  Se define un registro con varias claves de distinto peso:
+
+      reg = REGISTRO
+          clave3: N(8)    // mayor peso
+          clave2: N(4)
+          clave1: N(2)
+          clave0: N(2)    // menor peso
+          campo1: ("Si", "No")
+          campo2: N(2)
+          campo3: AN(50)
+      FIN_REGISTRO
+
+      Arch: Archivo de reg ordenado por clave3, clave2, clave1, clave0
+      r:    reg
+
+  Variables auxiliares:
+      Reg1, Reg2, Reg3:        resguardos de clave (guardan la clave del grupo actual)
+      cont1, cont2, cont3, contt: contadores por nivel y total general
+
+
+  3. ESQUELETO GENERICO
+  ----------------------
+  Cada subaccion de corte sigue siempre esta estructura:
+
+      SUBACCION corte_N ES
+          corte_N-1          // primero cierra el nivel inferior (excepto en corte_1)
+          Emitir resultados  // muestra el total del nivel N
+          Acumular al nivel superior
+          Reiniciar totales de este nivel
+          Resguardar la nueva clave
+      FIN_SUBACCION
+
+  Algoritmo principal:
+
+      ALGORITMO
+          Inicializar_archivos
+          Inicializar_totalizadores
+          Inicializar_resguardos
+
+          MIENTRAS NFDA(Arch) HACER
+              Tratar_corte
+              Tratar_registro
+              Leer_registro
+          FIN_MIENTRAS
+
+          Corte_3          // cerrar el ultimo grupo (el que no tuvo corte al final)
+          Emitir_totales
+          Cerrar_archivo
+      FIN_ALGORITMO
+
+  Subaccion Tratar_Corte — detecta en cual nivel ocurrio el cambio:
+
+      SUBACCION Tratar_Corte ES
+          SI r.clave3 <> Reg3 ENTONCES
+              Corte_3                // cambio en la clave de mayor peso
+          SINO
+              SI r.clave2 <> Reg2 ENTONCES
+                  Corte_2
+              SINO
+                  SI r.clave1 <> Reg1 ENTONCES
+                      Corte_1        // cambio en la clave de menor peso
+                  FIN_SI
+              FIN_SI
+          FIN_SI
+      FIN_SUBACCION
+
+  Nota: Inicializar, Tratar_registro y Emitir_totales dependen del enunciado.
+
+
+=======================================================
+  EPISODIO 2: Ejemplo completo
+=======================================================
+
+  Enunciado: mostrar cuantas entradas existen en el archivo,
+  discriminando por clave1, clave2, clave3 y total general.
+
+  ACCION ejemplo ES
+      AMBIENTE
+          reg = REGISTRO
+              clave3: N(8)
+              clave2: N(4)
+              clave1: N(2)
+              clave0: N(2)
+              campo1: ("Si", "No")
+              campo2: N(2)
+              campo3: AN(50)
+          FIN_REGISTRO
+          Arch: archivo de reg ordenado por clave3, clave2, clave1, clave0
+          r:    reg
+          Reg3: N(8)
+          Reg2: N(4)
+          Reg1: N(2)
+          contt, cont3, cont2, cont1: ENTERO
+
+      SUBACCION inicializar ES
+          Abrir E/S(Arch)
+          Leer(Arch, r)
+          contt := 0
+          cont3 := 0
+          cont2 := 0
+          cont1 := 0
+          Reg3  := r.clave3
+          Reg2  := r.clave2
+          Reg1  := r.clave1
+      FIN_SUBACCION
+
+      SUBACCION corte_1 ES
+          Esc("Para el ", Reg1, " existen: ", cont1)
+          cont2 := cont2 + cont1    // acumula al nivel superior
+          cont1 := 0                // reinicia
+          Reg1  := r.clave1         // resguarda nueva clave
+      FIN_SUBACCION
+
+      SUBACCION corte_2 ES
+          corte_1                   // cierra nivel inferior primero
+          Esc("Para el ", Reg2, " existen: ", cont2)
+          cont3 := cont3 + cont2
+          cont2 := 0
+          Reg2  := r.clave2
+      FIN_SUBACCION
+
+      SUBACCION corte_3 ES
+          corte_2                   // cierra nivel inferior primero
+          Esc("Para el ", Reg3, " existen: ", cont3)
+          contt := contt + cont3
+          cont3 := 0
+          Reg3  := r.clave3
+      FIN_SUBACCION
+
+      SUBACCION tratar_corte ES
+          SI r.clave3 <> Reg3 ENTONCES
+              corte_3
+          SINO
+              SI r.clave2 <> Reg2 ENTONCES
+                  corte_2
+              SINO
+                  SI r.clave1 <> Reg1 ENTONCES
+                      corte_1
+                  FIN_SI
+              FIN_SI
+          FIN_SI
+      FIN_SUBACCION
+
+      SUBACCION tratar_registro ES
+          cont1 := cont1 + 1
+      FIN_SUBACCION
+
+      SUBACCION emitir_totales ES
+          Esc("El total general de entradas es: ", contt)
+      FIN_SUBACCION
+
+      ALGORITMO
+          inicializar
+
+          MIENTRAS NFDA(Arch) HACER
+              tratar_corte
+              tratar_registro
+              Leer(Arch, r)
+          FIN_MIENTRAS
+
+          corte_3
+          emitir_totales
+          Cerrar(Arch)
+  FIN_ACCION
+
+
+=======================================================
+  EPISODIO 3: Ejercicios sobre el mismo archivo
+=======================================================
+
+  Mismo archivo del ejemplo. Cada ejercicio cambia solo
+  tratar_registro, inicializar y/o emitir_totales.
+
+  EJERCICIO 1
+  ------------
+  Mostrar cuantas entradas con campo1 = "Si" existen,
+  discriminando por clave1, clave2, clave3 y total general.
+
+  Diferencia con el ejemplo: tratar_registro solo cuenta si campo1 = "Si"
+
+      SUBACCION tratar_registro ES
+          SI r.campo1 = "Si" ENTONCES
+              cont1 := cont1 + 1
+          FIN_SI
+      FIN_SUBACCION
+
+
+  EJERCICIO 2
+  ------------
+  Mostrar cuantas entradas existen, discriminando por clave1, clave2
+  y clave3 (sin total general).
+
+  Diferencia: se elimina contt y emitir_totales no muestra nada.
+
+      SUBACCION emitir_totales ES
+          // no se emite total general
+      FIN_SUBACCION
+
+
+  EJERCICIO 3
+  ------------
+  Mostrar cuantas entradas existen, discriminando por clave2
+  y clave3 (sin clave1 ni total general).
+
+  Diferencia: corte_1 no emite nada, solo acumula.
+
+      SUBACCION corte_1 ES
+          cont2 := cont2 + cont1
+          cont1 := 0
+          Reg1  := r.clave1
+      FIN_SUBACCION
+
+      SUBACCION emitir_totales ES
+          // no se emite total general
+      FIN_SUBACCION
+
+
+  EJERCICIO 4
+  ------------
+  Mostrar cuantas entradas tienen campo2 >= 50 y cuantas tienen
+  campo2 < 50, discriminando por clave1, clave2, clave3 y total general.
+
+  Se necesitan dos contadores por nivel: cont1_may, cont1_men, etc.
+
+      SUBACCION tratar_registro ES
+          SI r.campo2 >= 50 ENTONCES
+              cont1_may := cont1_may + 1
+          SINO
+              cont1_men := cont1_men + 1
+          FIN_SI
+      FIN_SUBACCION
+
+      SUBACCION corte_1 ES
+          Esc("Para ", Reg1, " mayores/iguales a 50: ", cont1_may,
+                             " menores a 50: ", cont1_men)
+          cont2_may := cont2_may + cont1_may
+          cont2_men := cont2_men + cont1_men
+          cont1_may := 0
+          cont1_men := 0
+          Reg1 := r.clave1
+      FIN_SUBACCION
+      // corte_2 y corte_3 siguen el mismo patron acumulando _may y _men
+
+
+  EJERCICIO 5
+  ------------
+  Generar un archivo de salida con formato:
+  clave3, clave2, total de "Si" y total de "No".
+
+  Se necesita un archivo de salida y dos contadores: cont_si, cont_no.
+  El corte que escribe al archivo de salida es corte_2 (nivel clave2).
+
+      SUBACCION tratar_registro ES
+          SI r.campo1 = "Si" ENTONCES
+              cont_si := cont_si + 1
+          SINO
+              cont_no := cont_no + 1
+          FIN_SI
+      FIN_SUBACCION
+
+      SUBACCION corte_2 ES
+          corte_1
+          reg_sal.clave3  := Reg3
+          reg_sal.clave2  := Reg2
+          reg_sal.tot_si  := cont_si
+          reg_sal.tot_no  := cont_no
+          Escribir(Arch_sal, reg_sal)
+          cont3   := cont3 + cont_si + cont_no
+          cont_si := 0
+          cont_no := 0
+          Reg2    := r.clave2
+      FIN_SUBACCION
+
+  Regla a recordar:
+    El corte mayor SIEMPRE llama al corte menor primero.
+    El ultimo grupo SIEMPRE se cierra despues del MIENTRAS con corte_3.
+    Cada ejercicio cambia tratar_registro y los cortes que emiten resultados.
+
+=======
+CAPITULO 7: Mezcla
+=======================================================
+
+  EPISODIO 1: Conceptos
+  ----------------------
+
+  1. QUE ES Y CARACTERISTICAS
+  ----------------------------
+  La mezcla combina dos o mas archivos ordenados en uno solo.
+  Se aplica la "tecnica de apareo": se comparan registros de distintos
+  archivos usando un campo en comun llamado CLAVE DE APAREO.
+
+  Caracteristicas:
+    - Los ficheros de entrada deben tener un campo clave en comun.
+    - Todos los ficheros deben estar ordenados por ese campo clave.
+    - Ficheros de entrada: por lo menos dos.
+    - Fichero de salida:   uno (resultado de la combinacion).
+
+
+  2. TIPOS DE MEZCLA
+  -------------------
+
+      Caracteristica               DIRECTA                    INDIRECTA
+      ---------------------------  -------------------------  -------------------------
+      Formato registros entrada    Igual en todos             Distinto entre archivos
+      Formato registro salida      Igual al de entrada        Igual a alguno o combinado
+      Cantidad registros salida    Suma de todos los de       No se puede predecir
+                                   entrada
+
+
+  3. CICLOS DE APAREO
+  --------------------
+  Hay dos formas de armar el ciclo principal:
+
+  INCLUYENTE:
+  El ciclo corre mientras AL MENOS UN archivo tenga registros (usa HV).
+  Procesa todos los registros, de todos los archivos, en el mismo ciclo.
+
+      MIENTRAS (Clave1 <> HV) O (Clave2 <> HV) O ... (ClaveN <> HV) HACER
+          PROCESO
+      FIN_MIENTRAS
+
+  EXCLUYENTE:
+  El ciclo principal corre mientras TODOS los archivos tengan registros.
+  Cuando uno se agota, ciclos extra procesan los que quedan.
+
+      MIENTRAS NFDA(Arch1) Y NFDA(Arch2) HACER
+          PROCESO de registros comunes
+      FIN_MIENTRAS
+
+      MIENTRAS NFDA(Arch1) HACER   // si Arch2 se agoto primero
+          PROCESO de Arch1
+      FIN_MIENTRAS
+
+      MIENTRAS NFDA(Arch2) HACER   // si Arch1 se agoto primero
+          PROCESO de Arch2
+      FIN_MIENTRAS
+
+  Cantidad de ciclos para mezcla excluyente con N archivos:
+  Para 2 archivos → 3 ciclos  (1 principal + 2 residuales)
+  Para 3 archivos → 7 ciclos:
+
+      1. NFDA(Arch1) Y NFDA(Arch2) Y NFDA(Arch3)  ← principal
+      2. NFDA(Arch1) Y NFDA(Arch2)
+      3. NFDA(Arch1) Y NFDA(Arch3)
+      4. NFDA(Arch2) Y NFDA(Arch3)
+      5. NFDA(Arch1)
+      6. NFDA(Arch2)
+      7. NFDA(Arch3)
+
+  Regla: para N archivos, la cantidad de ciclos es 2^N - 1.
+
+
+=======================================================
+  EPISODIO 2: Mezcla Directa con ciclo Excluyente
+=======================================================
+
+  Dos archivos con el mismo formato. Se intercalan en orden.
+
+      ACCION mezcla_directa ES
+          AMBIENTE
+              arch1, arch2, arch_sal: archivo de Registro;
+              reg1, reg2: Registro;
+          PROCESO
+              ABRIR(arch1,   lectura);
+              ABRIR(arch2,   lectura);
+              ABRIR(arch_sal, escritura);
+
+              LEER(arch1, reg1);
+              LEER(arch2, reg2);
+
+              // ciclo principal: ambos tienen registros
+              MIENTRAS NFDA(arch1) Y NFDA(arch2) HACER
+                  SI reg1.clave <= reg2.clave ENTONCES
+                      ESCRIBIR(arch_sal, reg1);
+                      LEER(arch1, reg1);
+                  SINO
+                      ESCRIBIR(arch_sal, reg2);
+                      LEER(arch2, reg2);
+                  FIN_SI
+              FIN_MIENTRAS
+
+              // ciclos residuales: volcar lo que queda
+              MIENTRAS NFDA(arch1) HACER
+                  ESCRIBIR(arch_sal, reg1);
+                  LEER(arch1, reg1);
+              FIN_MIENTRAS
+
+              MIENTRAS NFDA(arch2) HACER
+                  ESCRIBIR(arch_sal, reg2);
+                  LEER(arch2, reg2);
+              FIN_MIENTRAS
+
+              CERRAR(arch1);
+              CERRAR(arch2);
+              CERRAR(arch_sal);
+      FIN_ACCION
+
+  Ejemplo paso a paso:
+  Arch1: [ 2 | 5 | 8 ]
+  Arch2: [ 1 | 4 | 6 | 9 ]
+
+      reg1=2, reg2=1 → 1<2  → escribe 1, lee arch2 → reg2=4
+      reg1=2, reg2=4 → 2<4  → escribe 2, lee arch1 → reg1=5
+      reg1=5, reg2=4 → 4<5  → escribe 4, lee arch2 → reg2=6
+      reg1=5, reg2=6 → 5<6  → escribe 5, lee arch1 → reg1=8
+      reg1=8, reg2=6 → 6<8  → escribe 6, lee arch2 → reg2=9
+      reg1=8, reg2=9 → 8<9  → escribe 8, lee arch1 → FDA(arch1)
+      Sale del ciclo principal.
+      Ciclo residual arch1: nada (ya termino).
+      Ciclo residual arch2: escribe 9.
+
+  Salida: [ 1 | 2 | 4 | 5 | 6 | 8 | 9 ]
+
+
+=======================================================
+  EPISODIO 3: Mezcla con ciclo Incluyente (HV)
+=======================================================
+
+  Usa HV (High Value) en vez de FDA para manejar el fin de archivo.
+  Cuando un archivo se agota, su clave pasa a HV y el ciclo sigue
+  con los registros que quedan en el otro.
+
+      SUBACCION Leer_Arch1 ES
+          LEER(arch1, reg1)
+          SI FDA(arch1) ENTONCES
+              reg1.clave := HV
+          FIN_SI
+      FIN_SUBACCION
+
+      SUBACCION Leer_Arch2 ES
+          LEER(arch2, reg2)
+          SI FDA(arch2) ENTONCES
+              reg2.clave := HV
+          FIN_SI
+      FIN_SUBACCION
+
+      ACCION mezcla_incluyente ES
+          PROCESO
+              ABRIR(arch1,    lectura);
+              ABRIR(arch2,    lectura);
+              ABRIR(arch_sal, escritura);
+
+              Leer_Arch1
+              Leer_Arch2
+
+              // un solo ciclo para todo
+              MIENTRAS (reg1.clave <> HV) O (reg2.clave <> HV) HACER
+                  SI reg1.clave <= reg2.clave ENTONCES
+                      ESCRIBIR(arch_sal, reg1);
+                      Leer_Arch1
+                  SINO
+                      ESCRIBIR(arch_sal, reg2);
+                      Leer_Arch2
+                  FIN_SI
+              FIN_MIENTRAS
+
+              CERRAR(arch1);
+              CERRAR(arch2);
+              CERRAR(arch_sal);
+      FIN_ACCION
+
+  Diferencia con excluyente:
+    Excluyente: 3 ciclos separados (principal + 2 residuales).
+    Incluyente: 1 solo ciclo, HV actua como "centinela de fin".
+    Resultado final es identico, cambia la estructura del codigo.
+
+=======
+CAPITULO 8: Actualizacion
+=======================================================
+
+  EPISODIO 1: Conceptos
+  ----------------------
+
+  1. TIPOS DE ACTUALIZACION
+  --------------------------
+
+      POR LOTES:  varios registros de movimiento para un registro maestro.
+                  Un maestro puede tener muchos movimientos acumulados.
+
+      UNITARIA:   un registro de movimiento para un registro maestro.
+                  Cada maestro tiene a lo sumo un movimiento.
+
+
+  2. FICHEROS
+  ------------
+      Ficheros de entrada: por lo menos dos → MAESTRO y MOVIMIENTOS
+      Ficheros de salida:  como minimo uno   → MAESTRO NUEVO
+
+
+  3. TIPOS DE FICHEROS MAESTROS
+  ------------------------------
+      Historico:    guarda todos los estados anteriores del registro.
+      Comun/Normal: solo guarda el estado actual.
+
+
+  4. TIPOS DE FICHEROS DE MOVIMIENTOS
+  -------------------------------------
+      Actualizacion General o Combinado:  contiene ALTA, BAJA y MODIF mezclados.
+      Actualizacion Parcial o Individual: contiene solo un tipo de movimiento.
+
+
+  5. TIPOS DE MOVIMIENTOS
+  ------------------------
+      ALTA:         agrega un registro nuevo al maestro.
+      BAJA:         elimina (logica o fisicamente) un registro existente.
+      MODIFICACION: cambia campos de un registro existente.
+
+  HV (High Value): valor especial mas grande que cualquier clave posible.
+  Se asigna cuando un archivo llega a FDA para que el ciclo incluyente
+  pueda seguir comparando sin romper.
+
+
+=======================================================
+  EPISODIO 2: Actualizacion Unitaria
+=======================================================
+
+  Un movimiento por maestro. Usa ciclo incluyente con HV.
+
+  ALGORITMO PRINCIPAL:
+
+      ACCION Act_Uni ES
+          ALGORITMO
+              Abrir_Archivos
+              Leer_Maestro
+              Leer_Movimiento
+              MIENTRAS (Clave_Mae <> HV) O (Clave_Mov <> HV) HACER
+                  SI (Clave_Mae = Clave_Mov) ENTONCES
+                      Proceso_Iguales
+                  SINO
+                      SI (Clave_Mae < Clave_Mov) ENTONCES
+                          Reg_sal := Reg_mae
+                          ESCRIBIR(Arch_sal, Reg_sal)
+                          Leer_Maestro
+                      SINO
+                          Proceso_Distintos
+                      FIN_SI
+                  FIN_SI
+              FIN_MIENTRAS
+              Cerrar_Archivos
+      FIN_ACCION
+
+  Que pasa en cada caso:
+      Clave_Mae = Clave_Mov → el movimiento corresponde a ese maestro
+      Clave_Mae < Clave_Mov → maestro sin movimiento, se copia tal cual
+      Clave_Mae > Clave_Mov → movimiento sin maestro (solo puede ser ALTA)
+
+
+  SUBACCIONES:
+
+      SUBACCION Leer_Movimiento ES
+          LEER(Arch_mov, Reg_mov)
+          SI FDA(Arch_mov) ENTONCES
+              Clave_mov := HV
+          FIN_SI
+      FIN_SUBACCION
+
+      SUBACCION Leer_Maestro ES
+          LEER(Arch_mae, Reg_mae)
+          SI FDA(Arch_mae) ENTONCES
+              Clave_mae := HV
+          FIN_SI
+      FIN_SUBACCION
+
+      SUBACCION Proceso_Iguales ES
+          SI Reg_mov.Cod_mov = 'ALTA' ENTONCES
+              ESCRIBIR('Error: alta, registro ya existe')
+              Reg_sal := Reg_mae
+              ESCRIBIR(Arch_sal, Reg_sal)
+          SINO
+              SI Reg_mov.Cod_Mov = 'MODIF' ENTONCES
+                  Proceso_Mod_Maestro
+                  Reg_sal := Reg_mae
+                  ESCRIBIR(Arch_sal, Reg_sal)
+              SINO  // BAJA: eliminacion logica
+                  Marcar_Registro
+                  Reg_sal := Reg_mae
+                  ESCRIBIR(Arch_sal, Reg_sal)
+              FIN_SI
+          FIN_SI
+          Leer_Maestro
+          Leer_Movimiento
+      FIN_SUBACCION
+
+      SUBACCION Proceso_Distintos ES
+          // clave_mov < clave_mae: movimiento sin maestro
+          SI Reg_mov.Cod_Mov = 'BAJA' ENTONCES
+              ESCRIBIR('Error: baja, registro no existe')
+          SINO
+              SI Reg_mov.Cod_Mov = 'MODIF' ENTONCES
+                  ESCRIBIR('Error: modificacion, registro no existe')
+              SINO  // ALTA: asigna campo por campo (distinto formato)
+                  Reg_sal.clave   := Reg_mov.clave
+                  Reg_sal.campo1  := Reg_mov.campo1
+                  Reg_sal.campo2  := Reg_mov.campo2
+                  // ... hasta campoN
+                  Reg_sal.Marca_baja := ''
+                  ESCRIBIR(Arch_sal, Reg_sal)
+              FIN_SI
+          FIN_SI
+          Leer_Movimiento
+      FIN_SUBACCION
+
+      SUBACCION Proceso_Modif_Maestro ES
+          // solo modifica los campos que llegaron con valor distinto de vacio
+          SI Reg_Mov.campo1 <> '' ENTONCES
+              Reg_mae.campo1 := Reg_mov.campo1
+          FIN_SI
+          SI Reg_Mov.campo2 <> '' ENTONCES
+              Reg_mae.campo2 := Reg_mov.campo2
+          FIN_SI
+          SI Reg_Mov.campo3 <> '' ENTONCES
+              Reg_mae.campo3 := Reg_mov.campo3
+          FIN_SI
+          // ... y asi para todos los campos
+      FIN_SUBACCION
+
+      SUBACCION Marcar_Registro ES
+          // marca logica de baja: asterisco, fecha, o cualquier dato segun el problema
+          Reg_mae.Marca_baja := '*'
+      FIN_SUBACCION
+
+
+=======================================================
+  EPISODIO 3: Actualizacion Secuencial Por Lotes
+=======================================================
+
+  Varios movimientos por maestro. Consideraciones:
+    - Alta: siempre el primer movimiento del grupo.
+    - Modificacion: pueden existir varias.
+    - Baja: solo el ultimo movimiento puede ser una baja logica.
+    - No existen altas o bajas entre modificaciones.
+
+
+  AMBIENTE:
+
+      Formato_Clave = REGISTRO
+          clave1: ...
+          // ...
+      FIN_REGISTRO
+
+      Formato_Maestro = REGISTRO
+          clave:      Formato_Clave
+          campo1: ...
+          // ...
+          Marca_baja: ...
+      FIN_REGISTRO
+
+      Formato_Movimiento = REGISTRO
+          clave:   Formato_Clave
+          campo1: ...
+          // ...
+          cod_mov: AN(1)   // 'A', 'M', 'B'
+      FIN_REGISTRO
+
+      mae, mae_sal: archivo de Formato_Maestro ordenado por clave
+      mov:          archivo de Formato_Movimiento ordenado por clave
+      reg_mae, reg_sal, aux: Formato_Maestro
+      reg_mov:      Formato_Movimiento
+
+
+  ALGORITMO PRINCIPAL:
+
+      Abrir_Archivos
+      Leer_Maestro
+      Leer_Movimiento
+
+      MIENTRAS (reg_mov.clave <> High_Value) O (reg_mae.clave <> High_Value) HACER
+          SI reg_mae.clave < reg_mov.clave ENTONCES
+              // Maestro sin Movimiento: copiar tal cual
+              Reg_sal := Reg_mae
+              ESCRIBIR(mae_sal, Reg_sal)
+              Leer_Maestro
+          SINO
+              SI reg_mae.clave = reg_mov.clave ENTONCES
+                  // Maestro con Movimientos: procesar todos los del grupo
+                  aux := reg_mae
+                  MIENTRAS (reg_mae.clave = reg_mov.clave) HACER
+                      Proceso_Movim
+                      Leer_Movimiento
+                  FIN_MIENTRAS
+                  reg_sal := aux
+                  ESCRIBIR(mae_sal, reg_sal)
+                  Leer_Maestro
+              SINO
+                  // Movimiento sin Maestro: es un ALTA (con posibles MODIF/BAJA despues)
+                  aux.clave      := reg_mov.clave
+                  aux.campo1     := reg_mov.campo1
+                  aux.campo2     := reg_mov.campo2
+                  // ... hasta campoN
+                  aux.Marca_baja := ''
+                  Leer_Movimiento
+                  MIENTRAS (aux.clave = reg_mov.clave) HACER
+                      Proceso_Movim
+                      Leer_Movimiento
+                  FIN_MIENTRAS
+                  reg_sal := aux
+                  ESCRIBIR(mae_sal, reg_sal)
+              FIN_SI
+          FIN_SI
+      FIN_MIENTRAS
+
+      CERRAR(mae)
+      CERRAR(mae_sal)
+      CERRAR(mov)
+
+
+  SUBACCIONES:
+
+      SUBACCION Leer_Movimiento ES
+          LEER(mov, Reg_mov)
+          SI FDA(mov) ENTONCES
+              reg_mov.clave := High_Value
+          FIN_SI
+      FIN_SUBACCION
+
+      SUBACCION Leer_Maestro ES
+          LEER(mae, reg_mae)
+          SI FDA(mae) ENTONCES
+              reg_mae.clave := High_Value
+          FIN_SI
+      FIN_SUBACCION
+
+      SUBACCION Proceso_Movim ES
+          SI reg_mov.Cod_Mov = 'M' ENTONCES
+              Proceso_modif_maestro
+          SINO
+              SI reg_mov.Cod_Mov = 'B' ENTONCES
+                  Marcar_registro
+              FIN_SI
+          FIN_SI
+      FIN_SUBACCION
+
+      SUBACCION Proceso_modif_maestro ES
+          // no se actualizan los campos clave
+          SI Reg_Mov.campo1 <> '' ENTONCES
+              aux.campo1 := Reg_mov.campo1
+          FIN_SI
+          SI Reg_Mov.campo2 <> '' ENTONCES
+              aux.campo2 := Reg_mov.campo2
+          FIN_SI
+          // ... y asi para todos los campos
+      FIN_SUBACCION
+
+      SUBACCION Marcar_registro ES
+          aux.Marca_baja := '*'
+      FIN_SUBACCION
+
+
+=======================================================
+  EPISODIO 4: Actualizacion Indexada
+=======================================================
+
+  Un solo archivo maestro indexado por clave.
+  Los movimientos se ingresan por teclado en tiempo real (no desde archivo).
+
+
+  AMBIENTE:
+
+      Formato_mae = REGISTRO
+          clave:      Formato_Clave
+          campo1: ...
+          // ...
+          Marca_baja: ...
+      FIN_REGISTRO
+
+      arch_mae: Archivo de Formato_mae indexado por clave
+      reg_mae:  Formato_mae
+      cod_mov:  AN(1)
+      valido  = ('A', 'B', 'M')
+      clave:    Formato_Clave
+
+
+  ALGORITMO:
+
+      ABRIR E/S (arch_mae)
+
+      ESCRIBIR('Ingrese clave y codigo de movimiento (A/B/M). Otra letra para salir.')
+      LEER(clave, cod_mov)
+
+      MIENTRAS (cod_mov EN valido) HACER
+          reg_mae.clave := clave
+          LEER(arch_mae, reg_mae)
+
+          SI NO EXISTE ENTONCES
+              SI cod_mov = 'B' ENTONCES
+                  ESCRIBIR('Error: baja, registro no existe')
+              SINO
+                  SI cod_mov = 'M' ENTONCES
+                      ESCRIBIR('Error: modificacion, registro no existe')
+                  SINO  // ALTA: ingresar datos por teclado
+                      LEER(reg_mae.campo1)
+                      LEER(reg_mae.campo2)
+                      // ...
+                      ESCRIBIR(arch_mae, reg_mae)
+                  FIN_SI
+              FIN_SI
+          SINO  // el registro EXISTE
+              SI cod_mov = 'A' ENTONCES
+                  ESCRIBIR('Error: alta, clave ya existe')
+              SINO
+                  SI cod_mov = 'M' ENTONCES
+                      LEER(campo1)
+                      SI campo1 <> '' ENTONCES
+                          reg_mae.campo1 := campo1
+                      FIN_SI
+                      LEER(campo2)
+                      SI campo2 <> '' ENTONCES
+                          reg_mae.campo2 := campo2
+                      FIN_SI
+                      // ...
+                      RE-ESCRIBIR(arch_mae, reg_mae)
+                  SINO  // BAJA
+                      // Baja logica:
+                      reg_mae.Marca_baja := '*'
+                      RE-ESCRIBIR(arch_mae, reg_mae)
+                      // Baja fisica (alternativa):
+                      // BORRAR(arch_mae, reg_mae)
+                  FIN_SI
+              FIN_SI
+          FIN_SI
+
+          ESCRIBIR('Ingrese clave y codigo de movimiento (A/B/M). Otra letra para salir.')
+          LEER(clave, cod_mov)
+      FIN_MIENTRAS
+
+      CERRAR(arch_mae)
+
+  Diferencia clave con actualizacion secuencial:
+      Secuencial: necesita dos archivos, procesa en lote, genera nuevo maestro.
+      Indexada:   un solo archivo, acceso directo por clave, modifica en el lugar.
+
+  RE-ESCRIBIR: sobreescribe el registro en su posicion original (no genera nuevo archivo).
+  BORRAR:      elimina fisicamente el registro del archivo (baja fisica).
+
+=======
+CAPITULO 9: Algoritmos de Busqueda y Ordenamiento
+=======================================================
+
+  EPISODIO 1: Busquedas
+  ----------------------
+  Buscar es recorrer un conjunto de datos para encontrar un elemento.
+  Siempre se trabaja sobre un arreglo (array) de N elementos.
+  El valor que buscamos se llama x (o clave).
+
+
+  1. BUSQUEDA LINEAL
+  ------------------
+  Recorre el arreglo de principio a fin comparando cada elemento con x.
+  No se detiene al encontrarlo: sigue hasta el final igual.
+
+      LEER(x)
+      PARA i := 1 a N HACER
+          SI A[i] = x ENTONCES
+              ESCRIBIR('El elemento', x, 'esta en la posicion', i)
+          FIN_SI
+      FIN_PARA
+
+  Como funciona paso a paso (A = [3, 7, 1, 9], x = 7):
+      i = 1: A[1] = 3, 3 <> 7 → sigue
+      i = 2: A[2] = 7, 7 = 7  → imprime "esta en la posicion 2"
+      i = 3: A[3] = 1, 1 <> 7 → sigue igual (no para)
+      i = 4: A[4] = 9, 9 <> 7 → sigue igual
+
+  Problema: si el elemento aparece varias veces, lo imprime todas.
+  Si no esta, no dice nada.
+  Costo: siempre recorre TODO el arreglo. Lento en arreglos grandes.
+
+
+  2. BUSQUEDA LINEAL CON CENTINELA
+  ---------------------------------
+  Mejora la busqueda lineal: se detiene en cuanto encuentra x,
+  sin seguir recorriendo el resto. Usa un MIENTRAS en vez de PARA.
+
+      LEER(x)
+      i := 1
+
+      MIENTRAS (i < N) Y A[i] <> x HACER
+          i := i + 1
+      FIN_MIENTRAS
+
+      SI A[i] = x ENTONCES
+          ESCRIBIR('El elemento', x, 'se encontro en la posicion', i)
+      SINO
+          ESCRIBIR('No encontrado')
+      FIN_SI
+
+  Como funciona paso a paso (A = [3, 7, 1, 9], x = 7):
+      i = 1: i < 4 Y A[1]=3 <> 7 → entra, i pasa a 2
+      i = 2: i < 4 Y A[2]=7 = 7  → condicion FALSA, sale del MIENTRAS
+      SI A[2] = 7 → VERDADERO → imprime "se encontro en la posicion 2"
+
+  Ventaja sobre lineal: para en cuanto lo encuentra.
+  El centinela es la condicion A[i] <> x que corta el bucle.
+
+
+  3. BUSQUEDA BINARIA O DICOTOMICA
+  ---------------------------------
+  IMPORTANTE: el arreglo debe estar ORDENADO para que funcione.
+  En cada paso descarta la mitad del arreglo que no puede contener a x.
+  Es mucho mas rapida que la lineal en arreglos grandes.
+
+  Variables:
+      iz  → limite izquierdo (empieza en 1)
+      de  → limite derecho (empieza en N)
+      cen → posicion del centro: (iz + de) DIV 2
+
+      LEER(x)
+      iz := 1
+      de := N
+      cen := (iz + de) DIV 2
+
+      MIENTRAS (iz < de) Y (nom[cen] <> x) HACER
+          SI (nom[cen] > x) ENTONCES
+              de := cen - 1       // x esta en la mitad izquierda
+          SINO
+              iz := cen + 1       // x esta en la mitad derecha
+          FIN_SI
+          cen := (iz + de) DIV 2
+      FIN_MIENTRAS
+
+      SI (nom[cen] = x) ENTONCES
+          ESCRIBIR('El elemento buscado esta en la posicion', cen)
+      SINO
+          ESCRIBIR('El elemento buscado no esta en el arreglo')
+      FIN_SI
+
+  Como funciona paso a paso (A = [1, 3, 5, 7, 9], x = 7, N = 5):
+      iz=1, de=5, cen=3 → A[3]=5, 5 < 7 → iz pasa a 4
+      iz=4, de=5, cen=4 → A[4]=7, 7 = 7 → sale del MIENTRAS
+      SI A[4] = 7 → imprime "esta en la posicion 4"
+
+  En vez de recorrer los 5 elementos, llego en 2 pasos.
+  Con 1000 elementos, la binaria necesita maximo 10 pasos.
+  La lineal necesitaria hasta 1000.
+
+
+=======================================================
+  EPISODIO 2: Ordenamientos
+=======================================================
+
+  Ordenar es reorganizar los elementos de un arreglo de menor a mayor
+  (o mayor a menor). Hay varios algoritmos, cada uno con su logica.
+
+
+  1. INSERCION DIRECTA
+  ---------------------
+  Ordena de MENOR a MAYOR.
+  Toma cada elemento y lo inserta en el lugar correcto dentro
+  de la parte ya ordenada, desplazando los demas hacia la derecha.
+
+      CARGAR_ARREGLO
+
+      PARA i := 2 a n HACER
+          x := a[i]       // tomo el elemento actual
+          j := i - 1
+          MIENTRAS (j > 0) Y (x < a[j]) HACER
+              a[j+1] := a[j]   // desplazo a la derecha
+              j := j - 1
+          FIN_MIENTRAS
+          a[j+1] := x          // inserto en su lugar
+      FIN_PARA
+
+  Como funciona paso a paso (A = [4, 2, 5, 1]):
+      i=2: x=2, compara con A[1]=4, 2 < 4 → desplaza → A=[4,4,5,1], inserta → A=[2,4,5,1]
+      i=3: x=5, compara con A[2]=4, 5 > 4 → no desplaza → A=[2,4,5,1]
+      i=4: x=1, desplaza 5, 4, 2 → A=[1,2,4,5]
+
+  Resultado: [1, 2, 4, 5]
+
+
+  2. SELECCION DIRECTA
+  ---------------------
+  Ordena de MAYOR a MENOR.
+  En cada vuelta busca el maximo del resto del arreglo
+  y lo intercambia con el elemento de la posicion actual.
+
+      CARGAR_ARREGLO
+
+      PARA i := 1 a n-1 HACER
+          x   := a[i]
+          max := i
+          PARA j := i+1 a n HACER
+              SI (x < a[j]) ENTONCES
+                  max := j
+                  x   := a[j]
+              FIN_SI
+          FIN_PARA
+          a[max] := a[i]   // intercambio
+          a[i]   := x
+      FIN_PARA
+
+  Como funciona paso a paso (A = [3, 1, 4, 2]):
+      i=1: busca el mayor en [3,1,4,2] → max=4 en pos 3 → intercambia → A=[4,1,3,2]
+      i=2: busca el mayor en [1,3,2]   → max=3 en pos 3 → intercambia → A=[4,3,1,2]
+      i=3: busca el mayor en [1,2]     → max=2 en pos 4 → intercambia → A=[4,3,2,1]
+
+  Resultado: [4, 3, 2, 1]
+
+
+  3. INTERCAMBIO DIRECTO / BURBUJA
+  ---------------------------------
+  Ordena de MAYOR a MENOR.
+  Compara pares de elementos adyacentes y los intercambia si estan
+  en el orden incorrecto. Usa una Bandera para saber si ya esta ordenado
+  y cortar antes si es posible.
+
+      CARGAR_ARREGLO
+
+      Bandera := Falso
+
+      MIENTRAS NO Bandera HACER
+          Bandera := Verdadero
+          PARA j := 1 a n-1 HACER
+              SI (a[j] < a[j+1]) ENTONCES
+                  x        := a[j]
+                  a[j]     := a[j+1]
+                  a[j+1]   := x
+                  Bandera  := Falso
+              FIN_SI
+          FIN_PARA
+      FIN_MIENTRAS
+
+  Como funciona paso a paso (A = [2, 4, 1, 3]):
+      Vuelta 1:
+        j=1: A[1]=2 < A[2]=4 → intercambia → A=[4,2,1,3], Bandera=Falso
+        j=2: A[2]=2 > A[3]=1 → no intercambia
+        j=3: A[3]=1 < A[4]=3 → intercambia → A=[4,2,3,1], Bandera=Falso
+      Vuelta 2:
+        j=1: A[1]=4 > A[2]=2 → no intercambia
+        j=2: A[2]=2 < A[3]=3 → intercambia → A=[4,3,2,1], Bandera=Falso
+        j=3: A[3]=2 > A[4]=1 → no intercambia
+      Vuelta 3:
+        j=1,2,3: ningun intercambio → Bandera queda Verdadero → sale
+
+  Resultado: [4, 3, 2, 1]
+
+  La Bandera es la optimizacion clave: si en una vuelta completa
+  no hubo ningun intercambio, el arreglo ya esta ordenado y para.
+
+
+=======================================================
+CAPITULO 10: Recursividad
+=======================================================
+
+  EPISODIO 1: Que es la Recursividad
+  ------------------------------------
+
+  1. LA IDEA
+  ----------
+  Una funcion es recursiva cuando se llama a si misma para resolver
+  una version mas pequena del mismo problema.
+
+  Para que funcione, toda funcion recursiva necesita dos partes:
+
+      CASO BASE:      la condicion que PARA la recursion.
+                      Sin esto, el programa nunca termina.
+
+      CASO RECURSIVO: la llamada a si misma con un problema mas chico.
+
+  Analogia: para bajar una escalera de 10 escalones,
+  "bajar la escalera" = bajar 1 escalon + bajar los 9 que quedan.
+  El caso base es: si quedan 0 escalones, ya terminaste.
+
+
+  2. FACTORIAL
+  ------------
+  n! = n * (n-1) * (n-2) * ... * 1
+  Caso base: 0! = 1
+
+      FUNCION factorial(E n: ENTERO): ENTERO
+          PROCESO
+              SI n = 0 ENTONCES
+                  factorial := 1;          // caso base
+              SINO
+                  factorial := n * factorial(n - 1);  // caso recursivo
+              FIN_SI
+      FIN_FUNCION
+
+  Traza de factorial(4):
+      factorial(4) = 4 * factorial(3)
+      factorial(3) = 3 * factorial(2)
+      factorial(2) = 2 * factorial(1)
+      factorial(1) = 1 * factorial(0)
+      factorial(0) = 1                  ← caso base, empieza a volver
+
+      factorial(1) = 1 * 1 = 1
+      factorial(2) = 2 * 1 = 2
+      factorial(3) = 3 * 2 = 6
+      factorial(4) = 4 * 6 = 24
+
+  La recursion tiene dos fases:
+      IDA:    se van apilando las llamadas hasta el caso base
+      VUELTA: se van resolviendo de adentro hacia afuera
+
+
+  3. SUMA DE 1 A N
+  -----------------
+  Sumar todos los numeros del 1 al N.
+  Caso base: si N = 0, la suma es 0.
+
+      FUNCION suma(E n: ENTERO): ENTERO
+          PROCESO
+              SI n = 0 ENTONCES
+                  suma := 0;
+              SINO
+                  suma := n + suma(n - 1);
+              FIN_SI
+      FIN_FUNCION
+
+  Traza de suma(3):
+      suma(3) = 3 + suma(2)
+      suma(2) = 2 + suma(1)
+      suma(1) = 1 + suma(0)
+      suma(0) = 0               ← caso base
+
+      suma(1) = 1 + 0 = 1
+      suma(2) = 2 + 1 = 3
+      suma(3) = 3 + 3 = 6
+
+
+  4. FIBONACCI
+  ------------
+  Cada numero es la suma de los dos anteriores: 0, 1, 1, 2, 3, 5, 8, 13...
+  Casos base: fib(0) = 0, fib(1) = 1
+
+      FUNCION fibonacci(E n: ENTERO): ENTERO
+          PROCESO
+              SI n = 0 ENTONCES
+                  fibonacci := 0;
+              SINO
+                  SI n = 1 ENTONCES
+                      fibonacci := 1;
+                  SINO
+                      fibonacci := fibonacci(n-1) + fibonacci(n-2);
+                  FIN_SI
+              FIN_SI
+      FIN_FUNCION
+
+  Traza de fibonacci(4):
+      fib(4) = fib(3) + fib(2)
+      fib(3) = fib(2) + fib(1)
+      fib(2) = fib(1) + fib(0) = 1 + 0 = 1
+      fib(3) = 1 + 1 = 2
+      fib(4) = 2 + 1 = 3
+
+  Atencion: fibonacci hace DOS llamadas recursivas por nivel.
+  Esto lo hace mucho mas lento que factorial para numeros grandes.
+
+
+  5. RECURSIVIDAD vs ITERACION
+  -----------------------------
+  Todo lo que se puede hacer recursivo se puede hacer iterativo
+  (con un bucle) y viceversa. ¿Cuando usar cada uno?
+
+      Recursion:  cuando el problema se divide naturalmente en
+                  subproblemas del mismo tipo (arboles, listas, etc.)
+
+      Iteracion:  cuando es una repeticion simple y la recursion
+                  solo agrega complejidad sin beneficio
+
+  Ejemplo: factorial iterativo vs recursivo
+
+      // Iterativo
+      FUNCION fact_iter(E n: ENTERO): ENTERO
+          AMBIENTE
+              resultado, i: ENTERO;
+          PROCESO
+              resultado := 1;
+              PARA i := 1 a n HACER
+                  resultado := resultado * i;
+              FIN_PARA
+              fact_iter := resultado;
+      FIN_FUNCION
+
+  Ambas dan el mismo resultado. Para factorial, la version iterativa
+  es mas eficiente porque no apila llamadas en memoria.
+
+  Regla a recordar:
+    Sin CASO BASE la recursion es infinita y el programa crashea.
+    La recursion siempre tiene una fase de IDA y una de VUELTA.
+    Cada llamada recursiva debe acercarse al caso base.
+
+=======
+CAPITULO 11: Punteros
+=======================================================
+
+  EPISODIO 1: Que es un puntero
+  ------------------------------
+
+  1. LA IDEA
+  ----------
+  Una variable normal guarda un VALOR directamente:
+
+      a: ENTERO;
+      a := 42;
+
+      En memoria:   a → [ 42 ]
+
+  Un puntero guarda una DIRECCION de memoria.
+  No guarda el valor, guarda DONDE esta el valor.
+
+  Analogia:
+    Variable normal = una caja con un numero adentro.
+    Puntero         = un papel con la direccion de esa caja escrita.
+
+  Para llegar al valor tenes que "ir a esa direccion".
+  Eso se llama DEREFERENCIAR y se hace con el asterisco: *p
+
+
+  2. DECLARACION
+  --------------
+  Se declara indicando a que tipo de dato apunta:
+
+      p: puntero a ENTERO;    // p apunta a un entero
+      q: puntero a REAL;      // q apunta a un real
+
+  Al principio p no apunta a nada. Eso se representa con nil:
+
+      p := nil;   // p esta "vacio", no apunta a ninguna direccion
+
+
+  3. NUEVO Y DISPONER
+  --------------------
+  Antes de usar un puntero hay que reservar memoria con NUEVO.
+
+      NUEVO(p)     → reserva espacio en RAM y hace que p apunte a el
+      DISPONER(p)  → libera ese espacio cuando ya no lo necesitas
+
+  Si no hacemos DISPONER, la memoria queda ocupada para siempre
+  aunque el programa ya no la use. Eso se llama "perdida de memoria".
+
+
+  4. ACCEDER AL VALOR: *p
+  ------------------------
+  Una vez que p apunta a algo, usamos *p para leer o escribir el valor:
+
+      *p := 10;        // guarda 10 en la direccion que apunta p
+      ESCRIBIR(*p);    // lee e imprime el valor (10)
+      *p := *p + 5;    // modifica: ahora vale 15
+
+  Diferencia clave:
+      p    → la DIRECCION (donde esta la caja)
+      *p   → el VALOR en esa direccion (lo que hay adentro)
+
+
+  5. EJEMPLO COMPLETO
+  --------------------
+
+      ACCION ejemplo_puntero ES
+          AMBIENTE
+              p: puntero a ENTERO;
+          PROCESO
+              NUEVO(p);         // reserva memoria, p apunta a ella
+              *p := 10;         // guarda 10 en esa memoria
+              ESCRIBIR(*p);     // imprime: 10
+
+              *p := *p + 5;     // modifica el valor
+              ESCRIBIR(*p);     // imprime: 15
+
+              DISPONER(p);      // libera la memoria
+      FIN_ACCION
+
+  Lo que pasa en memoria paso a paso:
+
+      NUEVO(p):    p ──→ [   ]    (reservo una cajita, p sabe donde esta)
+      *p := 10:    p ──→ [ 10 ]   (pongo 10 adentro)
+      *p := *p+5:  p ──→ [ 15 ]   (modifico lo que hay adentro)
+      DISPONER(p): p ──→ (liberado)
+
+
+  6. DOS PUNTEROS AL MISMO LUGAR
+  --------------------------------
+  Dos punteros pueden apuntar a la misma direccion:
+
+      NUEVO(p);
+      *p := 99;
+      q := p;           // q apunta al mismo lugar que p
+
+      ESCRIBIR(*q);     // imprime 99
+      *q := 7;          // modifico via q
+      ESCRIBIR(*p);     // imprime 7 (mismo lugar!)
+
+  Esto es importante entenderlo para las listas: cuando moves
+  un puntero a la siguiente posicion, no copias el nodo,
+  solo cambias a donde apuntas.
+
+  Regla a recordar:
+    p        → la direccion
+    *p       → el valor en esa direccion
+    NUEVO    → crear espacio
+    DISPONER → liberar espacio
+    nil      → no apunta a nada
+
+
+================================================
+
+=======
+CAPITULO 12: Nodos
+=======================================================
+
+  EPISODIO 1: Que es un nodo
+  ---------------------------
+
+  1. LA IDEA
+  ----------
+  Un nodo es un REGISTRO que tiene dos partes:
+    - El DATO: el valor que queremos guardar
+    - El PROX: un puntero que apunta al SIGUIENTE nodo
+
+  Es como un eslabon de una cadena: cada uno tiene su contenido
+  y sabe donde esta el siguiente.
+
+      [ Dato | Prox ──→ ]
+
+
+  2. DECLARACION
+  --------------
+
+      Nodo = REGISTRO
+          Dato: ENTERO;          // el valor guardado
+          Prox: puntero a Nodo;  // apunta al siguiente nodo
+      FIN_REGISTRO
+
+      p: puntero a Nodo;   // puntero para trabajar con nodos
+
+  El tipo del Dato puede ser cualquier cosa: ENTERO, REAL, AN, etc.
+  o incluso otro REGISTRO (como un alumno con legajo y nombre).
+
+
+  3. CREAR UN NODO SOLO
+  ----------------------
+
+      NUEVO(p);          // reservo memoria para un nodo
+      *p.Dato := 42;     // le pongo el valor
+      *p.Prox := nil;    // no hay siguiente, apunta a nil
+
+  En memoria:
+
+      p ──→ [ Dato:42 | Prox:nil ]
+
+
+  4. CONECTAR DOS NODOS
+  ----------------------
+  Creamos dos nodos y los conectamos:
+
+      ACCION dos_nodos ES
+          AMBIENTE
+              p, q: puntero a Nodo;
+          PROCESO
+              NUEVO(p);
+              *p.Dato := 10;
+              *p.Prox := nil;
+
+              NUEVO(q);
+              *q.Dato := 20;
+              *q.Prox := nil;
+
+              *p.Prox := q;   // p apunta a q como siguiente
+      FIN_ACCION
+
+  En memoria:
+
+      p ──→ [ Dato:10 | Prox:•──→ ] ──→ [ Dato:20 | Prox:nil ]
+
+
+  5. RECORRER NODOS CONECTADOS
+  -----------------------------
+  Para recorrer usamos un puntero auxiliar que "camina" de nodo en nodo.
+  NUNCA movemos p directamente o perdemos el inicio.
+
+      ACCION recorrer ES
+          AMBIENTE
+              p, aux: puntero a Nodo;
+          PROCESO
+              // asumimos que p ya apunta al primer nodo
+              aux := p;                    // aux empieza al inicio
+              MIENTRAS aux <> nil HACER
+                  ESCRIBIR(*aux.Dato);     // leemos el dato
+                  aux := *aux.Prox;        // avanzamos al siguiente
+              FIN_MIENTRAS
+      FIN_ACCION
+
+  Paso a paso (lista: 10 → 20 → nil):
+      aux = p → apunta a nodo 10
+      ESCRIBIR(10), aux := *aux.Prox → apunta a nodo 20
+      ESCRIBIR(20), aux := *aux.Prox → apunta a nil
+      nil → sale del MIENTRAS
+
+  Regla clave: usas un puntero auxiliar para recorrer,
+  no el puntero principal, para no perder el inicio de la cadena.
+
+
+  6. LIBERAR NODOS
+  -----------------
+  Para liberar una cadena de nodos hay que ir de a uno:
+
+      MIENTRAS p <> nil HACER
+          q := p;            // guardo el actual
+          p := *p.Prox;      // avanzo al siguiente
+          DISPONER(q);       // libero el actual
+      FIN_MIENTRAS
+
+  Si hacemos DISPONER(p) directo sin guardar *p.Prox antes,
+  perdemos la referencia al resto de la cadena para siempre.
+
+  Regla a recordar:
+    *p.Dato  → accede al campo Dato del nodo apuntado por p
+    *p.Prox  → accede al campo Prox (siguiente nodo)
+    aux := *p.Prox → avanza al siguiente sin perder p
+
+
+================================================
+
+
+=======================================================
+CAPITULO 13: Listas Simplemente Enlazadas
+=======================================================
+
+  EPISODIO 1: Que es una Lista
+  ------------------------------
+
+  1. LISTA vs ARREGLO
+  --------------------
+  Un arreglo ocupa un bloque fijo y continuo en memoria RAM.
+  Si declara arreglo[1..100], reserva 100 lugares aunque uses 3.
+
+  Una lista enlazada es diferente: no reserva memoria de antemano.
+  Cada elemento se crea cuando lo necesitas y se libera cuando no.
+  Los elementos no estan uno al lado del otro en memoria,
+  sino que cada uno sabe donde esta el siguiente.
+
+      Arreglo:
+      [ 10 | 30 | 20 | 50 ]   ← posiciones fijas y contiguas en RAM
+        [1]   [2]   [3]   [4]
+
+      Lista enlazada:
+      [ 10 | •-]→[ 30 | •-]→[ 20 | •-]→[ 50 | nil ]
+        dato prox   dato prox   dato prox   dato prox
+
+  Cada elemento de la lista se llama NODO.
+  Cada nodo guarda dos cosas: el dato y la direccion del siguiente.
+
+
+  2. EL NODO
+  -----------
+  El nodo se define como un REGISTRO con dos campos:
+
+      Nodo = REGISTRO
+          Dato: <tipo>           // el valor que guarda
+          Prox: puntero a Nodo  // direccion del siguiente nodo
+      FIN_REGISTRO
+
+  PUNTERO es una variable que guarda una direccion de memoria,
+  no un valor directo. Apunta a donde vive otro nodo.
+
+  Variables auxiliares que vas a usar siempre:
+
+      Prim:  puntero a Nodo   // apunta al PRIMER nodo de la lista
+      p:     puntero a Nodo   // puntero de recorrido (el que \

@@ -1,0 +1,69 @@
+name: Build Windows EXE
+
+on:
+  push:
+    branches: [ "aed_pseudo" ]
+
+permissions:
+  contents: write
+
+jobs:
+  build-windows:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout codigo
+        uses: actions/checkout@v4
+
+      - name: Instalar mingw-w64
+        run: sudo apt-get install -y mingw-w64
+
+      - name: Descargar SDL2 MinGW
+        run: |
+          curl -L -o /tmp/SDL2-mingw.tar.gz \
+            https://github.com/libsdl-org/SDL/releases/download/release-2.30.9/SDL2-devel-2.30.9-mingw.tar.gz
+          tar xf /tmp/SDL2-mingw.tar.gz -C /tmp
+
+      - name: Descargar SDL2_ttf MinGW
+        run: |
+          curl -L -o /tmp/SDL2_ttf-mingw.tar.gz \
+            https://github.com/libsdl-org/SDL_ttf/releases/download/release-2.22.0/SDL2_ttf-devel-2.22.0-mingw.tar.gz
+          tar xf /tmp/SDL2_ttf-mingw.tar.gz -C /tmp
+
+      - name: Preparar win-libs
+        run: |
+          mkdir -p PseudoGames/win-libs/include/SDL2
+          mkdir -p PseudoGames/win-libs/lib
+          mkdir -p PseudoGames/win-libs/dll
+          cp -r /tmp/SDL2-2.30.9/x86_64-w64-mingw32/include/SDL2/* PseudoGames/win-libs/include/SDL2/
+          cp -r /tmp/SDL2_ttf-2.22.0/x86_64-w64-mingw32/include/SDL2/* PseudoGames/win-libs/include/SDL2/
+          cp /tmp/SDL2-2.30.9/x86_64-w64-mingw32/lib/libSDL2.dll.a     PseudoGames/win-libs/lib/
+          cp /tmp/SDL2-2.30.9/x86_64-w64-mingw32/lib/libSDL2main.a     PseudoGames/win-libs/lib/
+          cp /tmp/SDL2_ttf-2.22.0/x86_64-w64-mingw32/lib/libSDL2_ttf.dll.a PseudoGames/win-libs/lib/
+          cp /tmp/SDL2-2.30.9/x86_64-w64-mingw32/bin/SDL2.dll     PseudoGames/win-libs/dll/
+          cp /tmp/SDL2_ttf-2.22.0/x86_64-w64-mingw32/bin/SDL2_ttf.dll PseudoGames/win-libs/dll/
+
+      - name: Compilar PseudoGames.exe
+        run: make -C PseudoGames windows
+
+      - name: Empaquetar release
+        run: |
+          mkdir -p release
+          cp PseudoGames/PseudoGames.exe        release/
+          cp PseudoGames/win-libs/dll/SDL2.dll        release/
+          cp PseudoGames/win-libs/dll/SDL2_ttf.dll    release/
+          cp -r PseudoGames/assets   release/
+          cp -r PseudoGames/data     release/
+          cp -r PseudoGames/scripts  release/
+          mkdir -p release/saves
+          cd release && zip -r ../PseudoGames-Windows.zip .
+
+      - name: Publicar Release
+        run: |
+          gh release delete v0.1 --yes 2>/dev/null || true
+          git push --delete origin v0.1 2>/dev/null || true
+          gh release create v0.1 PseudoGames-Windows.zip \
+            --title "PseudoGames v0.1" \
+            --notes "Build automatico. Extraer el zip y ejecutar PseudoGames.exe"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

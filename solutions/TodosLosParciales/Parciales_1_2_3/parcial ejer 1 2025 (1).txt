@@ -1,0 +1,124 @@
+accion parcialEjer1 (diff (x,y:real(4:2):real(4:2))) es
+    ambiente
+        key=registro
+            tipo_equipo:N(4)
+            nro_equiupo:N(4)
+        fin registro
+
+        fecha=registro
+            d:{1..31}
+            m:{1..12}
+            a:N(4)
+        fin registro
+
+        equipos=registro
+            clave=key
+            f_adq=fecha
+            f_ult_mant:fecha
+            h_uso:real(4:2)
+            disponibilidad:{"si","no"}
+        fin registro
+
+        novedades=registro
+            clave:key
+            tipo_novedad:
+            f_novedad:fecha
+            h_inicio:real(4:2)
+            h_fin:real(4:2)
+            nro_circuito:{1..6}
+            id_user:N(4)
+        fin registro
+
+        mae,sal:archivo de equipos ordenados por clave
+        reg_mae,reg_sal:equipos
+        movi:archivo de novedades ordenado por clave, tipo_novedad y f_novedad
+        reg_movi:novedades
+        cant_baja,cant_equipo_mantenimiento:N(4)
+        valor_ingresado:real (4:2)
+
+        procedimiento leer_mae() es:
+            leer(mae,regmae)
+            si FDA(mae) entonces
+                reg_mae.clave:=hv
+            fin si
+        fin procedimiento
+
+        procedimiento leer_movi() es:
+            leer(movi,reg_movi)
+            si FDA(movi) entonces
+                reg_movi.clave:=hv
+            fin si
+        fin procedimiento
+
+        procedimiento comprobar_mantenimiento(x:equipos) es:
+            si x.f_ult_mant.m = 1 or x.f_ult_mant.m = 2 entonces
+                si x.h_uso > valor_ingresado entonces
+                    cant_equipo_mantenimiento:= cant_equipo_mantenimiento + 1
+                fin si
+            fin si
+        fin procedimiento
+
+        procedimiento movimientos() es:
+            mientras reg_sal.clave = reg_movi.clave hacer
+                si reg_movi.tipo_novedad = 1 entonces
+                    esc('Error, alta no es posible, ya esta en el sistema')
+                sino
+                    si reg_movi.tipo_novedad = 2 entonces
+                        reg_sal.h_uso:=reg_sal.h_uso + diff(reg_movi.h_inicio,reg_movi.h_fin) //realizamos la actualizacion
+                    sino
+                        reg_sal.disponibilidad:="no"
+                        cant_baja:=cant_baja + 1 // contabilizamos la consigna C
+                    fin Si
+                fin si
+                leer_movi() //se lee solo movimientos ya que se quiere reutilizar el procedimiento en altas()
+            fin mientras //se termina de acumular el "lote" de actualizaciones
+            comprobar_mantenimiento(reg_sal) //comprobamos la consigna B
+            esc(sal,reg_sal)
+        fin procedimiento
+
+        procedimiento altas() es
+            reg_sal.calve:=reg_movi.clave
+            reg_sal.f_adq:=reg_movi.f_novedad
+            reg_sal.f_ult_mant.a:=0000 // codigo de año invalido para declarar que no tuvo aun mantenimientos
+            reg_sal.h_uso:=diff(reg_movi.h_inicio,reg_movi.h_fin) // puede venir o no valores de inicio, si no vienen, la diferencia sera 0
+            reg_sal.disponibilidad="si"
+            leer_movi()
+            movimientos()
+        fin procedimiento
+
+ALGORITMO
+    abrir e/(mae)
+    abrir e/(movi)
+    abrir /s(sal)
+    esc("ingrese el valor de horas usadas que desee comprobar bajo los mantenimeintos de enero y febrero")
+    leer(valor_ingresado)
+    leer_mae()
+    leer_movi()
+    cant_baja,cant_equipo_mantenimiento:=0
+    mientras (reg_mae.clave <> HV) or (reg_movi-clave<>HV) hacer
+        si reg_mae.clave<reg_movi.clave entonces //sin movimientos solo comprobar mantenimientos
+            esc(sal,reg_mae)
+            comprobar_mantenimiento(reg_mae)
+        sino
+            si reg_mae.clave=reg_movi.clave entonces
+                reg_sal:=reg_mae
+                movimientos()
+                leer_mae() //leemos el maestro faltante de movimientos()
+            sino
+                si reg_movi.tipo_novedad=1 entonces
+                    altas()
+                sino
+                    esc("error operacion no posible, no se encuentra el registro")
+                fin si
+            fin si
+        fin si
+    fin mientras    
+
+    esc("la cantidad de equipos dados de baja durante el proceso de actualizacion es =",cant_baja)
+    esc("la cantidad de equipos que superan las horas usadas ", valor_ingresado," en los meses de enero y febrero es de: ",cant_equipo_mantenimiento)
+    cerrar(mae)
+    cerrar(sal)
+    cerrar(movi)
+fin accion
+
+

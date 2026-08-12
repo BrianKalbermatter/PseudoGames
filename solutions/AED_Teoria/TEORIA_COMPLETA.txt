@@ -1,0 +1,1523 @@
+================================================================================
+    ALGORITMOS Y ESTRUCTURAS DE DATOS — TEORÍA COMPLETA
+    UTN Facultad Regional Resistencia — Ingeniería en Sistemas de Información
+    Elaborado por: Docentes de la cátedra
+================================================================================
+
+ÍNDICE
+------
+  UNIDAD I - Parte A: Introducción a la Algoritmia
+    1. Qué es un Algoritmo
+    2. Características de los Algoritmos
+    3. Proceso, Acción y Estado
+    4. Clasificación de Acciones
+    5. Metodologías: Pseudocódigo
+    6. Tipos de Datos
+    7. Variables
+    8. Constantes
+    9. Operadores y Operandos
+    10. Prueba de Escritorio
+
+  UNIDAD I - Parte B: Estructuras de Control
+    11. Estructura Secuencial
+    12. Estructura Condicional
+    13. Estructuras Repetitivas
+
+  UNIDAD II: Subacciones
+    14. Subacciones / Subalgoritmos
+    15. Control de Ejecución
+    16. Elementos de las Subacciones (Nombre y Parámetros)
+    17. Funciones
+    18. Procedimientos
+    19. Ámbitos de Variables
+    20. Paso de Parámetros
+
+  UNIDAD III - Parte A: Estructuras de Datos
+    21. Concepto de Campo
+    22. Registro
+    23. Archivos
+    24. Consistencia y Congruencia de Archivos
+    25. Clasificación de Archivos
+    26. Organización de Archivos
+    27. Acceso de Archivos
+
+  UNIDAD III - Parte B: Archivos Indexados
+    28. Qué son los Archivos Indexados
+    29. Constitución Física de un Archivo Indexado
+    30. Verbos para Archivos Indexados
+    31. Grabar versus Regrabar
+    32. Comparación: Secuenciales vs Indexados
+    33. Actualización Indexada
+
+  UNIDAD II - Subunidad A: Noción de Secuencia
+    34. Concepto de Secuencia
+    35. Clasificación de Secuencias
+    36. Definición en el Ambiente (verbos/operadores)
+    37. Sub Secuencias
+    38. Relación entre Sub Secuencias
+    39. Secuencia de Caracteres: Preguntas Frecuentes
+        39.1 ¿Hay enteros dentro de una secuencia de caracteres?
+        39.2 Campos fijos vs campos de longitud variable
+        39.3 ¿Cuándo declarar una variable para un campo?
+        39.4 Función conv_entero() — convertir carácter a entero
+        39.5 Resumen: cuándo usar cada estructura
+
+
+================================================================================
+  UNIDAD I — PARTE A: INTRODUCCIÓN A LA ALGORITMIA
+================================================================================
+
+--------------------------------------------------------------------------------
+1. QUÉ ES UN ALGORITMO
+--------------------------------------------------------------------------------
+
+Un algoritmo:
+  - Es una fórmula para resolver un problema.
+  - Es un conjunto de acciones o secuencia de operaciones que ejecutadas en un
+    determinado orden resuelven un problema.
+
+DEFINICIÓN FORMAL:
+  Un algoritmo es una secuencia FINITA de instrucciones, reglas o pasos que
+  describen de modo PRECISO las operaciones que una computadora debe realizar
+  para ejecutar una tarea determinada en un tiempo FINITO.
+
+Para crear un algoritmo es necesario:
+  1. Identificar los resultados esperados (entender el problema).
+  2. Individualizar los datos de entrada con que se cuenta.
+  3. Plantear los procesos necesarios para pasar de la entrada a la salida.
+
+En la práctica, un algoritmo sigue estas etapas:
+  1. DISEÑO: describir la secuencia ordenada de pasos (pseudocódigo / diagrama).
+  2. CODIFICACIÓN: expresarlo en un lenguaje de programación.
+  3. EJECUCIÓN Y VALIDACIÓN: ejecutarlo y comprobar resultados.
+
+La definición de un algoritmo debe describir tres partes:
+  ENTRADA → PROCESO → SALIDA
+
+Ejemplo 1: ¿Es el número par o impar?
+  - Entrada:  Solicitar al usuario que ingrese un número X.
+  - Proceso:  Dividir X por 2.
+  - Salida:   Si el resto es 0, informar que es par. Sino, informar que es impar.
+
+
+--------------------------------------------------------------------------------
+2. CARACTERÍSTICAS DE LOS ALGORITMOS
+--------------------------------------------------------------------------------
+
+  - PRECISO:      indica el orden de realización de cada paso.
+  - BIEN DEFINIDO: si se sigue dos veces, se obtiene el mismo resultado.
+  - FINITO:       debe terminar en algún momento (número finito de pasos).
+  - CORRECTO:     el resultado debe ser el esperado.
+  - INDEPENDIENTE: es independiente del lenguaje de programación y del hardware.
+
+
+--------------------------------------------------------------------------------
+3. PROCESO, ACCIÓN Y ESTADO
+--------------------------------------------------------------------------------
+
+PROCESO:
+  Es la unidad más pequeña de trabajo, individualmente planificable por un SO.
+  "Una unidad de actividad que se caracteriza por la ejecución de una secuencia
+  de instrucciones, un estado actual, y un conjunto de recursos asociados."
+
+ACCIÓN:
+  Es un acontecimiento producido por un ACTOR que tiene un TIEMPO FINITO
+  (período), produce un RESULTADO DEFINIDO Y PRECISO y produce un CAMBIO DE
+  ESTADO.
+
+  Los pasos en un algoritmo comienzan con verbos (Solicitar, Ingresar, Dividir…)
+  porque un verbo implica acción.
+
+TIPOS DE ACCIONES:
+  - SIMPLES:   pueden ser realizadas directamente.
+  - COMPLEJAS: no se pueden realizar directamente; se descomponen en acciones
+               simples de menor complejidad.
+
+  NOTA: La determinación de lo que es complejo y simple varía entre personas
+        y depende de sus capacidades y del enfoque del problema.
+
+
+--------------------------------------------------------------------------------
+4. CLASIFICACIÓN DE ACCIONES
+--------------------------------------------------------------------------------
+
+  Acciones
+  ├── Simples
+  │   ├── Asignación
+  │   │   ├── Pura
+  │   │   └── Expresión
+  │   │       ├── Funcionales
+  │   │       ├── Algebraicas
+  │   │       └── Incrementales
+  │   │           ├── Contador
+  │   │           └── Acumulador
+  │   └── Acción elemental
+  └── Estructuradas
+      ├── Acción con nombre
+      ├── Condicionales
+      │   ├── Simples
+      │   ├── Alternativas
+      │   └── Selección múltiple
+      └── Cíclicas
+          ├── Pre-test
+          ├── Post-test
+          └── Manejada por contador
+
+
+--------------------------------------------------------------------------------
+5. PSEUDOCÓDIGO
+--------------------------------------------------------------------------------
+
+El pseudocódigo nació como un lenguaje similar al inglés para representar
+estructuras de control de la programación estructurada.
+
+  - Se considera un PRIMER BORRADOR (igual que el diagrama de flujo).
+  - El pseudocódigo tiene que traducirse a un lenguaje de programación.
+  - El pseudocódigo NO PUEDE ser ejecutado por una computadora.
+
+PROGRAMACIÓN ESTRUCTURADA:
+  Conjunto de técnicas para diseñar y escribir programas usando método científico.
+  Se basa en:
+    1. Las características de un algoritmo.
+    2. El Teorema de la Programación Estructurada: todo algoritmo estructurado
+       puede escribirse con solo 3 tipos de estructuras de control:
+         - SECUENCIALES
+         - CONDICIONALES
+         - REPETITIVAS
+
+  Un algoritmo estructurado debe:
+    1. Poseer un solo punto de entrada y uno solo de salida.
+    2. Todas las acciones deben ser accesibles (existe al menos un camino desde
+       el inicio hasta el fin que pasa por cada acción).
+    3. No poseer ciclos o bucles infinitos.
+
+VENTAJAS del pseudocódigo sobre el diagrama de flujo:
+  - Permite representar fácilmente operaciones repetitivas complejas.
+  - Es muy fácil transformar una solución de pseudocódigo a un lenguaje real.
+  - Se pueden observar claramente los niveles de cada operación.
+
+ESTRUCTURA GENERAL DE UN ALGORITMO EN PSEUDOCÓDIGO:
+
+  ACCION NombreAccion ES
+  AMBIENTE
+      (declaración de variables)
+  PROCESO
+      (instrucciones)
+  FIN_ACCION
+
+
+--------------------------------------------------------------------------------
+6. TIPOS DE DATOS
+--------------------------------------------------------------------------------
+
+En Pseudocódigo se usan los siguientes tipos de datos:
+
+  NUMÉRICOS:
+    - Enteros: números completos, sin decimales. Positivos y negativos.
+               Ejemplos: 10, 5, 0, -234, -3
+               Uso: edad de una persona.
+    - Reales:  números con punto decimal. Positivos y negativos.
+               Ejemplos: 0.345, 12.4, -231.005
+               Uso: peso de una persona.
+
+  ALFANUMÉRICOS:
+    - Representan información textual (palabras, frases, símbolos).
+    - No se pueden usar en operaciones aritméticas.
+    - Uso: nombre de una persona, frases.
+
+  LÓGICOS (Booleanos):
+    - Solo pueden tomar dos valores: VERDADERO (V) o FALSO (F).
+    - Uso: determinar si un número es primo o no.
+
+
+--------------------------------------------------------------------------------
+7. VARIABLES
+--------------------------------------------------------------------------------
+
+Las variables son elementos de almacenamiento de datos.
+Representan una dirección de memoria donde se almacena un dato, cuyo contenido
+PUEDE VARIAR en el desarrollo del algoritmo.
+
+Definición de una variable:
+  nombre_variable: tipo_de_dato
+
+Ejemplo:
+  edad: entero
+  precio: real
+  nombre: alfanumérico
+
+IMPORTANTE:
+  - En una variable se puede almacenar distintos tipos de datos.
+  - De acuerdo al tipo de dato, varía la cantidad de bytes que ocupa en memoria.
+  - Lo más importante es el SIGNIFICADO de la variable (semántica).
+    Ejemplo: la variable "edad" debe ser entero porque las operaciones
+    relacionadas serán comparación, sumas o restas; no necesita decimales.
+
+Unidades de almacenamiento:
+  1 byte = 8 bits
+  1 KB   = 1024 bytes
+  1 MB   = 1024 KB
+  1 GB   = 1024 MB
+  (y así sucesivamente...)
+
+
+--------------------------------------------------------------------------------
+8. CONSTANTES
+--------------------------------------------------------------------------------
+
+Una constante, al igual que una variable, representa una zona de memoria en
+la cual se almacena un dato.
+Sin embargo, su contenido NO PUEDE MODIFICARSE durante la ejecución.
+
+¿CUÁNDO USAR CONSTANTES?
+  Se recomienda usar una constante cuando se va a utilizar un valor definido y
+  ESTÁTICO varias veces dentro de un programa.
+
+  NOTA: Ese dato ocupa espacio en memoria. No definir constantes sin analizar
+        realmente la necesidad de hacerlo.
+
+
+--------------------------------------------------------------------------------
+9. OPERADORES Y OPERANDOS
+--------------------------------------------------------------------------------
+
+Un OPERADOR es el símbolo que determina el tipo de operación o relación que
+habrá de establecerse entre los operandos para alcanzar un resultado.
+
+Los operadores permiten:
+  a) Transformar datos.
+  b) Usarlos en decisiones para controlar el flujo de ejecución.
+  c) Formar valores para asignarlos a otros datos.
+
+Una EXPRESIÓN es una secuencia de operaciones y operandos que especifica un
+cálculo.
+
+--- OPERADORES DE ASIGNACIÓN ---
+
+  Símbolo: :=
+  Indica que el valor a la derecha del := se asigna a la variable de la izquierda.
+
+  Ejemplo:
+    Edad := 29
+    precio := 25.45
+
+  IMPORTANTE: La asignación es DESTRUCTIVA. El valor anterior de la variable
+              se pierde y se reemplaza por el nuevo valor.
+
+--- OPERADORES ARITMÉTICOS ---
+  (Son binarios: requieren siempre dos operandos)
+
+  Operador  Descripción
+  --------  ----------------------------------
+  +         Suma
+  -         Resta
+  *         Multiplicación
+  /         División real
+  MOD       Resto de la división entera
+  DIV       Cociente de la división entera
+
+--- OPERADORES RELACIONALES ---
+  (Sirven para comparaciones. Devuelven resultado lógico: V o F)
+
+  Operador  Significado
+  --------  ------------------
+  =         Igual a
+  <>        No igual a (distinto)
+  >         Mayor que
+  >=        Mayor o igual que
+  <         Menor que
+  <=        Menor o igual que
+
+  Formato: expresión1  operador_de_relación  expresión2
+
+  Ejemplo (si A=4 y B=3):
+    A > B         → Verdadero
+    (A-2) < (B-4) → Falso
+
+  Las comparaciones entre alfanuméricos usan código ASCII:
+    'A' < 'K'      → Verdadero
+    'A' > 'a'      → Falso
+    'MARIA' < 'JUAN' → Falso (se considera la primera letra)
+
+--- OPERADORES LÓGICOS ---
+  (Combinan condiciones para formar una sola expresión lógica)
+
+  Operador      Descripción           Uso
+  ----------    -------------------   -----
+  AND / Y / ᴧ   Operador lógico AND   a Y b
+  OR  / O / ᴠ   Operador lógico OR    a O b
+
+  Tabla de verdad:
+    A Y B:               A O B:
+    A   B   RESULTADO    A   B   RESULTADO
+    V   V       V        V   V       V
+    V   F       F        V   F       V
+    F   V       F        F   V       V
+    F   F       F        F   F       F
+
+  NOTA: En AND, si el primer operando es Falso, el segundo no se evalúa
+        (ya se sabe que el resultado es Falso).
+
+--- PRIORIDAD DE LOS OPERADORES (de mayor a menor) ---
+
+  1. + - NO          (signo más, menos y negación)
+  2. **              (potencia)
+  3. * / DIV MOD     (multiplicación, división real, entera y módulo)
+  4. + -             (suma y resta)
+  5. +               (concatenación)
+  6. < <= > >=       (menor/mayor que, menor/mayor o igual que)
+  7. = <>            (igual que y distinto que)
+  8. Y               (conjunción)
+  9. O               (disyunción)
+
+
+--------------------------------------------------------------------------------
+10. PRUEBA DE ESCRITORIO
+--------------------------------------------------------------------------------
+
+Es la comprobación que se hace de un algoritmo para saber si está bien realizado.
+Consiste en tomar datos específicos como ENTRADA y seguir la secuencia del
+algoritmo hasta obtener un resultado. El análisis de resultados indica si el
+algoritmo es correcto o necesita ajustes.
+
+¿POR QUÉ USAR LA PRUEBA DE ESCRITORIO?
+  1. Es una estrategia para buscar errores en un programa.
+  2. Permite entender cómo funciona un algoritmo.
+  3. Desarrolla habilidades cognitivas esenciales para programar.
+
+PASOS:
+  Se realiza en base a una tabla cuyos encabezados son las VARIABLES del
+  algoritmo. Debajo de cada una se van colocando los valores que toman, paso a
+  paso. Cada fila representa el ESTADO de las variables en un instante.
+
+  Ejemplo:
+    1. a := 2;
+    2. b := 3;
+    3. suma := a + b;
+    4. suma := suma + 1;
+
+    ESTADO          a     b     suma
+    E0 (inicial)    ¿?    ¿?    ¿?
+    E1              2     ¿?    ¿?
+    E2              2     3     ¿?
+    E3              2     3     5
+    E4 (final)      2     3     6
+
+LA PRUEBA CONSISTE EN 2 ETAPAS:
+  1. Probar que el programa funcione con datos fáciles.
+  2. Si funciona, buscar datos que hagan fallar el algoritmo.
+     - Si no falla → el programa está correcto.
+
+
+================================================================================
+  UNIDAD I — PARTE B: ESTRUCTURAS DE CONTROL
+================================================================================
+
+Las estructuras de control tienen una finalidad definida:
+  SEÑALAR EL ORDEN EN QUE TIENEN QUE SUCEDERSE LOS PASOS DE UN ALGORITMO.
+
+Todo algoritmo estructurado puede escribirse con 3 tipos de estructuras:
+  a) Secuenciales
+  b) Selectivas o de decisión
+  c) Repetitivas
+
+
+--------------------------------------------------------------------------------
+11. ESTRUCTURA SECUENCIAL
+--------------------------------------------------------------------------------
+
+La estructura secuencial es aquella en la que una acción (instrucción) sigue a
+otra en secuencia. Las tareas se suceden de tal modo que la salida de una es
+la entrada de la siguiente y así sucesivamente hasta el fin del proceso.
+
+El hecho que las acciones se ejecuten secuencialmente implica que NUNCA se
+ejecutará más de una acción al mismo tiempo.
+
+EJEMPLO:
+
+  ACCION Ejemplo1 ES
+  AMBIENTE
+      a, doble: entero
+  PROCESO
+      ESCRIBIR("Ingrese el número")
+      LEER(a)
+      doble := a * 2
+      ESCRIBIR("Resultado ", doble)
+  FIN_ACCION
+
+
+--------------------------------------------------------------------------------
+12. ESTRUCTURA CONDICIONAL
+--------------------------------------------------------------------------------
+
+Se usa cuando hay que tomar una decisión. Las condiciones se especifican con
+expresiones lógicas. Se evalúa la condición y según el resultado se realiza
+una u otra acción.
+
+--- CONDICIONAL ALTERNATIVO SIMPLE ---
+
+  Si la condición se cumple → ejecuta acciones.
+  Si NO se cumple → no las ejecuta y sigue adelante.
+
+  Pseudocódigo:
+    SI <condición> ENTONCES
+        <acciones>
+    FIN_SI
+
+  EJEMPLO:
+    SI a > 0 ENTONCES
+        ESC("El número es positivo")
+    FIN_SI
+
+--- CONDICIONAL ALTERNATIVO DOBLE ---
+
+  Si la condición se cumple → ejecuta bloque 1.
+  Si NO se cumple → ejecuta bloque 2.
+
+  Pseudocódigo:
+    SI <condición> ENTONCES
+        <bloque 1>
+    SINO
+        <bloque 2>
+    FIN_SI
+
+  EJEMPLO:
+    SI A > B ENTONCES
+        ESC(A, "es mayor que ", B)
+    SINO
+        ESC(A, "NO es mayor que ", B)
+    FIN_SI
+
+--- CONDICIONAL ALTERNATIVO MÚLTIPLE ---
+
+  Permite evaluar una variable que puede tomar de 1 a N valores. Según el valor,
+  se realiza una de las N acciones.
+
+  Pseudocódigo:
+    SEGÚN <variable> HACER
+        valor1 : <acciones>
+        valor2 : <acciones>
+        ...
+    FIN_SEGUN
+
+  EJEMPLO:
+    SEGÚN suma HACER
+        =0 : ESC("El resultado es igual a 0")
+        <0 : ESC("El resultado es menor a 0")
+        >0 : ESC("El resultado es mayor a 0")
+    FIN_SEGUN
+
+  NOTA: El mismo problema puede resolverse con condicionales anidados (en
+        cascada), aunque para muchas alternativas el SEGÚN es más legible.
+
+
+--------------------------------------------------------------------------------
+13. ESTRUCTURAS REPETITIVAS
+--------------------------------------------------------------------------------
+
+Las estructuras que repiten una secuencia de instrucciones un número determinado
+de veces se denominan BUCLES. Cada repetición se llama ITERACIÓN.
+
+Todo bucle lleva asociada una CONDICIÓN que determina cuándo se repite y cuándo
+se detiene.
+
+ADVERTENCIA: Prestar especial atención a los BUCLES INFINITOS, que ocurren
+cuando la condición de finalización nunca se cumple.
+
+--- ESTRUCTURA PRE-TEST (MIENTRAS) ---
+
+  El cuerpo del bucle se repite MIENTRAS se cumpla una condición.
+  Es INDEFINIDA: no se conoce la cantidad de veces a repetir.
+  Puede ejecutarse 0 o más veces (si la condición es falsa al inicio, no entra).
+
+  Pseudocódigo:
+    MIENTRAS <condición> HACER
+        <acciones>
+    FIN_MIENTRAS
+
+  EJEMPLO (suma de 1 a N):
+    suma := 0
+    cont := 1
+    MIENTRAS cont <= n HACER
+        suma := suma + cont
+        cont := cont + 1
+    FIN_MIENTRAS
+
+--- ESTRUCTURA POST-TEST (REPETIR) ---
+
+  El cuerpo del bucle se ejecuta SIEMPRE AL MENOS UNA VEZ, ya que la condición
+  está al final.
+  Es INDEFINIDA.
+  NOTA: No está implementada en la mayoría de los lenguajes actuales;
+        se reemplaza con WHILE.
+
+  Pseudocódigo:
+    REPETIR
+        <acciones>
+    HASTA QUE <condición>
+    FIN_REPETIR
+
+--- ESTRUCTURA MANEJADA POR CONTADOR (PARA / FOR) ---
+
+  Es un CICLO DEFINIDO: se conoce de antemano la cantidad de iteraciones.
+  La variable contador se incrementa automáticamente.
+  Si debe decrementar, se indica con "- -".
+  Si el incremento es distinto de 1, debe indicarse.
+  NO hace falta inicializar la variable contador.
+
+  Pseudocódigo:
+    PARA contador := inicialización hasta fin; incremento HACER
+        <acciones>
+    FIN_PARA
+
+  EJEMPLO (suma de 1 a N):
+    PARA cont := 1 hasta n HACER
+        suma := suma + cont
+    FIN_PARA
+
+--- COMPARACIÓN ENTRE ESTRUCTURAS REPETITIVAS ---
+
+  Característica                     PRE-TEST    POST-TEST   PARA/FOR
+  --------------------------------   ---------   ---------   --------
+  Se conoce Nro de iteraciones       NO          NO          SÍ
+  Condición se verifica              Antes       Después     Antes
+  Puede no ejecutarse nunca          SÍ          NO          SÍ (si Vi>Vf)
+  Se debe modificar la condición     SÍ          SÍ          NO (automático)
+  Puede ser infinito                 SÍ          SÍ          NO
+  Cuando usarlo                      Cant. indet. Indet. y   Cant. conocida
+                                     No ejecutar  ejecutar   de antemano
+                                     si falsa     al menos 1
+
+
+================================================================================
+  UNIDAD II — SUBACCIONES
+================================================================================
+
+--------------------------------------------------------------------------------
+14. SUBACCIONES / SUBALGORITMOS
+--------------------------------------------------------------------------------
+
+La resolución de problemas complejos se facilita si se dividen en problemas más
+pequeños. Estos subproblemas se resuelven mediante SUBALGORITMOS o SUBACCIONES.
+
+Características de las Subacciones:
+  - Son acciones que FORMAN PARTE de una ACCIÓN PRINCIPAL.
+  - Son módulos escritos para ejecutar alguna TAREA ESPECÍFICA.
+  - Se definen en el AMBIENTE pues serán utilizadas durante el PROCESO.
+  - Se escriben SOLAMENTE UNA VEZ, pero pueden referenciarse en diferentes
+    puntos del algoritmo, evitando la duplicación innecesaria de código.
+
+Diagrama:
+  PROBLEMA
+  ├── SUBPROBLEMA 1
+  │   ├── Ingreso de Datos
+  │   └── Mostrar Datos
+  └── SUBPROBLEMA 2
+      └── Validar Datos
+
+
+--------------------------------------------------------------------------------
+15. CONTROL DE EJECUCIÓN
+--------------------------------------------------------------------------------
+
+El algoritmo principal se ejecuta en primera instancia y da la orden de inicio
+de ejecución de los subalgoritmos. Esto puede suceder N veces.
+
+CUANDO EL ALGORITMO PRINCIPAL REALIZA LA SOLICITUD, SE DETIENE HASTA QUE EL
+SUBALGORITMO DEJA DE REALIZAR SU TAREA, LUEGO CONTINÚA.
+Esto se conoce como CONTROL DE EJECUCIÓN.
+
+
+--------------------------------------------------------------------------------
+16. ELEMENTOS DE LAS SUBACCIONES
+--------------------------------------------------------------------------------
+
+a) NOMBRE
+   - Debe ser ÚNICO.
+   - Debe ser REPRESENTATIVO del objetivo específico del subalgoritmo.
+   - NO debe ser una palabra reservada (por ejemplo: Escribir, Leer…).
+
+b) PARÁMETROS
+   Son variables y/o constantes para pasar datos entre algoritmos y
+   subalgoritmos en ambos sentidos.
+
+   PARÁMETROS FORMALES (o ficticios):
+     Los que aparecen en la DEFINICIÓN del subalgoritmo.
+     Solo pueden ser VARIABLES.
+
+   PARÁMETROS ACTUALES (o argumentos):
+     Los que se encuentran en la LLAMADA al subalgoritmo.
+     Son los datos que el algoritmo principal envía a la subacción.
+     Contienen los valores necesarios para evaluar el subalgoritmo en ese momento.
+     Pueden ser CONSTANTES, VARIABLES o EXPRESIONES.
+
+   IMPORTANTE:
+     - Los parámetros actuales pueden ser constantes, variables o expresiones.
+     - Los parámetros formales SOLO pueden ser variables.
+     - Al llamar a una subacción se establece una correspondencia entre parámetros
+       actuales y formales: deben coincidir en CANTIDAD, TIPO y ORDEN.
+
+
+--------------------------------------------------------------------------------
+17. FUNCIONES
+--------------------------------------------------------------------------------
+
+Una FUNCIÓN es un subalgoritmo que recibe, como argumentos o parámetros
+actuales, datos de tipo numérico o no numérico, y DEVUELVE UN ÚNICO RESULTADO.
+
+TIPOS:
+  - FUNCIONES INTERNAS (intrínsecas predefinidas):
+    Las funciones incorporadas al sistema.
+
+  - FUNCIONES EXTERNAS:
+    Las funciones definidas por el usuario.
+
+DECLARACIÓN DE FUNCIONES:
+  Sintaxis en pseudocódigo:
+
+    FUNCION nombrefun(lista de parámetros): Tipo
+    AMBIENTE
+        (declaraciones locales si fuera necesario)
+    PROCESO
+        (acciones de la función)
+        ...
+        nombrefun := <valor de la función>   ← ¡NO OLVIDAR! Sin esto no devuelve valor
+    FIN_FUNCION
+
+  Donde:
+    nombrefun          → nombre de la función
+    lista de parámetros → parámetros formales. ESTA LISTA NO PUEDE SER VACÍA.
+    Tipo               → tipo de resultado que devuelve la función
+
+INVOCACIÓN:
+  El algoritmo principal invoca la función con su nombre en una expresión,
+  seguida de la lista de argumentos que debe coincidir en cantidad, tipo y orden.
+
+  Para que las acciones de una FUNCIÓN sean ejecutadas, debe ser invocada desde
+  un algoritmo principal o desde otros subalgoritmos.
+
+EJEMPLO:
+
+  FUNCION ES_PRIMO(A: entero): lógico
+  AMBIENTE
+      i: entero
+  PROCESO
+      ES_PRIMO := V                  // bandera inicial: asumo que es primo
+      PARA i := 2 hasta (A-1) HACER
+          SI A MOD i = 0 ENTONCES
+              ES_PRIMO := F          // ya no es primo
+          FIN_SI
+      FIN_PARA
+  FIN_FUNCION
+
+EJEMPLO DE USO (función como expresión):
+
+  FUNCION EsMultiploDe10(numero: entero): lógico
+  PROCESO
+      SI numero MOD 10 = 0 ENTONCES
+          EsMultiploDe10 := V
+      CONTRARIO
+          EsMultiploDe10 := F
+      FIN_SI
+  FIN_FUNCION
+
+  // En el algoritmo principal:
+  Leer(codigo)
+  bandera := EsMultiploDe10(codigo)
+  SI bandera ENTONCES
+      ...
+
+
+--------------------------------------------------------------------------------
+18. PROCEDIMIENTOS
+--------------------------------------------------------------------------------
+
+Un PROCEDIMIENTO también es una subacción diseñado con un fin específico,
+pero A DIFERENCIA DE LAS FUNCIONES NO DEVUELVE NINGÚN VALOR, solo ejecuta
+acciones.
+
+DECLARACIÓN:
+  PROCEDIMIENTO NombreProc(parámetros)
+      <acciones>
+  FIN_PROCEDIMIENTO
+
+EJEMPLO:
+
+  PROCEDIMIENTO Login(usu, pass, valid: alfanumérico)
+      SI pass = valid ENTONCES
+          ESC('Acceso autorizado a ', usu)
+      SINO
+          ESC('Login inválido para ', usu)
+      FIN_SI
+  FIN_PROCEDIMIENTO
+
+¿POR QUÉ USAR PROCEDIMIENTOS?
+  1. Facilitan el DISEÑO TOP-DOWN de las soluciones.
+  2. Se pueden ejecutar MÁS DE UNA VEZ definiendo solo una vez en el ambiente.
+  3. Facilitan la DIVISIÓN DE TAREAS entre desarrolladores de un equipo.
+
+
+--------------------------------------------------------------------------------
+19. ÁMBITOS DE VARIABLES
+--------------------------------------------------------------------------------
+
+El ÁMBITO de las variables es el conjunto de partes del algoritmo en que una
+variable es conocida.
+
+VARIABLES LOCALES:
+  - Son las declaradas DENTRO de una subacción (función o procedimiento).
+  - Son conocidas SOLO en la subacción donde fueron definidas.
+  - Ninguna otra subacción tiene acceso a ellas.
+  - Los PARÁMETROS de una subacción también son variables locales.
+  - Comienzan su existencia cuando la subacción es llamada y DESAPARECEN cuando
+    esta termina su ejecución.
+  - NO retienen sus valores de una llamada a otra.
+
+VARIABLES GLOBALES:
+  - Son las declaradas en el ALGORITMO PRINCIPAL.
+  - Pueden ser utilizadas en el algoritmo principal Y en TODAS las subacciones
+    declaradas en él.
+
+
+--------------------------------------------------------------------------------
+20. PASO DE PARÁMETROS
+--------------------------------------------------------------------------------
+
+El paso de parámetros es el proceso por el cual el algoritmo principal envía
+variables a una función o procedimiento para que trabajen internamente.
+
+Existen dos alternativas:
+  - Paso de parámetros por VALOR
+  - Paso de parámetros por REFERENCIA
+
+  NOTA: En la cátedra se utiliza en mayor parte el paso por VALOR.
+
+--- PASO POR VALOR ---
+
+  Cuando se necesita pasar el contenido de una variable local hacia una subacción.
+  Se produce una COPIA de la variable original hacia el parámetro formal.
+  La variable copia tiene ámbito local en la función/procedimiento receptor.
+  Al terminar la ejecución, se libera el espacio de memoria de la copia.
+
+  CONSECUENCIA: Si usamos parámetros por valor, NUNCA podremos modificar los
+                valores de las variables originales, ya que se trabaja con copias.
+
+  Diagrama:
+    [VARIABLE original]
+         |
+         ↓ Se crea copia
+    [VAR COPIA]  ← dentro del procedimiento
+         |
+         ↓ Al terminar, desaparece la copia
+    [VARIABLE original]  ← La variable NO sufre cambios
+
+
+================================================================================
+  UNIDAD III — PARTE A: ESTRUCTURAS DE DATOS
+================================================================================
+
+--------------------------------------------------------------------------------
+21. CONCEPTO DE CAMPO
+--------------------------------------------------------------------------------
+
+Un CAMPO es un conjunto de caracteres capaz de suministrar una determinada
+información referida a un concepto.
+Es la ENTIDAD LÓGICA MÁS PEQUEÑA; consiste en un conjunto de bytes que
+conforman un dato.
+
+Al definir un campo se indican 3 características:
+  NOMBRE:  identifica ese conjunto de caracteres.
+  TIPO:    tipo de caracteres que puede contener (alfabético, entero, etc.).
+  TAMAÑO:  cantidad de caracteres que puede contener.
+
+  Ejemplo:  dni : N(8)
+             ↑      ↑ ↑
+           nombre  tipo tamaño
+
+PROBLEMA que motiva la existencia de campos:
+  Si guardamos información concatenada sin estructura:
+    "Maria Ames French 414 Resistencia-3500 Alejandro Mason..."
+  No podemos separar los distintos campos que la componen.
+
+DOS SOLUCIONES:
+  OPCIÓN 1: Secuencia con marcas separadoras.
+    "Maria_ Ames* French 414% Resistencia-3500# ..."
+    Ventaja: ocupa menos espacio.
+    Desventaja: hay que manejar subsecuencias; convertir a numérico para operar.
+
+  OPCIÓN 2: Campos de longitud fija → REGISTROS.
+    NOMBRE-APELLIDO (30 car.) | DOMICILIO (20 car.) | LOCALIDAD (15 car.)
+    Ventaja: acceso rápido, puede haber campos numéricos directamente.
+    Desventaja: si un campo necesita más espacio, hay que redefinirlo en todos.
+
+
+--------------------------------------------------------------------------------
+22. REGISTRO
+--------------------------------------------------------------------------------
+
+Un REGISTRO es un conjunto de campos que permanecen juntos cuando el archivo
+es visto en términos de organización de alto nivel.
+
+Es un tipo de dato ESTRUCTURADO formado por diversos elementos, cada uno de los
+cuales puede ser de DIFERENTES TIPOS.
+
+El registro se define en el AMBIENTE para ser usado en el algoritmo.
+Se usa el símbolo = para definir un TIPO DE DATO.
+
+SINTAXIS:
+  NombreRegistro = Registro
+      campo1: Tipo;
+      campo2: Tipo;
+      ...
+  Fin Registro;
+
+EJEMPLO:
+  PERSONA = Registro
+      DNI: Entero;
+      Nombre: AN(50);
+      Domicilio: AN(70);
+  Fin Registro;
+
+¿QUÉ ES UN TIPO DE DATO?
+  Cuando definimos una estructura personalizada, una vez definida como TIPO DE
+  DATO, es posible dimensionar variables a base de ella.
+
+USO DEL REGISTRO (selector de campo "."):
+  Reg.DNI := 23456789;
+  Leer(NroDNI);
+  Reg.DNI := NroDNI;
+  Escribir(Reg.Nombre);
+
+  El símbolo "." se denomina SELECTOR DE CAMPO y determina a qué campo dentro
+  del registro se está accediendo.
+
+¿POR QUÉ UNA VARIABLE PARA TODO EL CONJUNTO?
+  Porque el registro es una UNIDAD. Al ser una estructura está compuesta por
+  elementos, pero debe ser tratada como una sola entidad.
+
+EJEMPLO DE CONTENIDO DE REGISTRO:
+  DNI N°    APELLIDO Y NOMBRE   FECHA.NACIM   POSTEOS
+  41526320  ALI BABÁ            20122000      45360
+
+
+--------------------------------------------------------------------------------
+23. ARCHIVOS
+--------------------------------------------------------------------------------
+
+Se define como ARCHIVO a un conjunto de REGISTROS que, una vez almacenados,
+se pueden utilizar a través de las distintas aplicaciones.
+
+CARACTERÍSTICAS GENERALES DE LOS ARCHIVOS:
+  1. Un archivo está siempre almacenado en MEMORIA EXTERNA; su proceso se
+     realiza en la MEMORIA INTERNA. La información almacenada es PERMANENTE.
+  2. Existe INDEPENDENCIA de los datos respecto de los algoritmos que los usen.
+  3. Todo algoritmo INTERCAMBIA DATOS con el archivo; la UNIDAD BÁSICA de
+     entrada/salida es el REGISTRO. Los datos extraídos o almacenados son los
+     de un registro completo.
+  4. Los archivos en memoria externa permiten una gran capacidad de
+     almacenamiento.
+
+
+--------------------------------------------------------------------------------
+24. CONSISTENCIA Y CONGRUENCIA DE ARCHIVOS
+--------------------------------------------------------------------------------
+
+CONSISTENCIA:
+  Es la propiedad que verifica la validez del dato almacenado con su definición
+  en el ambiente.
+
+  CONSISTENCIA AUTOMÁTICA: definición de límites para los datos (Rango, Conjunto).
+
+  Ejemplo:
+    FECHA = Registro
+        DD: Entero;
+        MM: Entero;
+        AAAA: Entero;
+    Fin Registro;
+
+    Reg = (02/12/2019) → Es CONSISTENTE
+    Reg = (50/50/9999) → Es INCONSISTENTE
+
+    Con consistencia automática (rango):
+    FECHA = Registro
+        DD: 1..31;
+        MM: 1..12;
+        AAAA: Entero;
+    Fin Registro;
+
+CONGRUENCIA:
+  Es la propiedad que verifica la validez de los DATOS ENTRE SÍ.
+
+  GRUESA: Validación entre datos en un MISMO registro.
+    Ejemplo: mes/dia/año → 31/02/2019 sería consistente pero NO congruente
+             (el 31 de febrero no existe).
+
+  FINA: Validación entre datos en ARCHIVOS DISTINTOS.
+    Ejemplo: un DNI en un archivo de ALUMNOS validado con un archivo de PADRON.
+
+NOTAS IMPORTANTES:
+  NOTA1: Si es consistente, NO indica que sea congruente.
+  NOTA2: Si NO es consistente, TAMPOCO es congruente.
+
+
+--------------------------------------------------------------------------------
+25. CLASIFICACIÓN DE ARCHIVOS
+--------------------------------------------------------------------------------
+
+1) POR SU UTILIDAD:
+   DE ENTRADA:    datos almacenados en dispositivo de entrada.
+   DE SALIDA:     información que se visualiza desde la computadora.
+   HISTÓRICOS:    datos que varían en el tiempo, con info de archivos actualizados.
+   DE MOVIMIENTO: se usan junto con los constantes; comparten algún campo.
+   TEMPORALES:    se crean al ejecutar un programa y se borran al finalizar.
+                  Son auxiliares.
+
+2) POR SUS DATOS ALMACENADOS:
+   ASCII:         datos almacenados como texto simple. Intercambiables y
+                  modificables por el usuario.
+   BINARIOS:      almacenan en lenguaje solo comprensible por la computadora
+                  (colores, sonidos, imágenes, órdenes). Son de menor tamaño.
+
+
+--------------------------------------------------------------------------------
+26. ORGANIZACIÓN DE ARCHIVOS
+--------------------------------------------------------------------------------
+
+La organización representa la manera en que se encuentran almacenados los
+registros en el archivo.
+
+SOPORTES (medios físicos donde se almacenan los datos):
+  a) SOPORTES SECUENCIALES:
+     Los registros están escritos uno a continuación del otro.
+     Para acceder al registro N es necesario recorrer los N-1 anteriores.
+
+  b) SOPORTES DIRECCIONABLES:
+     Las informaciones se localizan por su DIRECCIÓN; no requieren pasar por
+     registros precedentes.
+     Los registros deben contener un campo específico denominado CLAVE que
+     identifica cada registro de modo ÚNICO (dos registros distintos no pueden
+     tener el mismo valor de clave).
+
+LOS TRES TIPOS DE ORGANIZACIÓN que se estudian:
+
+  ┌─────────────────────────────────────────────────────────────────────┐
+  │ SECUENCIAL │ RELATIVA (o Directa) │ INDEXADA (o Secuencial Indexada) │
+  └─────────────────────────────────────────────────────────────────────┘
+
+ORGANIZACIÓN SECUENCIAL:
+  Es una sucesión de registros almacenados CONSECUTIVAMENTE (continuidad física).
+  Para acceder al registro N, es OBLIGATORIO pasar por todos los N-1 anteriores.
+
+ORGANIZACIÓN DIRECTA (o Relativa):
+  El orden físico NO se corresponde necesariamente con el orden lógico.
+  Los datos se sitúan en el archivo y se accede a ellos mediante su POSICIÓN
+  (lugar relativo que ocupan).
+
+  Un archivo de organización directa necesita:
+    - Ser almacenado en soporte DIRECCIONABLE.
+    - Cada registro debe contener un CAMPO CLAVE.
+    - Relación entre clave y direcciones disponibles en el soporte.
+
+ORGANIZACIÓN INDEXADA (o Secuencial Indexada):
+  Consta de dos partes:
+    - ÁREA DE DATOS (o primaria): registros en forma secuencial, organizada por
+      secuencia de claves sin dejar huecos.
+    - ÁREA DE ÍNDICES: tabla que contiene los niveles de índice.
+
+
+--------------------------------------------------------------------------------
+27. ACCESO DE ARCHIVOS
+--------------------------------------------------------------------------------
+
+Indica la manera en que se recuperan (o leen) los registros.
+
+ACCESO SECUENCIAL:
+  Acceso a un archivo según el ORDEN DE ALMACENAMIENTO, uno tras otro.
+
+ACCESO DIRECTO:
+  Acceso a un registro determinado SIN consultar los registros precedentes.
+  Solo es posible con soportes DIRECCIONABLES.
+
+ACCESO MIXTO:
+  Acceso DIRECTO a un registro dentro del archivo, seguido de un ACCESO
+  SECUENCIAL al resto de los registros que continúan en el orden.
+
+
+================================================================================
+  UNIDAD III — PARTE B: ARCHIVOS INDEXADOS
+================================================================================
+
+--------------------------------------------------------------------------------
+28. QUÉ SON LOS ARCHIVOS INDEXADOS
+--------------------------------------------------------------------------------
+
+Los archivos indexados son aquéllos que incluyen ÍNDICES en el almacenamiento
+de los registros; de esta forma es más fácil buscar un registro determinado sin
+necesidad de recorrer todo el archivo.
+
+Un campo (o grupo de campos) del registro denominado CLAVE es utilizado como
+campo de índice.
+
+Ejemplo: en una aplicación bancaria, un archivo de sucursales podría indexarse
+por el nombre de la sucursal, para acceder rápidamente a una sucursal en
+particular mediante consulta interactiva.
+
+
+--------------------------------------------------------------------------------
+29. CONSTITUCIÓN FÍSICA DE UN ARCHIVO INDEXADO
+--------------------------------------------------------------------------------
+
+En la vista física de un archivo indexado se observan DOS ÁREAS:
+
+  ÁREA DE ÍNDICES:
+    - Listado de todos los valores del campo clave de los registros.
+    - Junto con la POSICIÓN del registro en el almacenamiento masivo (área datos).
+    - Está SIEMPRE ORDENADA de menor a mayor valor de clave.
+
+  ÁREA DE DATOS:
+    - Los registros de información NO necesariamente guardan orden.
+    - Se almacenan de acuerdo a las disponibilidades libres de memoria en el
+      momento de la grabación.
+
+Los índices apoyan las aplicaciones que acceden selectivamente registros
+individuales, en lugar de buscar a través de toda la colección en secuencia.
+
+  Área de índices        Área de datos (principal)
+  ┌────────┬──────────┐  ┌─────┬───────────────────┐
+  │ CLAVE  │ DIRECCIÓN│  │ Dir │ CLAVE  DATOS       │
+  ├────────┼──────────┤  ├─────┼────────────────────┤
+  │   15   │   010    │  │ 010 │   15    [datos]    │
+  │   24   │   020    │  │ 011 │         [vacío]    │
+  │   36   │   030    │  │ ... │                    │
+  │   54   │   040    │  │ 020 │   24    [datos]    │
+  │  ...   │  ...     │  │ ... │                    │
+  │  240   │   090    │  │ 030 │   36    [datos]    │
+  └────────┴──────────┘  └─────┴────────────────────┘
+
+
+--------------------------------------------------------------------------------
+30. VERBOS PARA ARCHIVOS INDEXADOS
+--------------------------------------------------------------------------------
+
+  SECUENCIA ELEM.   ARCHIVO SECUENCIAL   ARCHIVO INDEXADO
+  ────────────────  ────────────────────  ──────────────────────────────────
+  Arrancar(Sec)     Abrir E/(Arch)        Abrir E/(Arch)
+                                          Abrir E/S(Arch)
+
+  Avanzar(Sec, v)   Leer(Arch, Reg)       CLAVE := Información
+                                          LEER(ARCH, REG)
+
+  Crear(Sec)        Abrir S/(Arch)        Abrir S(Arch)
+
+  Esc(Sec, V)       ESC(Arch, Reg)        (Archivo existente)
+                    GRABAR(Arch, Reg)     RE-ESCRIBIR(Arch, Reg)
+                                          REGRABAR(Arch, Reg)
+
+
+--------------------------------------------------------------------------------
+31. GRABAR VERSUS REGRABAR
+--------------------------------------------------------------------------------
+
+GRABAR:
+  Se usa cuando el archivo es abierto como ARCHIVO DE SALIDA.
+  Antes de grabar, se deben asignar a cada campo del registro los contenidos
+  correspondientes.
+  La orden de GRABAR se efectúa cuando la lógica ya obtuvo todos los datos
+  necesarios; el registro ya contiene todo.
+  El proceso de grabación genera un NUEVO REGISTRO en el archivo.
+  - Si el archivo es SECUENCIAL: agrega a continuación del último registro
+    (obliga a la continuidad física).
+  - Si no hay espacio físico continuo → se produce un ERROR y se interrumpe.
+
+REGRABAR:
+  Solo disponible para archivos con ORGANIZACIÓN DIRECTA.
+  Para usar REGRABAR, el archivo debe haberse abierto como ENTRADA/SALIDA (E/S).
+  La apertura E/S permite:
+    - GRABAR (crear nuevos registros)
+    - REGRABAR (modificar un registro existente ya leído)
+
+  Para REGRABAR:
+    1. Primero se LEE el registro → queda en memoria.
+    2. Se modifican los campos necesarios.
+    3. Se ejecuta REGRABAR → reescribe sobre el mismo espacio.
+
+  Como el espacio ya está asignado, NO genera error por falta de espacio.
+
+  ¿QUÉ PUEDE SALIR MAL CON REGRABAR?
+    - Intentar REGRABAR sin haber leído previamente (error de lógica).
+    - (Muy raro) que se haya perdido el enlace con el área de lectura.
+
+
+--------------------------------------------------------------------------------
+32. COMPARACIÓN: SECUENCIALES VS INDEXADOS
+--------------------------------------------------------------------------------
+
+  CARACTERÍSTICA             SECUENCIALES              INDEXADOS
+  ─────────────────────────  ────────────────────────  ──────────────────────────────
+  Espacio en memoria         Solo el de los registros  Registros + área de índices
+  Orden                      No necesariamente         Siempre ordenado por índice
+  Listado total (velocidad)  Más RÁPIDO                Más lento (área índice extra)
+  Búsqueda de un registro    Lento (recorre todo)      MUY RÁPIDO (acceso por clave)
+
+
+--------------------------------------------------------------------------------
+33. ACTUALIZACIÓN INDEXADA
+--------------------------------------------------------------------------------
+
+En una actualización indexada el archivo MAESTRO está indexado por la clave
+principal (ordenado automáticamente por clave).
+
+Las novedades normalmente vienen de una TERMINAL con un USUARIO INTELIGENTE
+(no de otro archivo como en la actualización secuencial).
+
+USUARIO INTELIGENTE:
+  Tiene ciertos PRIVILEGIOS que le permiten actuar según sus permisos.
+  Principalmente puede CARGAR y CORREGIR datos durante la carga.
+  Esto implica INTERACTIVIDAD con el programa de actualización.
+
+  IMPORTANTE: A mayor nivel de permisos, mayor riesgo de seguridad, ya que el
+              usuario trabaja directamente sobre el archivo Maestro (IN SITU).
+
+  Cada dato ingresado está precedido por el VALOR DE CLAVE, lo que permite
+  acceder directamente al registro correspondiente (acceso puntual o al azar).
+
+OPERACIONES POSIBLES (según privilegios):
+  ALTA:         Incorporar un nuevo registro al archivo.
+  MODIFICACIÓN: Modificar la información de un registro existente.
+  BAJA:         Eliminar / marcar un registro.
+
+CARACTERÍSTICAS DE LA ACTUALIZACIÓN INDEXADA:
+  - Rápida
+  - In Situ
+  - Interactiva
+  - Insegura
+
+
+================================================================================
+  UNIDAD II — SUBUNIDAD A: NOCIÓN DE SECUENCIA
+================================================================================
+
+--------------------------------------------------------------------------------
+34. CONCEPTO DE SECUENCIA
+--------------------------------------------------------------------------------
+
+Una secuencia es un conjunto de datos relacionados entre sí:
+
+  [ A ][ L ][ G ][ O ][ R ][ I ][ T ][ M ][ O ][ ... ][ FDS ]
+    1    2    3    .    .    .    .    .    .    .       n
+
+Características que DEBE cumplir:
+
+  1. EXISTENCIA DEL PRIMER ELEMENTO: el acceso al primer elemento permite
+     el acceso posterior a todos los demás.
+
+  2. RELACIÓN DE SUCESIÓN ENTRE ELEMENTOS: todo objeto, salvo el último,
+     precede a uno de los demás (su sucesor). Esta relación permite recorrer
+     todos los elementos hasta el final.
+
+  3. FINITUD: puede ser conocida o no. Puede estar dada por la cantidad de
+     elementos o por una marca de fin (FDS = Fin De Secuencia).
+     TODAS las secuencias deben ser finitas — deben tener condición de fin
+     para evitar ciclo infinito.
+
+  4. EXISTENCIA DEL ÚLTIMO ELEMENTO: debe existir un indicador de fin de
+     secuencia que permita detener la enumeración.
+
+NOTA IMPORTANTE:
+  El tamaño de una secuencia NO ES FIJO — su longitud puede variar dentro
+  del algoritmo que la crea. Para su procesamiento se usa un esquema de
+  asignación de almacenamiento en memoria DINÁMICO.
+
+--------------------------------------------------------------------------------
+35. CLASIFICACIÓN DE SECUENCIAS
+--------------------------------------------------------------------------------
+
+  SEGÚN SU CONTENIDO:
+  ┌──────────────────────────────────────────────────┐
+  │ De datos elementales → Número                    │
+  │                      → Caracter                  │
+  │ De Registros                                     │
+  └──────────────────────────────────────────────────┘
+
+  SEGÚN SU PROCESAMIENTO:
+  ┌──────────────────────────────────────────────────────────────────────┐
+  │ DEFINIDAS   → Utiliza estructura manejada por Contador               │
+  │               El último elemento es conocido ANTES de iniciar el     │
+  │               proceso. Se usa estructura POST-TEST.                  │
+  │                                                                      │
+  │ INDEFINIDAS → PURAS: cuentan con una marca de fin (FDS).             │
+  │               Se usa estructura PRE-TEST.                            │
+  │             → IMPURAS: ...                                           │
+  └──────────────────────────────────────────────────────────────────────┘
+
+  Resumen rápido:
+    - Definida  → cantidad conocida de antemano → FOR / POST-TEST
+    - Indefinida pura → tiene marca de fin (FDS) → MIENTRAS (PRE-TEST)
+    - Indefinida impura → combinación
+
+--------------------------------------------------------------------------------
+36. DEFINICIÓN EN EL AMBIENTE Y VERBOS (OPERADORES)
+--------------------------------------------------------------------------------
+
+Para usar una secuencia en un algoritmo se definen DOS cosas:
+  1. La ESTRUCTURA DE DATOS (la secuencia).
+  2. La VARIABLE que tratará cada elemento (acceso individual y secuencial).
+
+Ejemplo de definición en el ambiente:
+  sec: Secuencia de caracter
+  v:   caracter
+
+VERBOS / OPERADORES DE SECUENCIAS:
+
+  ARR (sec)
+    Inicia el tratamiento de una secuencia ya existente.
+    Solo requiere indicar qué secuencia se va a trabajar.
+    → "Arrancar" / posicionarse al inicio de la secuencia.
+
+  AVZ (sec, v)
+    Recupera el contenido del elemento actual de la secuencia y avanza.
+    Requiere: la secuencia y la variable donde almacenar el elemento.
+    → "Avanzar" / leer el próximo elemento y guardarlo en v.
+
+  CREAR (secNueva)
+    Inicializa una nueva secuencia vacía.
+    Solo requiere indicar qué secuencia almacenará los elementos.
+    → "Crear" / preparar una secuencia para escritura.
+
+  ESC (sec, v)
+    Escribe un elemento en la secuencia.
+    Requiere: la secuencia destino y la variable con el valor a escribir.
+    → "Escribir" / agregar un elemento al final de la secuencia.
+
+ESQUEMA TÍPICO DE LECTURA (secuencia indefinida pura con FDS):
+
+  ARR(sec)
+  AVZ(sec, v)
+  MIENTRAS v <> FDS HACER
+      <procesar v>
+      AVZ(sec, v)
+  FIN_MIENTRAS
+
+ESQUEMA TÍPICO DE ESCRITURA:
+
+  CREAR(secNueva)
+  <obtener primer elemento>
+  MIENTRAS <hay elementos> HACER
+      ESC(secNueva, v)
+      <obtener siguiente elemento>
+  FIN_MIENTRAS
+
+--------------------------------------------------------------------------------
+37. SUB SECUENCIAS
+--------------------------------------------------------------------------------
+
+CONCEPTO:
+  Conjunto de elementos consecutivos incluidos en la secuencia principal,
+  considerados como un subconjunto de acuerdo a la definición del problema.
+
+EJEMPLOS:
+
+  PALABRA: subconjunto de elementos consecutivos de una secuencia de caracter
+    - Comienza con un caracter distinto de " " (espacio en blanco)
+    - Finaliza con " " (espacio) u otra marca definida en el problema
+
+    [ H ][ O ][ L ][ A ][ _ ][ B ][ U ][ E ][ N ][ O ]
+    [ S ][ _ ][ D ][ I ][ A ][ S ][ . ][ FDS ]
+
+  ORACIÓN: subconjunto que comienza sin espacio y finaliza con "." (punto)
+    → Misma secuencia anterior, pero agrupada como oración completa.
+
+  DNI: subconjunto de exactamente 8 elementos consecutivos de tipo caracter
+    numérico dentro de una secuencia.
+
+    [ N ][ O ][ M ][ B ][ R ][ E ][ - ][ 2 ][ 5 ][ 4 ]
+    [ 5 ][ 6 ][ 7 ][ 8 ][ 9 ][ N ][ O ][ M ][ B ][ R ]
+    [ E ][ - ][ 3 ][ 1 ][ 4 ][ 7 ][ 5 ][ 8 ][ 6 ][ 9 ][ FDS ]
+
+Las sub secuencias también deben cumplir las 4 características de una secuencia:
+  - Existencia del primer elemento
+  - Relación de sucesión entre elementos
+  - Finitud
+  - Existencia del último elemento
+
+Y también se clasifican por contenido y procesamiento.
+
+--------------------------------------------------------------------------------
+38. RELACIÓN ENTRE SUB SECUENCIAS
+--------------------------------------------------------------------------------
+
+Las sub secuencias pueden relacionarse de dos formas:
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ SUB SECUENCIAS ENLAZADAS                                                     │
+├─────────────────────────────────────────────────────────────────────────────┤
+│ Están identificadas UNA A CONTINUACIÓN DE LA OTRA.                          │
+│ Se debe definir el principio y fin de cada una.                             │
+│                                                                             │
+│ Ejemplo:                                                                    │
+│   [ NOMBRE... - ][ 25456789 ][ NOMBRE... - ][ 31475869 ][ FDS ]            │
+│      sub-sec nombre   sub-sec DNI(8 dígitos)                                │
+│                                                                             │
+│ REGLA: el FIN de una sub secuencia enlazada indica el INICIO de la          │
+│ siguiente (salvo al principio y fin de la secuencia principal).             │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ SUB SECUENCIAS JERÁRQUICAS                                                   │
+├─────────────────────────────────────────────────────────────────────────────┤
+│ Están identificadas a través de una relación de PERTENENCIA o INCLUSIÓN.    │
+│ Definen jerarquías entre sub secuencias.                                    │
+│                                                                             │
+│ Ejemplo:                                                                    │
+│   SECUENCIA PRINCIPAL                                                       │
+│     └── ORACIÓN (termina en ".")                                            │
+│           └── PALABRA (termina en " " espacio)                              │
+│                                                                             │
+│ [ H ][ O ][ L ][ A ][ _ ][ B ][ U ][ E ][ N ][ O ]                        │
+│ [ S ][ _ ][ D ][ I ][ A ][ S ][ . ][ FDS ]                                 │
+│                                                                             │
+│ REGLA: el inicio y fin de una sub secuencia DETERMINA el inicio y fin de   │
+│ las sub secuencias INCLUIDAS en ésta.                                       │
+│                                                                             │
+│ Se procesan con bucles ANIDADOS (uno por cada nivel de jerarquía).          │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+ESQUEMA DE PROCESAMIENTO JERÁRQUICO (SECUENCIA > ORACIÓN > PALABRA):
+
+  ARR(sec)
+  AVZ(sec, v)
+  MIENTRAS v <> FDS HACER             ← nivel secuencia principal
+      MIENTRAS v <> '.' HACER         ← nivel oración
+          MIENTRAS v <> ' ' HACER     ← nivel palabra
+              <procesar caracter>
+              AVZ(sec, v)
+          FIN_MIENTRAS
+          <fin de palabra>
+          AVZ(sec, v)   {saltar el espacio}
+      FIN_MIENTRAS
+      <fin de oración>
+      AVZ(sec, v)   {saltar el punto}
+  FIN_MIENTRAS
+
+
+================================================================================
+  SECCIÓN 39 — SECUENCIA DE CARACTERES: PREGUNTAS FRECUENTES
+================================================================================
+
+39.1 — ¿Hay enteros dentro de una secuencia de caracteres?
+-----------------------------------------------------------
+  No. Todo elemento de una secuencia de caracteres ES un carácter.
+  El valor "03" en la secuencia no es el número 3 — es el carácter '0'
+  seguido del carácter '3'.
+
+  Si necesitás operar matemáticamente con ese valor (sumar, comparar con
+  un número), usás la función conv_entero() para convertirlo.
+  Si solo lo grabás en otra secuencia sin hacer cuentas, lo tratás como
+  carácter directamente.
+
+
+39.2 — Campos fijos vs campos de longitud variable
+----------------------------------------------------
+  En una secuencia de caracteres hay dos tipos de campos:
+
+  CAMPO FIJO — sabés exactamente cuántos caracteres ocupa:
+    Ejemplo: CodProtocolo (5c), CantEstudios (2c), CodEstudio (4c)
+    → Se lee con un PARA:
+
+      Para i:= 1 a 5 hacer
+        Avz(sec, v)
+      FinPara
+
+    Si necesitás guardar el valor:
+      Para i:= 1 a 5 hacer
+        cod := cod + v
+        Avz(sec, v)
+      FinPara
+
+  CAMPO VARIABLE — no sabés cuánto mide, termina con un centinela:
+    Ejemplo: Nombre del paciente (termina con ',')
+    → Se lee con un MIENTRAS hasta el centinela:
+
+      Mientras v <> "," hacer
+        Avz(sec, v)
+      FinMientras
+
+    Si necesitás guardar el valor:
+      Mientras v <> "," hacer
+        nombre := nombre + v
+        Avz(sec, v)
+      FinMientras
+
+    Al salir del Mientras, v contiene la ','. Para pasar al siguiente
+    campo hacés un Avz(sec, v) extra.
+
+  REGLA: si al menos UN campo es de longitud variable → no podés usar
+  archivo con registro. Necesitás secuencia de caracteres.
+
+
+39.3 — ¿Cuándo declarar una variable para un campo?
+----------------------------------------------------
+  Solo declarás la variable si la vas a USAR (grabar, comparar, calcular).
+  Si el ejercicio no te pide nada con ese campo, simplemente avanzás
+  la ventana sin guardar nada.
+
+  Ejemplo: si el enunciado no pide nada con el código de protocolo:
+    → No declarás cod, solo hacés Para i:= 1 a 5 → Avz()
+
+  Si sí lo necesitás:
+    → Declarás cod: AN(5) en el Ambiente y lo leés carácter por carácter.
+
+
+39.4 — Función conv_entero() — convertir carácter a entero
+-----------------------------------------------------------
+  Aparece en casi todos los ejercicios de secuencia de caracteres donde
+  necesitás operar con números. Es prácticamente obligatoria memorizarla.
+
+  Funcion conv_entero(c: caracter): entero
+    Segun c hacer
+      "0": conv_entero := 0
+      "1": conv_entero := 1
+      "2": conv_entero := 2
+      "3": conv_entero := 3
+      "4": conv_entero := 4
+      "5": conv_entero := 5
+      "6": conv_entero := 6
+      "7": conv_entero := 7
+      "8": conv_entero := 8
+      "9": conv_entero := 9
+    FinSegun
+  FinFuncion
+
+  CÓMO RECONSTRUIR UN NÚMERO DE N DÍGITOS:
+
+  2 dígitos (ej: "03" → 3, "12" → 12):
+    num := conv_entero(v) * 10
+    Avz(sec, v)
+    num := num + conv_entero(v)
+
+  3 dígitos (ej: "045" → 45, "123" → 123):
+    num := conv_entero(v) * 100
+    Avz(sec, v)
+    num := num + conv_entero(v) * 10
+    Avz(sec, v)
+    num := num + conv_entero(v)
+
+  PATRÓN: primer dígito × 10^(n-1) + segundo × 10^(n-2) + ... + último × 1
+
+
+39.5 — Resumen: cuándo usar cada estructura
+--------------------------------------------
+  | Situación                          | Estructura a usar           |
+  |------------------------------------|------------------------------|
+  | Todos los campos de longitud fija  | Archivo con registro         |
+  | Al menos un campo de long. variable| Secuencia de caracteres      |
+  | Datos mezclados con centinelas     | Secuencia de caracteres      |
+  | Operaciones matemáticas con dígitos| conv_entero() en secuencia   |
+
+
+================================================================================
+  FIN DEL DOCUMENTO
+================================================================================
+  Material elaborado por los Docentes de la cátedra AED
+  UTN Facultad Regional Resistencia — Ingeniería en Sistemas de Información
+================================================================================
