@@ -1,6 +1,6 @@
 CC     = clang
 CFLAGS = -Wall -Wextra -I src
-LDFLAGS = -lSDL2 -lm
+LDFLAGS = $(shell pkg-config --libs sdl3) -lm
 
 BUILDDIR = build
 SRC      = src/main.c

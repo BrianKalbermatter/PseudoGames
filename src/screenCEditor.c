@@ -1,6 +1,7 @@
 #define _XOPEN_SOURCE 600
 #include "screenCEditor.h"
-#include <SDL2/SDL_ttf.h>
+#include "ui.h"
+#include <SDL3_ttf/SDL_ttf.h>
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
@@ -101,17 +102,17 @@ ce_text(SDL_Renderer *r, TTF_Font *f,
         const char *txt, int x, int y, SDL_Color c)
 {
     if (!txt || !txt[0]) return;
-    SDL_Surface *s = TTF_RenderUTF8_Blended(f, txt, c);
+    SDL_Surface *s = TTF_RenderText_Blended(f, txt, 0, c);
     if (!s) return;
     SDL_Texture *t = SDL_CreateTextureFromSurface(r, s);
-    SDL_Rect dst = {x, y, s->w, s->h};
-    SDL_RenderCopy(r, t, NULL, &dst);
-    SDL_FreeSurface(s);
+    SDL_FRect dst = {x, y, s->w, s->h};
+    SDL_RenderTexture(r, t, NULL, &dst);
+    SDL_DestroySurface(s);
     SDL_DestroyTexture(t);
 }
 
 static void
-ce_fill(SDL_Renderer *r, SDL_Rect rect, SDL_Color c)
+ce_fill(SDL_Renderer *r, SDL_FRect rect, SDL_Color c)
 {
     SDL_SetRenderDrawColor(r, c.r, c.g, c.b, c.a);
     SDL_RenderFillRect(r, &rect);
@@ -121,7 +122,7 @@ static void
 ce_hline(SDL_Renderer *r, int x, int y, int w, SDL_Color c)
 {
     SDL_SetRenderDrawColor(r, c.r, c.g, c.b, c.a);
-    SDL_RenderDrawLine(r, x, y, x + w - 1, y);
+    SDL_RenderLine(r, x, y, x + w - 1, y);
 }
 
 /* ── Paleta UI ── */
@@ -215,13 +216,13 @@ ce_draw_row_hl(SDL_Renderer *r, TTF_Font *f, const char *row, int x, int y)
 #define FLUSH_SPAN() do { \
     if (slen > 0) { \
         span[slen] = '\0'; \
-        SDL_Surface *ss = TTF_RenderUTF8_Blended(f, span, cur_color); \
+        SDL_Surface *ss = TTF_RenderText_Blended(f, span, 0, cur_color); \
         if (ss) { \
             SDL_Texture *tt = SDL_CreateTextureFromSurface(r, ss); \
-            SDL_Rect dr = {sx, y, ss->w, ss->h}; \
-            SDL_RenderCopy(r, tt, NULL, &dr); \
+            SDL_FRect dr = {sx, y, ss->w, ss->h}; \
+            SDL_RenderTexture(r, tt, NULL, &dr); \
             sx += ss->w; \
-            SDL_FreeSurface(ss); SDL_DestroyTexture(tt); \
+            SDL_DestroySurface(ss); SDL_DestroyTexture(tt); \
         } \
         slen = 0; \
     } \
@@ -717,7 +718,7 @@ ceditor_init(ShellCtx *ctx, Tab *tab)
 }
 
 /* forward declaration — definida en la seccion de dibujo mas abajo */
-static int ce_tabbar_hit(CEditorState *s, TTF_Font *f, SDL_Rect area,
+static int ce_tabbar_hit(CEditorState *s, TTF_Font *f, SDL_FRect area,
                          int mx, int my, int *es_close);
 
 /* ════════════════════════════════════════════════════════════════════════════
@@ -732,8 +733,8 @@ ceditor_handle_event(ShellCtx *ctx, Tab *tab, SDL_Event *e)
 
     /* ══ OUTPUT: scroll, ESC vuelve, F5 relanza ══ */
     if (s->mode == MODE_OUTPUT) {
-        if (e->type == SDL_KEYDOWN) {
-            switch (e->key.keysym.sym) {
+        if (e->type == SDL_EVENT_KEY_DOWN) {
+            switch (e->key.key) {
             case SDLK_ESCAPE:
                 s->mode = (s->n_tabs > 0) ? MODE_EDITOR : MODE_PICKER;
                 return;
@@ -755,11 +756,11 @@ ceditor_handle_event(ShellCtx *ctx, Tab *tab, SDL_Event *e)
             default: break;
             }
             /* F5 relanza output */
-            if (e->key.keysym.sym == SDLK_F5) lanzar_output(s);
+            if (e->key.key == SDLK_F5) lanzar_output(s);
             /* input al programa corriendo */
             if (s->out_fd >= 0) {
                 const char *seq = NULL; char ch = 0;
-                switch (e->key.keysym.sym) {
+                switch (e->key.key) {
                 case SDLK_RETURN: ch = '\r'; break;
                 case SDLK_BACKSPACE: ch = '\x7f'; break;
                 default: break;
@@ -768,7 +769,7 @@ ceditor_handle_event(ShellCtx *ctx, Tab *tab, SDL_Event *e)
                 if (seq) write(s->out_fd, seq, strlen(seq));
             }
         }
-        if (e->type == SDL_TEXTINPUT && s->out_fd >= 0)
+        if (e->type == SDL_EVENT_TEXT_INPUT && s->out_fd >= 0)
             write(s->out_fd, e->text.text, strlen(e->text.text));
         return;
     }
@@ -778,8 +779,8 @@ ceditor_handle_event(ShellCtx *ctx, Tab *tab, SDL_Event *e)
         CTab *t = &s->tabs[s->tab_activo];
 
         /* ── Mouse: clicks en la tab bar interna ── */
-        if (e->type == SDL_MOUSEBUTTONDOWN && e->button.button == SDL_BUTTON_LEFT) {
-            SDL_Rect area = {
+        if (e->type == SDL_EVENT_MOUSE_BUTTON_DOWN && e->button.button == SDL_BUTTON_LEFT) {
+            SDL_FRect area = {
                 ctx->sidebar_w, TAB_BAR_H,
                 ctx->ancho - ctx->sidebar_w, ctx->alto - TAB_BAR_H
             };
@@ -805,37 +806,37 @@ ceditor_handle_event(ShellCtx *ctx, Tab *tab, SDL_Event *e)
         }
 
         /* ── Teclado: atajos del panel ── */
-        if (e->type == SDL_KEYDOWN) {
+        if (e->type == SDL_EVENT_KEY_DOWN) {
             SDL_Keymod mod = SDL_GetModState();
 
-            if (e->key.keysym.sym == SDLK_F5) {
+            if (e->key.key == SDLK_F5) {
                 lanzar_output(s);
                 return;
             }
-            if ((mod & KMOD_CTRL) && e->key.keysym.sym == SDLK_w) {
+            if ((mod & SDL_KMOD_CTRL) && e->key.key == SDLK_W) {
                 if (t->master_fd >= 0) write(t->master_fd, "\x0f:wq\r", 5);
                 return;
             }
-            if ((mod & KMOD_CTRL) && e->key.keysym.sym == SDLK_s) {
+            if ((mod & SDL_KMOD_CTRL) && e->key.key == SDLK_S) {
                 if (t->master_fd >= 0) write(t->master_fd, "\x0f:wa\r", 5);
                 return;
             }
-            if ((mod & KMOD_CTRL) && e->key.keysym.sym == SDLK_n) {
+            if ((mod & SDL_KMOD_CTRL) && e->key.key == SDLK_N) {
                 s->mode           = MODE_PICKER;
                 s->creando_nuevo  = 1;
                 s->skip_next_text = 1;
                 memset(s->nuevo_buf, 0, sizeof(s->nuevo_buf));
                 s->nuevo_len = 0;
-                SDL_StartTextInput();
+                ui_text_input(true);
                 return;
             }
-            if ((mod & KMOD_CTRL) && e->key.keysym.sym == SDLK_m) {
+            if ((mod & SDL_KMOD_CTRL) && e->key.key == SDLK_M) {
                 for (int i = 0; i < s->n_tabs; i++) s->tabs[i].is_main = 0;
                 t->is_main = 1;
                 return;
             }
-            if ((mod & KMOD_CTRL) && e->key.keysym.sym == SDLK_TAB) {
-                if (mod & KMOD_SHIFT)
+            if ((mod & SDL_KMOD_CTRL) && e->key.key == SDLK_TAB) {
+                if (mod & SDL_KMOD_SHIFT)
                     s->tab_activo = (s->tab_activo - 1 + s->n_tabs) % s->n_tabs;
                 else
                     s->tab_activo = (s->tab_activo + 1) % s->n_tabs;
@@ -845,11 +846,11 @@ ceditor_handle_event(ShellCtx *ctx, Tab *tab, SDL_Event *e)
 
         if (!t->vivo || t->master_fd < 0) return;
 
-        if (e->type == SDL_TEXTINPUT)
+        if (e->type == SDL_EVENT_TEXT_INPUT)
             write(t->master_fd, e->text.text, strlen(e->text.text));
-        else if (e->type == SDL_KEYDOWN) {
+        else if (e->type == SDL_EVENT_KEY_DOWN) {
             const char *seq = NULL; char ch = 0;
-            switch (e->key.keysym.sym) {
+            switch (e->key.key) {
             case SDLK_RETURN:    case SDLK_KP_ENTER: ch  = '\r';     break;
             case SDLK_BACKSPACE:                      ch  = '\x7f';   break;
             case SDLK_ESCAPE:                         return;         /* no salir de insert mode */
@@ -870,7 +871,7 @@ ceditor_handle_event(ShellCtx *ctx, Tab *tab, SDL_Event *e)
 
     /* ══ PICKER ══ */
     if (s->creando_nuevo) {
-        if (e->type == SDL_TEXTINPUT) {
+        if (e->type == SDL_EVENT_TEXT_INPUT) {
             if (s->skip_next_text) { s->skip_next_text = 0; return; }
             int len = (int)strlen(e->text.text);
             if (s->nuevo_len + len < 60) {
@@ -878,8 +879,8 @@ ceditor_handle_event(ShellCtx *ctx, Tab *tab, SDL_Event *e)
                 s->nuevo_len               += len;
                 s->nuevo_buf[s->nuevo_len]  = '\0';
             }
-        } else if (e->type == SDL_KEYDOWN) {
-            SDL_Keycode k = e->key.keysym.sym;
+        } else if (e->type == SDL_EVENT_KEY_DOWN) {
+            SDL_Keycode k = e->key.key;
             if (k == SDLK_BACKSPACE && s->nuevo_len > 0)
                 s->nuevo_buf[--s->nuevo_len] = '\0';
             else if (k == SDLK_ESCAPE) {
@@ -901,8 +902,8 @@ ceditor_handle_event(ShellCtx *ctx, Tab *tab, SDL_Event *e)
         return;
     }
 
-    if (e->type != SDL_KEYDOWN) return;
-    SDL_Keycode k = e->key.keysym.sym;
+    if (e->type != SDL_EVENT_KEY_DOWN) return;
+    SDL_Keycode k = e->key.key;
 
     if (s->confirm_borrar) {
         if (k == SDLK_RETURN && s->sel >= 0) {
@@ -916,7 +917,7 @@ ceditor_handle_event(ShellCtx *ctx, Tab *tab, SDL_Event *e)
     }
 
     if (s->n_archivos == 0) {
-        if (k == SDLK_n) { s->creando_nuevo = 1; s->skip_next_text = 1; SDL_StartTextInput(); }
+        if (k == SDLK_N) { s->creando_nuevo = 1; s->skip_next_text = 1; ui_text_input(true); }
         return;
     }
 
@@ -933,13 +934,13 @@ ceditor_handle_event(ShellCtx *ctx, Tab *tab, SDL_Event *e)
     case SDLK_RETURN:
         if (s->sel >= 0) abrir_archivo(s, s->archivos[s->sel]);
         break;
-    case SDLK_d:
+    case SDLK_D:
         if (s->sel >= 0) s->confirm_borrar = 1;
         break;
-    case SDLK_n:
+    case SDLK_N:
         s->creando_nuevo  = 1;
         s->skip_next_text = 1;
-        SDL_StartTextInput();
+        ui_text_input(true);
         break;
     }
 }
@@ -958,7 +959,7 @@ static int
 ce_tab_width(TTF_Font *f, const char *name)
 {
     int tw;
-    TTF_SizeUTF8(f, name, &tw, NULL);
+    TTF_GetStringSize(f, name, 0, &tw, NULL);
     return 8 + tw + 6 + 12 + 8;   /* pad_x + text + gap + close_w + pad_x */
 }
 
@@ -976,7 +977,7 @@ ce_tab_width(TTF_Font *f, const char *name)
 #define CE_HIT_PLUS -2
 
 static int
-ce_tabbar_hit(CEditorState *s, TTF_Font *f, SDL_Rect area,
+ce_tabbar_hit(CEditorState *s, TTF_Font *f, SDL_FRect area,
               int mx, int my, int *es_close)
 {
     *es_close = 0;
@@ -987,7 +988,7 @@ ce_tabbar_hit(CEditorState *s, TTF_Font *f, SDL_Rect area,
 
     for (int i = 0; i < s->n_tabs; i++) {
         int tw;
-        TTF_SizeUTF8(f, s->tabs[i].name, &tw, NULL);
+        TTF_GetStringSize(f, s->tabs[i].name, 0, &tw, NULL);
         int tab_w = ce_tab_width(f, s->tabs[i].name);
 
         if (mx >= tx && mx < tx + tab_w) {
@@ -1005,12 +1006,12 @@ ce_tabbar_hit(CEditorState *s, TTF_Font *f, SDL_Rect area,
 }
 
 static void
-draw_tab_bar_interna(CEditorState *s, SDL_Renderer *r, TTF_Font *f, SDL_Rect area)
+draw_tab_bar_interna(CEditorState *s, SDL_Renderer *r, TTF_Font *f, SDL_FRect area)
 {
     int mx, my;
-    SDL_GetMouseState(&mx, &my);
+    ui_mouse(&mx, &my);
 
-    SDL_Rect bar = {area.x, area.y, area.w, CE_TABBAR_H};
+    SDL_FRect bar = {area.x, area.y, area.w, CE_TABBAR_H};
     ce_fill(r, bar, (SDL_Color){10, 10, 10, 255});
     ce_hline(r, area.x, area.y + CE_TABBAR_H - 1, area.w, CE_SEP);
 
@@ -1019,7 +1020,7 @@ draw_tab_bar_interna(CEditorState *s, SDL_Renderer *r, TTF_Font *f, SDL_Rect are
 
     for (int i = 0; i < s->n_tabs; i++) {
         int tw, th;
-        TTF_SizeUTF8(f, s->tabs[i].name, &tw, &th);
+        TTF_GetStringSize(f, s->tabs[i].name, 0, &tw, &th);
 
         int close_w = 12;
         int tab_w   = pad_x + tw + 6 + close_w + pad_x;
@@ -1028,19 +1029,19 @@ draw_tab_bar_interna(CEditorState *s, SDL_Renderer *r, TTF_Font *f, SDL_Rect are
                        my >= area.y && my < area.y + CE_TABBAR_H);
 
         if (is_act || hover)
-            ce_fill(r, (SDL_Rect){tx, area.y, tab_w, CE_TABBAR_H}, CE_TAB_ACT);
+            ce_fill(r, (SDL_FRect){tx, area.y, tab_w, CE_TABBAR_H}, CE_TAB_ACT);
 
         /* linea inferior: neon si activo, sep si hover */
         SDL_SetRenderDrawColor(r,
             is_act  ? CE_ACCENT.r : (hover ? 60 : CE_SEP.r),
             is_act  ? CE_ACCENT.g : (hover ? 60 : CE_SEP.g),
             is_act  ? CE_ACCENT.b : (hover ? 60 : CE_SEP.b), 255);
-        SDL_RenderDrawLine(r, tx, area.y + CE_TABBAR_H - 1,
+        SDL_RenderLine(r, tx, area.y + CE_TABBAR_H - 1,
                               tx + tab_w - 2, area.y + CE_TABBAR_H - 1);
 
         /* separador derecho */
         SDL_SetRenderDrawColor(r, CE_SEP.r, CE_SEP.g, CE_SEP.b, 255);
-        SDL_RenderDrawLine(r, tx + tab_w - 1, area.y + 3,
+        SDL_RenderLine(r, tx + tab_w - 1, area.y + 3,
                               tx + tab_w - 1, area.y + CE_TABBAR_H - 4);
 
         /* nombre — azul si es main */
@@ -1064,7 +1065,7 @@ draw_tab_bar_interna(CEditorState *s, SDL_Renderer *r, TTF_Font *f, SDL_Rect are
         int hover_plus = (mx >= tx && mx < tx + 24 &&
                           my >= area.y && my < area.y + CE_TABBAR_H);
         SDL_Color pc = hover_plus ? CE_ACCENT : CE_TEXT;
-        int th; TTF_SizeUTF8(f, "+", NULL, &th);
+        int th; TTF_GetStringSize(f, "+", 0, NULL, &th);
         ce_text(r, f, "+", tx + 4, area.y + (CE_TABBAR_H - th) / 2, pc);
     }
 }
@@ -1074,7 +1075,7 @@ draw_tab_bar_interna(CEditorState *s, SDL_Renderer *r, TTF_Font *f, SDL_Rect are
  * ════════════════════════════════════════════════════════════════════════════ */
 
 void
-ceditor_draw(ShellCtx *ctx, Tab *tab, SDL_Rect area)
+ceditor_draw(ShellCtx *ctx, Tab *tab, SDL_FRect area)
 {
     CEditorState *s = (CEditorState *)tab->state;
     if (!s) return;
@@ -1082,11 +1083,11 @@ ceditor_draw(ShellCtx *ctx, Tab *tab, SDL_Rect area)
     SDL_Renderer *r = ctx->renderer;
     TTF_Font     *f = ctx->fuente;
 
-    SDL_RenderSetClipRect(r, &area);
+    ui_clip(r, &area);
     ce_fill(r, area, CE_BG);
 
     int fh;
-    TTF_SizeUTF8(f, "A", NULL, &fh);
+    TTF_GetStringSize(f, "A", 0, NULL, &fh);
 
     /* ══ OUTPUT ══ */
     if (s->mode == MODE_OUTPUT) {
@@ -1118,16 +1119,16 @@ ceditor_draw(ShellCtx *ctx, Tab *tab, SDL_Rect area)
         if (s->out_row > 0) {
             char sc[32];
             snprintf(sc, sizeof(sc), "linea %d/%d", s->out_scroll + 1, s->out_row + 1);
-            int sw; TTF_SizeUTF8(f, sc, &sw, NULL);
+            int sw; TTF_GetStringSize(f, sc, 0, &sw, NULL);
             ce_text(r, f, sc, area.x + area.w - sw - 10, area.y + 6, CE_TEXT);
         }
 
         ce_hline(r, area.x, area.y + fh + 10, area.w, CE_SEP);
 
         /* Buffer scrolleable */
-        SDL_Rect out_content = {area.x, area.y + fh + 12,
+        SDL_FRect out_content = {area.x, area.y + fh + 12,
                                 area.w, area.h - fh * 2 - 24};
-        SDL_RenderSetClipRect(r, &out_content);
+        ui_clip(r, &out_content);
 
         int visible_rows = out_content.h / fh;
         int y = out_content.y;
@@ -1145,13 +1146,13 @@ ceditor_draw(ShellCtx *ctx, Tab *tab, SDL_Rect area)
             ce_text(r, f, s->out_screen[row], out_content.x + 8, y, lc);
             y += fh;
         }
-        SDL_RenderSetClipRect(r, &area);
+        ui_clip(r, &area);
 
         /* Footer */
         ce_text(r, f, "[ESC] volver   [F5] recompilar   [↑↓] scroll",
             area.x + 8, area.y + area.h - fh - 6, CE_TEXT);
 
-        SDL_RenderSetClipRect(r, NULL);
+        ui_clip(r, NULL);
         return;
     }
 
@@ -1161,7 +1162,7 @@ ceditor_draw(ShellCtx *ctx, Tab *tab, SDL_Rect area)
         /* Tab bar interna */
         draw_tab_bar_interna(s, r, f, area);
 
-        SDL_Rect content = {
+        SDL_FRect content = {
             area.x,
             area.y + CE_TABBAR_H,
             area.w,
@@ -1178,7 +1179,7 @@ ceditor_draw(ShellCtx *ctx, Tab *tab, SDL_Rect area)
                 t->vivo      = 0;
                 close(t->master_fd); t->master_fd = -1;
                 cerrar_tab_interno(s, s->tab_activo);
-                SDL_RenderSetClipRect(r, NULL);
+                ui_clip(r, NULL);
                 return;
             }
         }
@@ -1195,7 +1196,7 @@ ceditor_draw(ShellCtx *ctx, Tab *tab, SDL_Rect area)
         }
 
         /* Renderizar screen buffer con syntax highlighting */
-        SDL_RenderSetClipRect(r, &content);
+        ui_clip(r, &content);
         for (int row = 0; row < CE_ROWS; row++) {
             int y = content.y + row * fh;
             if (y + fh > content.y + content.h) break;
@@ -1217,20 +1218,20 @@ ceditor_draw(ShellCtx *ctx, Tab *tab, SDL_Rect area)
                     strncpy(tmp, t->screen[crow], take);
                     tmp[take] = '\0';
                     int px = 0;
-                    TTF_SizeUTF8(f, tmp, &px, NULL);
+                    TTF_GetStringSize(f, tmp, 0, &px, NULL);
                     /* ancho de un caracter para la raya */
                     int cw;
-                    TTF_SizeUTF8(f, "M", &cw, NULL);
+                    TTF_GetStringSize(f, "M", 0, &cw, NULL);
                     int cur_x = content.x + 4 + px;
                     /* raya debajo: 2px de alto */
                     SDL_SetRenderDrawColor(r, 220, 220, 220, 220);
-                    SDL_Rect cr = {cur_x, cy + fh - 2, cw, 2};
+                    SDL_FRect cr = {cur_x, cy + fh - 2, cw, 2};
                     SDL_RenderFillRect(r, &cr);
                 }
             }
         }
 
-        SDL_RenderSetClipRect(r, &area);
+        ui_clip(r, &area);
 
         /* Footer */
         char footer[128];
@@ -1238,7 +1239,7 @@ ceditor_draw(ShellCtx *ctx, Tab *tab, SDL_Rect area)
             "[F5] compilar   [Ctrl+Tab] cambiar tab   [Ctrl+M] marcar main   [Ctrl+W] cerrar tab");
         ce_text(r, f, footer, area.x + 6, area.y + area.h - fh - 4, CE_TEXT);
 
-        SDL_RenderSetClipRect(r, NULL);
+        ui_clip(r, NULL);
         return;
     }
 
@@ -1255,23 +1256,23 @@ ceditor_draw(ShellCtx *ctx, Tab *tab, SDL_Rect area)
     ce_text(r, f, "Archivos .c", area.x + pad, cy, col_dim);
     cy += fh + 4;
     SDL_SetRenderDrawColor(r, 40, 40, 40, 255);
-    SDL_RenderDrawLine(r, area.x + pad, cy, area.x + area.w - pad, cy);
+    SDL_RenderLine(r, area.x + pad, cy, area.x + area.w - pad, cy);
     cy += 8;
 
     if (s->creando_nuevo) {
         ce_text(r, f, "Nombre del nuevo archivo:", area.x + pad, cy, col_dim);
         cy += fh + 6;
         int bw = 300, bh = fh + 10;
-        SDL_Rect box = {area.x + pad, cy, bw, bh};
+        SDL_FRect box = {area.x + pad, cy, bw, bh};
         ce_fill(r, box, (SDL_Color){30, 30, 30, 255});
         SDL_SetRenderDrawColor(r, 60, 60, 60, 255);
-        SDL_RenderDrawRect(r, &box);
+        SDL_RenderRect(r, &box);
         char display[80];
         snprintf(display, sizeof(display), "%s_.c", s->nuevo_buf);
         ce_text(r, f, display, area.x + pad + 8, cy + 5, col_bright);
         cy += bh + 10;
         ce_text(r, f, "[Enter] crear   [Esc] cancelar", area.x + pad, cy, col_accent);
-        SDL_RenderSetClipRect(r, NULL);
+        ui_clip(r, NULL);
         return;
     }
 
@@ -1279,7 +1280,7 @@ ceditor_draw(ShellCtx *ctx, Tab *tab, SDL_Rect area)
         ce_text(r, f, "No hay archivos .c todavia.", area.x + pad, cy, col_dim);
         cy += fh + 12;
         ce_text(r, f, "[N] crear nuevo", area.x + pad, cy, col_accent);
-        SDL_RenderSetClipRect(r, NULL);
+        ui_clip(r, NULL);
         return;
     }
 
@@ -1290,7 +1291,7 @@ ceditor_draw(ShellCtx *ctx, Tab *tab, SDL_Rect area)
         cy += fh + 10;
         ce_text(r, f, "[Enter] confirmar   [cualquier otra] cancelar",
                 area.x + pad, cy, col_dim);
-        SDL_RenderSetClipRect(r, NULL);
+        ui_clip(r, NULL);
         return;
     }
 
@@ -1299,12 +1300,12 @@ ceditor_draw(ShellCtx *ctx, Tab *tab, SDL_Rect area)
     if (end > s->n_archivos) end = s->n_archivos;
 
     for (int i = s->scroll; i < end; i++) {
-        SDL_Rect row_rect = {area.x + pad - 4, cy - 2,
+        SDL_FRect row_rect = {area.x + pad - 4, cy - 2,
                              area.w - pad * 2 + 8, item_h};
         if (i == s->sel) {
             ce_fill(r, row_rect, (SDL_Color){28, 28, 28, 255});
             SDL_SetRenderDrawColor(r, 0, 200, 80, 255);
-            SDL_RenderDrawLine(r, area.x + pad - 4, cy - 2,
+            SDL_RenderLine(r, area.x + pad - 4, cy - 2,
                                area.x + pad - 4, cy - 2 + item_h - 1);
             ce_text(r, f, s->archivos[i], area.x + pad + 8, cy, col_bright);
         } else {
@@ -1316,7 +1317,7 @@ ceditor_draw(ShellCtx *ctx, Tab *tab, SDL_Rect area)
     if (s->n_archivos > CE_LIST_VIS) {
         char sc[16];
         snprintf(sc, sizeof(sc), "%d/%d", s->sel + 1, s->n_archivos);
-        int sw; TTF_SizeUTF8(f, sc, &sw, NULL);
+        int sw; TTF_GetStringSize(f, sc, 0, &sw, NULL);
         ce_text(r, f, sc, area.x + area.w - pad - sw, area.y + pad, col_dim);
     }
 
@@ -1325,7 +1326,7 @@ ceditor_draw(ShellCtx *ctx, Tab *tab, SDL_Rect area)
         "[↑↓] navegar   [Enter] abrir   [D] borrar   [N] nuevo",
         area.x + pad, fy, col_dim);
 
-    SDL_RenderSetClipRect(r, NULL);
+    ui_clip(r, NULL);
 }
 
 /* ════════════════════════════════════════════════════════════════════════════

@@ -1,5 +1,5 @@
-#include <SDL2/SDL.h>
-#include <SDL2/SDL_ttf.h>
+#include <SDL3/SDL.h>
+#include <SDL3_ttf/SDL_ttf.h>
 #include <math.h>
 #include "ui.h"
 
@@ -10,14 +10,14 @@ static inline void
 fr(SDL_Renderer *r, int x, int y, int w, int h, int cr, int cg, int cb, int ca)
 {
     SDL_SetRenderDrawColor(r, cr, cg, cb, ca);
-    SDL_Rect rc = {x, y, w, h};
+    SDL_FRect rc = {x, y, w, h};
     SDL_RenderFillRect(r, &rc);
 }
 static inline void
 ln(SDL_Renderer *r, int x1, int y1, int x2, int y2, int cr, int cg, int cb, int ca)
 {
     SDL_SetRenderDrawColor(r, cr, cg, cb, ca);
-    SDL_RenderDrawLine(r, x1, y1, x2, y2);
+    SDL_RenderLine(r, x1, y1, x2, y2);
 }
 static inline int clampi(int v, int lo, int hi)
 {
@@ -97,7 +97,7 @@ dibujar_fondo_castillo(SDL_Renderer *renderer, int ancho, int alto, Uint32 ticks
             int b2 = clampi((int)(warm *  20), 0, 255);
 
             SDL_SetRenderDrawColor(renderer, r2, g2, b2, 255);
-            SDL_RenderDrawLine(renderer, xl, y, xr, y);
+            SDL_RenderLine(renderer, xl, y, xr, y);
         }
     }
 
@@ -123,7 +123,7 @@ dibujar_fondo_castillo(SDL_Renderer *renderer, int ancho, int alto, Uint32 ticks
                 clampi((int)(fl * 1.55f), 0, 255),
                 clampi((int)(fl * 0.85f), 0, 255),
                 clampi((int)(fl * 0.40f), 0, 255), 255);
-            SDL_RenderDrawLine(renderer, xl, y, xr, y);
+            SDL_RenderLine(renderer, xl, y, xr, y);
         }
 
         /* líneas de perspectiva (juntas de ladrillos convergentes) */
@@ -173,10 +173,10 @@ dibujar_fondo_castillo(SDL_Renderer *renderer, int ancho, int alto, Uint32 ticks
         /* ─── Columnas rectangulares ─── */
         /* columna izquierda */
         SDL_SetRenderDrawColor(renderer, sr, sg, sb, 255);
-        SDL_Rect col_l = { vx - ro, 0, ft, by };
+        SDL_FRect col_l = { vx - ro, 0, ft, by };
         SDL_RenderFillRect(renderer, &col_l);
         /* columna derecha */
-        SDL_Rect col_r = { vx + hw, 0, ft, by };
+        SDL_FRect col_r = { vx + hw, 0, ft, by };
         SDL_RenderFillRect(renderer, &col_r);
 
         /* cara interna de las columnas (más clara → efecto 3D) */
@@ -186,9 +186,9 @@ dibujar_fondo_castillo(SDL_Renderer *renderer, int ancho, int alto, Uint32 ticks
             int gg = clampi(sg + 20, 0, 255);
             int bb = clampi(sb + 10, 0, 255);
             SDL_SetRenderDrawColor(renderer, rr, gg, bb, 255);
-            SDL_Rect clf = { vx - hw - fw, 0, fw, by };
+            SDL_FRect clf = { vx - hw - fw, 0, fw, by };
             SDL_RenderFillRect(renderer, &clf);
-            SDL_Rect crf = { vx + hw, 0, fw, by };
+            SDL_FRect crf = { vx + hw, 0, fw, by };
             SDL_RenderFillRect(renderer, &crf);
         }
 
@@ -199,9 +199,9 @@ dibujar_fondo_castillo(SDL_Renderer *renderer, int ancho, int alto, Uint32 ticks
             int gg = clampi(sg - 16, 0, 255);
             int bb = clampi(sb -  8, 0, 255);
             SDL_SetRenderDrawColor(renderer, rr, gg, bb, 255);
-            SDL_Rect cls = { vx - ro, 0, fw, by };
+            SDL_FRect cls = { vx - ro, 0, fw, by };
             SDL_RenderFillRect(renderer, &cls);
-            SDL_Rect crs = { vx + ro - fw, 0, fw, by };
+            SDL_FRect crs = { vx + ro - fw, 0, fw, by };
             SDL_RenderFillRect(renderer, &crs);
         }
 
@@ -238,8 +238,8 @@ dibujar_fondo_castillo(SDL_Renderer *renderer, int ancho, int alto, Uint32 ticks
             int bb = clampi((int)(sb * ks), 0, 255);
             SDL_SetRenderDrawColor(renderer, rr, gg, bb, 255);
 
-            SDL_RenderDrawLine(renderer, vx - xo, y, vx - xi, y);
-            SDL_RenderDrawLine(renderer, vx + xi, y, vx + xo, y);
+            SDL_RenderLine(renderer, vx - xo, y, vx - xi, y);
+            SDL_RenderLine(renderer, vx + xi, y, vx + xo, y);
         }
 
         /* piedra clave (keystone): destaque en el tope del arco */
@@ -411,17 +411,17 @@ screenFeedback(SDL_Renderer *renderer, TTF_Font *fuente, int ancho, int alto)
     int corriendo = 1;
     int mx = 0, my = 0;
 
-    SDL_Rect link_rect = {0, 0, 0, 0};
+    SDL_FRect link_rect = {0, 0, 0, 0};
 
     while (corriendo) {
         int clicked = 0, click_x = 0, click_y = 0;
 
         while (SDL_PollEvent(&evento)) {
-            if (evento.type == SDL_QUIT) return 0;
-            if (evento.type == SDL_KEYDOWN &&
-                evento.key.keysym.sym == SDLK_ESCAPE)
+            if (evento.type == SDL_EVENT_QUIT) return 0;
+            if (evento.type == SDL_EVENT_KEY_DOWN &&
+                evento.key.key == SDLK_ESCAPE)
                 corriendo = 0;
-            if (evento.type == SDL_MOUSEBUTTONDOWN &&
+            if (evento.type == SDL_EVENT_MOUSE_BUTTON_DOWN &&
                 evento.button.button == SDL_BUTTON_LEFT) {
                 clicked = 1;
                 click_x = evento.button.x;
@@ -429,13 +429,13 @@ screenFeedback(SDL_Renderer *renderer, TTF_Font *fuente, int ancho, int alto)
             }
         }
 
-        SDL_GetMouseState(&mx, &my);
+        ui_mouse(&mx, &my);
 
         /* ── fondo ── */
         dibujar_fondo_castillo(renderer, ancho, alto, SDL_GetTicks());
 
         /* ── panel de texto ── */
-        int line_h  = TTF_FontHeight(fuente) + 10;
+        int line_h  = TTF_GetFontHeight(fuente) + 10;
         int cx      = ancho / 2;
         int panel_w = 510;
         int panel_h = line_h * 6 + 85;
@@ -449,12 +449,12 @@ screenFeedback(SDL_Renderer *renderer, TTF_Font *fuente, int ancho, int alto)
         fr(renderer, panel_x, panel_y, panel_w, panel_h, 6, 4, 2, 215);
         /* borde exterior: naranja cálido (acorde al estilo mazmorra) */
         SDL_SetRenderDrawColor(renderer, 140, 72, 20, 220);
-        SDL_Rect borde1 = {panel_x, panel_y, panel_w, panel_h};
-        SDL_RenderDrawRect(renderer, &borde1);
+        SDL_FRect borde1 = {panel_x, panel_y, panel_w, panel_h};
+        SDL_RenderRect(renderer, &borde1);
         /* borde interior fino */
         SDL_SetRenderDrawColor(renderer, 80, 42, 12, 150);
-        SDL_Rect borde2 = {panel_x + 3, panel_y + 3, panel_w - 6, panel_h - 6};
-        SDL_RenderDrawRect(renderer, &borde2);
+        SDL_FRect borde2 = {panel_x + 3, panel_y + 3, panel_w - 6, panel_h - 6};
+        SDL_RenderRect(renderer, &borde2);
         SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_NONE);
 
         /* ── contenido ── */
@@ -463,12 +463,12 @@ screenFeedback(SDL_Renderer *renderer, TTF_Font *fuente, int ancho, int alto)
         /* título */
         SDL_Color c_titulo = {220, 185, 120, 255};
         {
-            int tw; TTF_SizeUTF8(fuente, "Feedback y Contacto", &tw, NULL);
+            int tw; TTF_GetStringSize(fuente, "Feedback y Contacto", 0, &tw, NULL);
             dibujadoTextoColor(renderer, fuente, "Feedback y Contacto",
                 cx - tw/2 - 10, cy, c_titulo);
             cy += line_h + 4;
             SDL_SetRenderDrawColor(renderer, 120, 62, 16, 200);
-            SDL_RenderDrawLine(renderer, cx - 180, cy - 4, cx + 180, cy - 4);
+            SDL_RenderLine(renderer, cx - 180, cy - 4, cx + 180, cy - 4);
             cy += 10;
         }
 
@@ -476,7 +476,7 @@ screenFeedback(SDL_Renderer *renderer, TTF_Font *fuente, int ancho, int alto)
         {
             SDL_Color c_desc = {170, 155, 130, 255};
             const char *desc = "Encontraste un bug o tenes una sugerencia?";
-            int tw; TTF_SizeUTF8(fuente, desc, &tw, NULL);
+            int tw; TTF_GetStringSize(fuente, desc, 0, &tw, NULL);
             dibujadoTextoColor(renderer, fuente, desc,
                 cx - tw/2 - 10, cy, c_desc);
             cy += line_h + 8;
@@ -492,7 +492,7 @@ screenFeedback(SDL_Renderer *renderer, TTF_Font *fuente, int ancho, int alto)
                 : (SDL_Color){ 70, 165, 255, 255};
 
             int tw, th;
-            TTF_SizeUTF8(fuente, URL_ISSUES, &tw, &th);
+            TTF_GetStringSize(fuente, URL_ISSUES, 0, &tw, &th);
             int lx = cx - tw/2 - 10;
 
             link_rect.x = lx + 10;
@@ -503,7 +503,7 @@ screenFeedback(SDL_Renderer *renderer, TTF_Font *fuente, int ancho, int alto)
             if (hover) {
                 SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
                 SDL_SetRenderDrawColor(renderer, 70, 165, 255, 28);
-                SDL_Rect bg2 = {link_rect.x - 6, link_rect.y - 2,
+                SDL_FRect bg2 = {link_rect.x - 6, link_rect.y - 2,
                                 link_rect.w + 12, link_rect.h + 4};
                 SDL_RenderFillRect(renderer, &bg2);
                 SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_NONE);
@@ -511,7 +511,7 @@ screenFeedback(SDL_Renderer *renderer, TTF_Font *fuente, int ancho, int alto)
 
             dibujadoTextoColor(renderer, fuente, URL_ISSUES, lx, cy, c_link);
             SDL_SetRenderDrawColor(renderer, c_link.r, c_link.g, c_link.b, 200);
-            SDL_RenderDrawLine(renderer,
+            SDL_RenderLine(renderer,
                 link_rect.x, link_rect.y + th + 1,
                 link_rect.x + link_rect.w, link_rect.y + th + 1);
 
@@ -532,7 +532,7 @@ screenFeedback(SDL_Renderer *renderer, TTF_Font *fuente, int ancho, int alto)
 
         /* separador */
         SDL_SetRenderDrawColor(renderer, 80, 42, 10, 160);
-        SDL_RenderDrawLine(renderer, cx - 180, cy, cx + 180, cy);
+        SDL_RenderLine(renderer, cx - 180, cy, cx + 180, cy);
         cy += 14;
 
         /* mail */
@@ -541,8 +541,8 @@ screenFeedback(SDL_Renderer *renderer, TTF_Font *fuente, int ancho, int alto)
             SDL_Color c_mail  = {175, 165, 145, 255};
             const char *mail  = "ctejant@gmail.com";
             int tw1, tw2;
-            TTF_SizeUTF8(fuente, "Mail: ", &tw1, NULL);
-            TTF_SizeUTF8(fuente, mail,     &tw2, NULL);
+            TTF_GetStringSize(fuente, "Mail: ", 0, &tw1, NULL);
+            TTF_GetStringSize(fuente, mail, 0, &tw2, NULL);
             int total = tw1 + tw2;
             dibujadoTextoColor(renderer, fuente, "Mail: ",
                 cx - total/2 - 10, cy, c_label);
@@ -555,7 +555,7 @@ screenFeedback(SDL_Renderer *renderer, TTF_Font *fuente, int ancho, int alto)
         {
             SDL_Color c_ver = {80, 65, 45, 255};
             const char *ver = "PseudoGames v0.1 - aed_pseudo";
-            int tw; TTF_SizeUTF8(fuente, ver, &tw, NULL);
+            int tw; TTF_GetStringSize(fuente, ver, 0, &tw, NULL);
             dibujadoTextoColor(renderer, fuente, ver,
                 cx - tw/2 - 10, cy + 10, c_ver);
         }
@@ -564,7 +564,7 @@ screenFeedback(SDL_Renderer *renderer, TTF_Font *fuente, int ancho, int alto)
         {
             SDL_Color c_esc = {100, 80, 50, 255};
             const char *pie = "[ESC] para volver";
-            int tw; TTF_SizeUTF8(fuente, pie, &tw, NULL);
+            int tw; TTF_GetStringSize(fuente, pie, 0, &tw, NULL);
             dibujadoTextoColor(renderer, fuente, pie,
                 cx - tw/2 - 10, alto - 40, c_esc);
         }

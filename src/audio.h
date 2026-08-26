@@ -2,7 +2,7 @@
 #define AUDIO_H
 
 #ifdef SIN_AUDIO
-/* Stubs vacios para builds sin SDL2_mixer (ej: Windows) */
+/* Stubs vacios para builds sin SDL3_mixer (ej: Windows) */
 static inline void audio_init(void)             {}
 static inline void audio_sfx_btn(void)          {}
 static inline void audio_cleanup(void)          {}
@@ -18,7 +18,7 @@ static inline void audio_tick(void)             {}
 static inline void audio_set_volumen(int v)     { (void)v; }
 #else
 
-/* Inicializa SDL2_mixer. Llamar una sola vez en main(). */
+/* Inicializa SDL3_mixer. Llamar una sola vez en main(). */
 void audio_init(void);
 
 /* Reproduce el efecto de sonido de boton. */

@@ -1,8 +1,8 @@
 #ifndef EDITOR_TEXT_H
 #define EDITOR_TEXT_H
 
-#include <SDL2/SDL.h>
-#include <SDL2/SDL_ttf.h>
+#include <SDL3/SDL.h>
+#include <SDL3_ttf/SDL_ttf.h>
 #include "niveles.h"
 
 #define MAX_LINES 500
@@ -20,7 +20,7 @@ typedef struct {
 } EditorPanel;
 
 /* Dibuja el editor dentro de un rect sin loop propio (para embeber) */
-void drawEditorText(SDL_Renderer *renderer, TTF_Font *fuente, SDL_Rect area);
+void drawEditorText(SDL_Renderer *renderer, TTF_Font *fuente, SDL_FRect area);
 
 /* Pantalla completa con loop propio.
  * nombre_fijo    : si no es NULL/""  → carga saves/<nombre>.paed y F9 sobreescribe directo.
@@ -39,8 +39,8 @@ typedef struct EditorLibreState EditorLibreState;
 EditorLibreState *editor_libre_crear   (TTF_Font *fuente);
 void              editor_libre_destruir(EditorLibreState *s);
 void              editor_libre_evento  (EditorLibreState *s, TTF_Font *fuente,
-                                        SDL_Event *e, SDL_Rect area);
+                                        SDL_Event *e, SDL_FRect area);
 void              editor_libre_dibujar (EditorLibreState *s, SDL_Renderer *r,
-                                        TTF_Font *fuente, SDL_Rect area);
+                                        TTF_Font *fuente, SDL_FRect area);
 
 #endif

@@ -1,4 +1,4 @@
-#include <SDL2/SDL.h>
+#include <SDL3/SDL.h>
 #include <math.h>
 #include <stdlib.h>
 #include <time.h>
@@ -442,16 +442,17 @@ int main(int argc, char *argv[]) {
     srand((unsigned)time(NULL));
 
     /* forzar warp-based relative mouse — necesario en WSL2/WSLg */
-    SDL_SetHint(SDL_HINT_MOUSE_RELATIVE_MODE_WARP, "1");
+    SDL_SetHint(SDL_HINT_MOUSE_RELATIVE_MODE_CENTER, "1");
     SDL_SetHint(SDL_HINT_VIDEO_X11_NET_WM_BYPASS_COMPOSITOR, "0");
 
     SDL_Init(SDL_INIT_VIDEO);
+    /* SDL3: sin posicion, y FULLSCREEN_DESKTOP se fusiono en SDL_WINDOW_FULLSCREEN.
+       El renderer se pide por NOMBRE de driver: NULL = el mejor disponible. */
     SDL_Window   *win = SDL_CreateWindow(
         "screenPJ - mazmorra corrupta",
-        SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
         W, H,
-        SDL_WINDOW_FULLSCREEN_DESKTOP | SDL_WINDOW_ALWAYS_ON_TOP);
-    SDL_Renderer *ren = SDL_CreateRenderer(win, -1, SDL_RENDERER_ACCELERATED);
+        SDL_WINDOW_FULLSCREEN | SDL_WINDOW_ALWAYS_ON_TOP);
+    SDL_Renderer *ren = SDL_CreateRenderer(win, NULL);
 
     /* textura SDL para el framebuffer */
     SDL_Texture *screen = SDL_CreateTexture(ren,
@@ -466,7 +467,6 @@ int main(int argc, char *argv[]) {
 
     /* traer ventana al frente y darle foco */
     SDL_RaiseWindow(win);
-    SDL_SetWindowInputFocus(win);
     SDL_Delay(50);
 
     /* cursor invisible: creamos uno de 1x1 completamente transparente */
@@ -474,24 +474,24 @@ int main(int argc, char *argv[]) {
     Uint8 cmask[1] = {0};
     SDL_Cursor *cursor_vacio = SDL_CreateCursor(cdata, cmask, 8, 1, 0, 0);
     SDL_SetCursor(cursor_vacio);
-    SDL_ShowCursor(SDL_DISABLE);
+    SDL_HideCursor();
 
     /* capturar mouse */
-    SDL_SetWindowGrab(win, SDL_TRUE);
-    SDL_CaptureMouse(SDL_TRUE);
+    SDL_SetWindowMouseGrab(win, true);
+    SDL_CaptureMouse(true);
     SDL_WarpMouseInWindow(win, W / 2, H / 2);
-    SDL_SetRelativeMouseMode(SDL_TRUE);
+    SDL_SetWindowRelativeMouseMode(win, true);
 
-    const Uint8 *keys;
+    const bool *keys;
     int corriendo = 1;
     SDL_Event ev;
 
     while (corriendo) {
         while (SDL_PollEvent(&ev)) {
-            if (ev.type == SDL_QUIT) corriendo = 0;
-            if (ev.type == SDL_KEYDOWN && ev.key.keysym.sym == SDLK_ESCAPE)
+            if (ev.type == SDL_EVENT_QUIT) corriendo = 0;
+            if (ev.type == SDL_EVENT_KEY_DOWN && ev.key.key == SDLK_ESCAPE)
                 corriendo = 0;
-            if (ev.type == SDL_MOUSEMOTION)
+            if (ev.type == SDL_EVENT_MOUSE_MOTION)
                 p.angulo += ev.motion.xrel * MOUSE_SENS;
         }
         /* warp cada frame — respaldo para WSL2 donde el confinamiento falla */
@@ -563,14 +563,14 @@ int main(int argc, char *argv[]) {
 
         /* ── subir fb a GPU y presentar ── */
         SDL_UpdateTexture(screen, NULL, fb, W * sizeof(Uint32));
-        SDL_RenderCopy(ren, screen, NULL, NULL);
+        SDL_RenderTexture(ren, screen, NULL, NULL);
         SDL_RenderPresent(ren);
         SDL_Delay(16);
     }
 
-    SDL_FreeCursor(cursor_vacio);
-    SDL_ShowCursor(SDL_ENABLE);
-    SDL_SetRelativeMouseMode(SDL_FALSE);
+    SDL_DestroyCursor(cursor_vacio);
+    SDL_ShowCursor();
+    SDL_SetWindowRelativeMouseMode(win, false);
     SDL_DestroyTexture(screen);
     SDL_DestroyRenderer(ren);
     SDL_DestroyWindow(win);

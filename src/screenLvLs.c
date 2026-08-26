@@ -1,5 +1,5 @@
-#include <SDL2/SDL.h>
-#include <SDL2/SDL_ttf.h>
+#include <SDL3/SDL.h>
+#include <SDL3_ttf/SDL_ttf.h>
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
@@ -45,7 +45,7 @@ dibujar_estrella(SDL_Renderer *renderer, int cx, int cy, int r, SDL_Color color)
             for (int b = a + 1; b < nx; b++)
                 if (xs[a] > xs[b]) { float t = xs[a]; xs[a] = xs[b]; xs[b] = t; }
         for (int a = 0; a + 1 < nx; a += 2)
-            SDL_RenderDrawLine(renderer, (int)xs[a], y, (int)xs[a+1], y);
+            SDL_RenderLine(renderer, (int)xs[a], y, (int)xs[a+1], y);
     }
 }
 
@@ -66,20 +66,20 @@ dibujar_candado(SDL_Renderer *renderer, int lx, int ly)
     SDL_SetRenderDrawColor(renderer, c.r, c.g, c.b, 255);
 
     /* argolla: dos laterales + techo */
-    SDL_Rect sl  = {lx-10, ly-22, 4, 24};   /* lado izq  */
-    SDL_Rect sr  = {lx+ 6, ly-22, 4, 24};   /* lado der  */
-    SDL_Rect tch = {lx-10, ly-22, 20, 4};   /* techo     */
+    SDL_FRect sl  = {lx-10, ly-22, 4, 24};   /* lado izq  */
+    SDL_FRect sr  = {lx+ 6, ly-22, 4, 24};   /* lado der  */
+    SDL_FRect tch = {lx-10, ly-22, 20, 4};   /* techo     */
     SDL_RenderFillRect(renderer, &sl);
     SDL_RenderFillRect(renderer, &sr);
     SDL_RenderFillRect(renderer, &tch);
 
     /* cuerpo */
-    SDL_Rect body = {lx-16, ly, 32, 24};
+    SDL_FRect body = {lx-16, ly, 32, 24};
     SDL_RenderFillRect(renderer, &body);
 
     /* ojo del candado */
     SDL_SetRenderDrawColor(renderer, 38, 38, 42, 255);
-    SDL_Rect ojo = {lx-4, ly+6, 8, 12};
+    SDL_FRect ojo = {lx-4, ly+6, 8, 12};
     SDL_RenderFillRect(renderer, &ojo);
 }
 
@@ -88,14 +88,14 @@ static void
 neon_texto(SDL_Renderer *renderer, TTF_Font *fuente,
            const char *texto, int x, int y, SDL_Color color, Uint8 alpha)
 {
-    SDL_Surface *sup = TTF_RenderUTF8_Blended(fuente, texto, color);
+    SDL_Surface *sup = TTF_RenderText_Blended(fuente, texto, 0, color);
     if (!sup) return;
     SDL_Texture *tex = SDL_CreateTextureFromSurface(renderer, sup);
     SDL_SetTextureBlendMode(tex, SDL_BLENDMODE_BLEND);
     SDL_SetTextureAlphaMod(tex, alpha);
-    SDL_Rect pos = {x, y, sup->w, sup->h};
-    SDL_RenderCopy(renderer, tex, NULL, &pos);
-    SDL_FreeSurface(sup);
+    SDL_FRect pos = {x, y, sup->w, sup->h};
+    SDL_RenderTexture(renderer, tex, NULL, &pos);
+    SDL_DestroySurface(sup);
     SDL_DestroyTexture(tex);
 }
 
@@ -319,12 +319,12 @@ screenLvLs(SDL_Renderer *renderer, TTF_Font *fuente, int ancho, int alto)
         pom_tick();
 
         while (SDL_PollEvent(&evento)) {
-            if (evento.type == SDL_QUIT) {
+            if (evento.type == SDL_EVENT_QUIT) {
                 if (fuente_grande) TTF_CloseFont(fuente_grande);
                 return 0;
             }
-            if (evento.type == SDL_KEYDOWN) {
-                switch (evento.key.keysym.sym) {
+            if (evento.type == SDL_EVENT_KEY_DOWN) {
+                switch (evento.key.key) {
                     case SDLK_ESCAPE:
                         if (fuente_grande) TTF_CloseFont(fuente_grande);
                         return 0;
@@ -362,16 +362,16 @@ screenLvLs(SDL_Renderer *renderer, TTF_Font *fuente, int ancho, int alto)
                         }
                         break;
                     }
-                    case SDLK_p: pom_send("p", 1); break;
+                    case SDLK_P: pom_send("p", 1); break;
                     case SDLK_0: pom_send("0", 1); break;
                     default: break;
                 }
             }
-            if (evento.type == SDL_MOUSEWHEEL) {
+            if (evento.type == SDL_EVENT_MOUSE_WHEEL) {
                 scroll_y -= evento.wheel.y * 45;  /* y>0 = rueda arriba */
                 if (scroll_y < 0) scroll_y = 0;
             }
-            if (evento.type == SDL_MOUSEBUTTONDOWN &&
+            if (evento.type == SDL_EVENT_MOUSE_BUTTON_DOWN &&
                 evento.button.button == SDL_BUTTON_LEFT) {
                 clicked = 1;
                 click_x = evento.button.x;
@@ -400,14 +400,14 @@ screenLvLs(SDL_Renderer *renderer, TTF_Font *fuente, int ancho, int alto)
         SDL_RenderClear(renderer);
 
         /* clip: no dibujar fuera de la pantalla */
-        SDL_Rect viewport = {0, 0, ancho, alto};
-        SDL_RenderSetClipRect(renderer, &viewport);
+        SDL_FRect viewport = {0, 0, ancho, alto};
+        ui_clip(renderer, &viewport);
 
         int mx, my;
-        SDL_GetMouseState(&mx, &my);
+        ui_mouse(&mx, &my);
 
         /* ── fondo: dos columnas de código vivo ── */
-        int line_h = TTF_FontHeight(fuente) + 3;
+        int line_h = TTF_GetFontHeight(fuente) + 3;
         bg_editor_tick(&bg_izq);
         bg_editor_tick(&bg_der);
         bg_editor_dibujar(renderer, fuente, &bg_izq, 8,        95, line_h);
@@ -417,7 +417,7 @@ screenLvLs(SDL_Renderer *renderer, TTF_Font *fuente, int ancho, int alto)
         SDL_Color c_glow = {0, 255, 160, 255};
         int etapa_w = 0;
         if (fuente_grande)
-            TTF_SizeUTF8(fuente_grande, "ETAPA 1", &etapa_w, NULL);
+            TTF_GetStringSize(fuente_grande, "ETAPA 1", 0, &etapa_w, NULL);
         int etapa_x = (ancho - etapa_w) / 2;
         int etapa_y = 8;
         if (fuente_grande) {
@@ -455,7 +455,7 @@ screenLvLs(SDL_Renderer *renderer, TTF_Font *fuente, int ancho, int alto)
                                my >= cy && my <= cy + card_h;
             int enfocado     = (i == seleccionado);
 
-            SDL_Rect card = {cx, cy, card_w, card_h};
+            SDL_FRect card = {cx, cy, card_w, card_h};
 
             /* fondo de la tarjeta */
             if (!desbloqueado) {
@@ -479,16 +479,16 @@ screenLvLs(SDL_Renderer *renderer, TTF_Font *fuente, int ancho, int alto)
                 for (int g = 4; g >= 1; g--) {
                     Uint8 a = (Uint8)(12 / g);
                     SDL_SetRenderDrawColor(renderer, 0, 255, 160, a);
-                    SDL_Rect glow = {cx - g*2, cy - g*2,
+                    SDL_FRect glow = {cx - g*2, cy - g*2,
                                      card_w + g*4, card_h + g*4};
                     SDL_RenderFillRect(renderer, &glow);
                 }
                 /* borde sólido encima */
                 SDL_SetRenderDrawColor(renderer, 0, 255, 160, 80);
-                SDL_Rect b0 = {cx-2,      cy-2,      card_w+4, 2};
-                SDL_Rect b1 = {cx-2,      cy+card_h, card_w+4, 2};
-                SDL_Rect b2 = {cx-2,      cy-2,      2, card_h+4};
-                SDL_Rect b3 = {cx+card_w, cy-2,      2, card_h+4};
+                SDL_FRect b0 = {cx-2,      cy-2,      card_w+4, 2};
+                SDL_FRect b1 = {cx-2,      cy+card_h, card_w+4, 2};
+                SDL_FRect b2 = {cx-2,      cy-2,      2, card_h+4};
+                SDL_FRect b3 = {cx+card_w, cy-2,      2, card_h+4};
                 SDL_RenderFillRect(renderer, &b0);
                 SDL_RenderFillRect(renderer, &b1);
                 SDL_RenderFillRect(renderer, &b2);
@@ -497,7 +497,7 @@ screenLvLs(SDL_Renderer *renderer, TTF_Font *fuente, int ancho, int alto)
             }
 
             /* borde superior de color */
-            SDL_Rect borde = {cx, cy, card_w, 4};
+            SDL_FRect borde = {cx, cy, card_w, 4};
             if (!desbloqueado)
                 SDL_SetRenderDrawColor(renderer, 55, 55, 60, 255);
             else if (completado)
@@ -550,7 +550,7 @@ screenLvLs(SDL_Renderer *renderer, TTF_Font *fuente, int ancho, int alto)
                 dibujadoTextoColor(renderer, fuente, "Dificultad:",
                                    cx, dif_y, c_lbl);
                 int lbl_w2 = 0;
-                TTF_SizeUTF8(fuente, "Dificultad: ", &lbl_w2, NULL);
+                TTF_GetStringSize(fuente, "Dificultad: ", 0, &lbl_w2, NULL);
                 dibujar_estrellas(renderer, estrellas,
                                   cx + lbl_w2 + 10, dif_y + 20, 6, c_dif);
 
@@ -578,7 +578,7 @@ screenLvLs(SDL_Renderer *renderer, TTF_Font *fuente, int ancho, int alto)
                          my >= rbtn_y && my <= rbtn_y + rbtn_h;
             SDL_SetRenderDrawColor(renderer,
                 rhover ? 160 : 100, rhover ? 20 : 12, rhover ? 20 : 12, 255);
-            SDL_Rect rbtn = {rbtn_x, rbtn_y, rbtn_w, rbtn_h};
+            SDL_FRect rbtn = {rbtn_x, rbtn_y, rbtn_w, rbtn_h};
             SDL_RenderFillRect(renderer, &rbtn);
             SDL_Color c_reset = {255, 160, 160, 255};
             dibujadoTextoColor(renderer, fuente, "Resetear progreso",
@@ -599,14 +599,14 @@ screenLvLs(SDL_Renderer *renderer, TTF_Font *fuente, int ancho, int alto)
             if (bar_h < 20) bar_h = 20;
             int bar_y = (int)((long long)scroll_y * (alto - bar_h) / scroll_max);
             SDL_SetRenderDrawColor(renderer, 60, 60, 80, 200);
-            SDL_Rect bar_bg = {bar_x, 0, 5, alto};
+            SDL_FRect bar_bg = {bar_x, 0, 5, alto};
             SDL_RenderFillRect(renderer, &bar_bg);
             SDL_SetRenderDrawColor(renderer, 120, 120, 160, 255);
-            SDL_Rect bar = {bar_x, bar_y, 5, bar_h};
+            SDL_FRect bar = {bar_x, bar_y, 5, bar_h};
             SDL_RenderFillRect(renderer, &bar);
         }
 
-        SDL_RenderSetClipRect(renderer, NULL);
+        ui_clip(renderer, NULL);
         presente(renderer);
         SDL_Delay(16);
     }
@@ -684,13 +684,13 @@ niveles_refrescar(NivelesState *s)
 }
 
 void
-niveles_evento(NivelesState *s, SDL_Event *e, SDL_Rect area)
+niveles_evento(NivelesState *s, SDL_Event *e, SDL_FRect area)
 {
     int total = s->total;
     int cols  = 3;
 
-    if (e->type == SDL_KEYDOWN) {
-        switch (e->key.keysym.sym) {
+    if (e->type == SDL_EVENT_KEY_DOWN) {
+        switch (e->key.key) {
             case SDLK_LEFT: {
                 int sig = s->seleccionado - 1;
                 while (sig >= 0 && !nivel_desbloqueado(sig + 1)) sig--;
@@ -727,11 +727,11 @@ niveles_evento(NivelesState *s, SDL_Event *e, SDL_Rect area)
             default: break;
         }
     }
-    if (e->type == SDL_MOUSEWHEEL) {
+    if (e->type == SDL_EVENT_MOUSE_WHEEL) {
         s->scroll_y -= e->wheel.y * 45;
         if (s->scroll_y < 0) s->scroll_y = 0;
     }
-    if (e->type == SDL_MOUSEBUTTONDOWN && e->button.button == SDL_BUTTON_LEFT) {
+    if (e->type == SDL_EVENT_MOUSE_BUTTON_DOWN && e->button.button == SDL_BUTTON_LEFT) {
         s->clicked = 1;
         s->click_x = e->button.x - area.x;
         s->click_y = e->button.y - area.y;
@@ -739,7 +739,7 @@ niveles_evento(NivelesState *s, SDL_Event *e, SDL_Rect area)
 }
 
 void
-niveles_dibujar(NivelesState *s, SDL_Renderer *renderer, TTF_Font *fuente, SDL_Rect area)
+niveles_dibujar(NivelesState *s, SDL_Renderer *renderer, TTF_Font *fuente, SDL_FRect area)
 {
     int ancho = area.w, alto = area.h;
     int total = s->total;
@@ -768,20 +768,20 @@ niveles_dibujar(NivelesState *s, SDL_Renderer *renderer, TTF_Font *fuente, SDL_R
         if (s->scroll_y > scroll_max) s->scroll_y = scroll_max;
     }
 
-    SDL_RenderSetViewport(renderer, &area);
-    SDL_RenderSetClipRect(renderer, NULL);
+    ui_viewport(renderer, &area);
+    ui_clip(renderer, NULL);
 
     /* fondo */
     SDL_SetRenderDrawColor(renderer, 15, 15, 22, 255);
-    SDL_RenderFillRect(renderer, &(SDL_Rect){0, 0, ancho, alto});
+    SDL_RenderFillRect(renderer, &(SDL_FRect){0, 0, ancho, alto});
 
     /* mouse relativo al area */
     int mx, my;
-    SDL_GetMouseState(&mx, &my);
+    ui_mouse(&mx, &my);
     mx -= area.x; my -= area.y;
 
     /* fondo animado */
-    int lh = TTF_FontHeight(fuente) + 3;
+    int lh = TTF_GetFontHeight(fuente) + 3;
     bg_editor_tick(&s->bg_izq);
     bg_editor_tick(&s->bg_der);
     bg_editor_dibujar(renderer, fuente, &s->bg_izq, 8,          95, lh);
@@ -791,7 +791,7 @@ niveles_dibujar(NivelesState *s, SDL_Renderer *renderer, TTF_Font *fuente, SDL_R
     SDL_Color c_glow = {0, 255, 160, 255};
     int etapa_w = 0;
     if (s->fuente_grande)
-        TTF_SizeUTF8(s->fuente_grande, "ETAPA 1", &etapa_w, NULL);
+        TTF_GetStringSize(s->fuente_grande, "ETAPA 1", 0, &etapa_w, NULL);
     int etapa_x = (ancho - etapa_w) / 2;
     int etapa_y = 8;
     if (s->fuente_grande) {
@@ -838,7 +838,7 @@ niveles_dibujar(NivelesState *s, SDL_Renderer *renderer, TTF_Font *fuente, SDL_R
         int enfocado     = (i == s->seleccionado);
         int es_actual    = (i == nivel_actual);
 
-        SDL_Rect card = {cx, cy, card_w, card_h};
+        SDL_FRect card = {cx, cy, card_w, card_h};
 
         /* fondo tarjeta */
         if (!desbloqueado) {
@@ -858,19 +858,19 @@ niveles_dibujar(NivelesState *s, SDL_Renderer *renderer, TTF_Font *fuente, SDL_R
             for (int g = 4; g >= 1; g--) {
                 Uint8 a = (Uint8)(12 / g);
                 SDL_SetRenderDrawColor(renderer, 0, 255, 160, a);
-                SDL_Rect glow = {cx-g*2, cy-g*2, card_w+g*4, card_h+g*4};
+                SDL_FRect glow = {cx-g*2, cy-g*2, card_w+g*4, card_h+g*4};
                 SDL_RenderFillRect(renderer, &glow);
             }
             SDL_SetRenderDrawColor(renderer, 0, 255, 160, 80);
-            SDL_RenderFillRect(renderer, &(SDL_Rect){cx-2,      cy-2,      card_w+4, 2});
-            SDL_RenderFillRect(renderer, &(SDL_Rect){cx-2,      cy+card_h, card_w+4, 2});
-            SDL_RenderFillRect(renderer, &(SDL_Rect){cx-2,      cy-2,      2, card_h+4});
-            SDL_RenderFillRect(renderer, &(SDL_Rect){cx+card_w, cy-2,      2, card_h+4});
+            SDL_RenderFillRect(renderer, &(SDL_FRect){cx-2,      cy-2,      card_w+4, 2});
+            SDL_RenderFillRect(renderer, &(SDL_FRect){cx-2,      cy+card_h, card_w+4, 2});
+            SDL_RenderFillRect(renderer, &(SDL_FRect){cx-2,      cy-2,      2, card_h+4});
+            SDL_RenderFillRect(renderer, &(SDL_FRect){cx+card_w, cy-2,      2, card_h+4});
             SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_NONE);
         }
 
         /* borde superior de color */
-        SDL_Rect borde = {cx, cy, card_w, 4};
+        SDL_FRect borde = {cx, cy, card_w, 4};
         if (!desbloqueado)
             SDL_SetRenderDrawColor(renderer, 55,  55,  60,  255);
         else if (completado)
@@ -925,7 +925,7 @@ niveles_dibujar(NivelesState *s, SDL_Renderer *renderer, TTF_Font *fuente, SDL_R
             int dif_y = cy + card_h - 90;
             dibujadoTextoColor(renderer, fuente, "Dificultad:", cx, dif_y, c_lbl);
             int lbl_w2 = 0;
-            TTF_SizeUTF8(fuente, "Dificultad: ", &lbl_w2, NULL);
+            TTF_GetStringSize(fuente, "Dificultad: ", 0, &lbl_w2, NULL);
             dibujar_estrellas(renderer, estrellas, cx + lbl_w2 + 10, dif_y + 20, 6, c_dif);
 
             dibujadoTextoColor(renderer, fuente, "100 pts", cx, cy + card_h - 38, c_pts);
@@ -948,7 +948,7 @@ niveles_dibujar(NivelesState *s, SDL_Renderer *renderer, TTF_Font *fuente, SDL_R
         int rhover = mx >= rbtn_x && mx < rbtn_x+rbtn_w &&
                      my >= rbtn_y && my < rbtn_y+rbtn_h;
         SDL_SetRenderDrawColor(renderer, rhover?160:100, rhover?20:12, rhover?20:12, 255);
-        SDL_RenderFillRect(renderer, &(SDL_Rect){rbtn_x, rbtn_y, rbtn_w, rbtn_h});
+        SDL_RenderFillRect(renderer, &(SDL_FRect){rbtn_x, rbtn_y, rbtn_w, rbtn_h});
         SDL_Color c_reset = {255, 160, 160, 255};
         dibujadoTextoColor(renderer, fuente, "Resetear progreso",
                            rbtn_x, rbtn_y, c_reset);
@@ -967,11 +967,11 @@ niveles_dibujar(NivelesState *s, SDL_Renderer *renderer, TTF_Font *fuente, SDL_R
         if (bar_h < 20) bar_h = 20;
         int bar_y = (int)((long long)s->scroll_y * (alto - bar_h) / scroll_max);
         SDL_SetRenderDrawColor(renderer, 60, 60, 80, 200);
-        SDL_RenderFillRect(renderer, &(SDL_Rect){bar_x, 0, 5, alto});
+        SDL_RenderFillRect(renderer, &(SDL_FRect){bar_x, 0, 5, alto});
         SDL_SetRenderDrawColor(renderer, 120, 120, 160, 255);
-        SDL_RenderFillRect(renderer, &(SDL_Rect){bar_x, bar_y, 5, bar_h});
+        SDL_RenderFillRect(renderer, &(SDL_FRect){bar_x, bar_y, 5, bar_h});
     }
 
     s->clicked = 0;
-    SDL_RenderSetViewport(renderer, NULL);
+    ui_viewport(renderer, NULL);
 }

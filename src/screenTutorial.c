@@ -1,5 +1,5 @@
-#include <SDL2/SDL.h>
-#include <SDL2/SDL_ttf.h>
+#include <SDL3/SDL.h>
+#include <SDL3_ttf/SDL_ttf.h>
 #include <stdio.h>
 #include <string.h>
 #include "ui.h"
@@ -74,22 +74,25 @@ static SDL_Texture *
 crear_tex(SDL_Renderer *r, TTF_Font *f, const char *txt,
           SDL_Color col, int wrap, int *ow, int *oh, SDL_Color bg)
 {
-    SDL_Surface *tsup = TTF_RenderUTF8_Blended_Wrapped(
-                            f, txt, col, wrap > 0 ? (Uint32)wrap : 0);
+    SDL_Surface *tsup = TTF_RenderText_Blended_Wrapped(
+                            f, txt, 0, col, wrap > 0 ? wrap : 0);
     if (!tsup) { *ow = 0; *oh = LINE_H; return NULL; }
 
     /* superficie opaca del mismo tamaño en color de fondo */
-    SDL_Surface *bsup = SDL_CreateRGBSurfaceWithFormat(
-                            0, tsup->w, tsup->h, 24, SDL_PIXELFORMAT_RGB24);
-    SDL_FillRect(bsup, NULL, SDL_MapRGB(bsup->format, bg.r, bg.g, bg.b));
+    /* SDL3: CreateSurface ya no pide flags ni profundidad de bits: el
+       formato de pixel solo ya dice cuantos bits tiene cada canal.
+       Y SDL_MapRGB toma la SURFACE, no un puntero a su formato, porque
+       en SDL3 el formato es un enum y no una estructura. */
+    SDL_Surface *bsup = SDL_CreateSurface(tsup->w, tsup->h, SDL_PIXELFORMAT_RGB24);
+    SDL_FillSurfaceRect(bsup, NULL, SDL_MapSurfaceRGB(bsup, bg.r, bg.g, bg.b));
 
     /* compositar texto (con alpha) sobre el fondo opaco */
     SDL_BlitSurface(tsup, NULL, bsup, NULL);
-    SDL_FreeSurface(tsup);
+    SDL_DestroySurface(tsup);
 
     SDL_Texture *tex = SDL_CreateTextureFromSurface(r, bsup);
     *ow = bsup->w; *oh = bsup->h;
-    SDL_FreeSurface(bsup);
+    SDL_DestroySurface(bsup);
 
     /* sin blend: blit = memcpy, sin operaciones por pixel */
     if (tex) SDL_SetTextureBlendMode(tex, SDL_BLENDMODE_NONE);
@@ -191,8 +194,8 @@ static void
 blit(SDL_Renderer *r, SDL_Texture *t, int x, int y, int w, int h)
 {
     if (!t) return;
-    SDL_Rect dst = { x, y, w, h };
-    SDL_RenderCopy(r, t, NULL, &dst);
+    SDL_FRect dst = { x, y, w, h };
+    SDL_RenderTexture(r, t, NULL, &dst);
 }
 
 /* ── Pantalla principal ──────────────────────────────────── */
@@ -218,9 +221,9 @@ screenTutorial(SDL_Renderer *renderer, TTF_Font *fuente, int ancho, int alto)
         int clicked = 0, click_x = 0, click_y = 0;
 
         while (SDL_PollEvent(&evento)) {
-            if (evento.type == SDL_QUIT) return 0;
-            if (evento.type == SDL_KEYDOWN) {
-                switch (evento.key.keysym.sym) {
+            if (evento.type == SDL_EVENT_QUIT) return 0;
+            if (evento.type == SDL_EVENT_KEY_DOWN) {
+                switch (evento.key.key) {
                     case SDLK_ESCAPE:
                     case SDLK_RETURN:
                     case SDLK_KP_ENTER:
@@ -234,18 +237,18 @@ screenTutorial(SDL_Renderer *renderer, TTF_Font *fuente, int ancho, int alto)
                     default: break;
                 }
             }
-            if (evento.type == SDL_MOUSEWHEEL) {
+            if (evento.type == SDL_EVENT_MOUSE_WHEEL) {
                 scroll_y -= evento.wheel.y * 45;
                 if (scroll_y < 0) scroll_y = 0;
             }
-            if (evento.type == SDL_MOUSEBUTTONDOWN &&
+            if (evento.type == SDL_EVENT_MOUSE_BUTTON_DOWN &&
                 evento.button.button == SDL_BUTTON_LEFT) {
                 clicked = 1; click_x = evento.button.x; click_y = evento.button.y;
             }
         }
 
         /* scroll fluido con estado del teclado — sin delay del SO */
-        const Uint8 *keys = SDL_GetKeyboardState(NULL);
+        const bool *keys = SDL_GetKeyboardState(NULL);
         if (keys[SDL_SCANCODE_DOWN]) scroll_y += 10;
         if (keys[SDL_SCANCODE_UP])   scroll_y -= 10;
 
@@ -258,8 +261,8 @@ screenTutorial(SDL_Renderer *renderer, TTF_Font *fuente, int ancho, int alto)
         SDL_SetRenderDrawColor(renderer, 12, 12, 20, 255);
         SDL_RenderClear(renderer);
 
-        SDL_Rect clip = { 0, HEADER_H, ancho, alto - HEADER_H - FOOTER_H };
-        SDL_RenderSetClipRect(renderer, &clip);
+        SDL_FRect clip = { 0, HEADER_H, ancho, alto - HEADER_H - FOOTER_H };
+        ui_clip(renderer, &clip);
 
         int cy = HEADER_H - scroll_y;
         for (int i = 0; i < n_lineas; i++) {
@@ -273,18 +276,18 @@ screenTutorial(SDL_Renderer *renderer, TTF_Font *fuente, int ancho, int alto)
             /* fondos */
             if (lineas[i].tipo == LIN_SEPARADOR) {
                 SDL_SetRenderDrawColor(renderer, 60, 60, 80, 200);
-                SDL_RenderDrawLine(renderer,
+                SDL_RenderLine(renderer,
                     MARGEN_X, cy + lh / 2, ancho - MARGEN_X, cy + lh / 2);
             } else if (lineas[i].tipo == LIN_CODIGO) {
                 SDL_SetRenderDrawColor(renderer, 22, 22, 32, 255);
-                SDL_Rect bg = { MARGEN_X - 8, cy, ancho - MARGEN_X * 2 + 16, lh };
+                SDL_FRect bg = { MARGEN_X - 8, cy, ancho - MARGEN_X * 2 + 16, lh };
                 SDL_RenderFillRect(renderer, &bg);
             } else if (lineas[i].tipo == LIN_CITA) {
                 SDL_SetRenderDrawColor(renderer, 40, 80, 60, 120);
-                SDL_Rect bg = { MARGEN_X - 8, cy, ancho - MARGEN_X * 2 + 16, lh };
+                SDL_FRect bg = { MARGEN_X - 8, cy, ancho - MARGEN_X * 2 + 16, lh };
                 SDL_RenderFillRect(renderer, &bg);
                 SDL_SetRenderDrawColor(renderer, 60, 200, 100, 255);
-                SDL_Rect barra = { MARGEN_X - 8, cy, 3, lh };
+                SDL_FRect barra = { MARGEN_X - 8, cy, 3, lh };
                 SDL_RenderFillRect(renderer, &barra);
             }
 
@@ -303,21 +306,21 @@ screenTutorial(SDL_Renderer *renderer, TTF_Font *fuente, int ancho, int alto)
             int bar_y = HEADER_H + (int)((long long)scroll_y *
                         (area_h - bar_h) / scroll_max);
             SDL_SetRenderDrawColor(renderer, 50, 50, 70, 200);
-            SDL_Rect bg_bar = { ancho - 6, HEADER_H, 5, area_h };
+            SDL_FRect bg_bar = { ancho - 6, HEADER_H, 5, area_h };
             SDL_RenderFillRect(renderer, &bg_bar);
             SDL_SetRenderDrawColor(renderer, 100, 100, 160, 255);
-            SDL_Rect bar = { ancho - 6, bar_y, 5, bar_h };
+            SDL_FRect bar = { ancho - 6, bar_y, 5, bar_h };
             SDL_RenderFillRect(renderer, &bar);
         }
 
-        SDL_RenderSetClipRect(renderer, NULL);
+        ui_clip(renderer, NULL);
 
         /* ── Header ── */
         SDL_SetRenderDrawColor(renderer, 18, 18, 28, 255);
-        SDL_Rect header = { 0, 0, ancho, HEADER_H };
+        SDL_FRect header = { 0, 0, ancho, HEADER_H };
         SDL_RenderFillRect(renderer, &header);
         SDL_SetRenderDrawColor(renderer, 80, 200, 240, 180);
-        SDL_RenderDrawLine(renderer, 0, HEADER_H - 1, ancho, HEADER_H - 1);
+        SDL_RenderLine(renderer, 0, HEADER_H - 1, ancho, HEADER_H - 1);
         blit(renderer, tex_titulo, MARGEN_X, 8,  tw_titulo, th_titulo);
         blit(renderer, tex_hint,   MARGEN_X, 30, tw_hint,   th_hint);
 
@@ -326,19 +329,19 @@ screenTutorial(SDL_Renderer *renderer, TTF_Font *fuente, int ancho, int alto)
         int btn_x = ancho - btn_w - MARGEN_X;
         int btn_y = alto - FOOTER_H + (FOOTER_H - btn_h) / 2;
         int mx, my;
-        SDL_GetMouseState(&mx, &my);
+        ui_mouse(&mx, &my);
         int hover = mx >= btn_x && mx <= btn_x + btn_w &&
                     my >= btn_y && my <= btn_y + btn_h;
 
         SDL_SetRenderDrawColor(renderer, 18, 18, 28, 255);
-        SDL_Rect footer = { 0, alto - FOOTER_H, ancho, FOOTER_H };
+        SDL_FRect footer = { 0, alto - FOOTER_H, ancho, FOOTER_H };
         SDL_RenderFillRect(renderer, &footer);
         SDL_SetRenderDrawColor(renderer, 80, 200, 240, 180);
-        SDL_RenderDrawLine(renderer, 0, alto - FOOTER_H, ancho, alto - FOOTER_H);
+        SDL_RenderLine(renderer, 0, alto - FOOTER_H, ancho, alto - FOOTER_H);
 
         SDL_SetRenderDrawColor(renderer,
             hover ? 40 : 20, hover ? 160 : 110, hover ? 200 : 160, 255);
-        SDL_Rect btn = { btn_x, btn_y, btn_w, btn_h };
+        SDL_FRect btn = { btn_x, btn_y, btn_w, btn_h };
         SDL_RenderFillRect(renderer, &btn);
         blit(renderer, tex_btn, btn_x + 10, btn_y + (btn_h - th_btn) / 2,
              tw_btn, th_btn);

@@ -1,5 +1,5 @@
-#include <SDL2/SDL.h>
-#include <SDL2/SDL_ttf.h>
+#include <SDL3/SDL.h>
+#include <SDL3_ttf/SDL_ttf.h>
 #include <stdio.h>
 #include <string.h>
 #include "ui.h"
@@ -33,9 +33,9 @@ screenSoluciones(SDL_Renderer *renderer, TTF_Font *fuente, int ancho, int alto){
 
     while (1) {
         while (SDL_PollEvent(&evento)) {
-            if (evento.type == SDL_QUIT) return 0;
-            if (evento.type == SDL_KEYDOWN)
-                if (evento.key.keysym.sym == SDLK_ESCAPE) return 0;
+            if (evento.type == SDL_EVENT_QUIT) return 0;
+            if (evento.type == SDL_EVENT_KEY_DOWN)
+                if (evento.key.key == SDLK_ESCAPE) return 0;
         }
         SDL_SetRenderDrawColor(renderer, 20, 20, 30, 255);
         SDL_RenderClear(renderer);
@@ -49,7 +49,7 @@ screenSoluciones(SDL_Renderer *renderer, TTF_Font *fuente, int ancho, int alto){
         
         
 
-        SDL_Rect card = {card_x, card_y, card_w, card_h};
+        SDL_FRect card = {card_x, card_y, card_w, card_h};
         SDL_SetRenderDrawColor(renderer, 40, 80, 120, 255);
         SDL_RenderFillRect(renderer, &card);
 
@@ -57,13 +57,13 @@ screenSoluciones(SDL_Renderer *renderer, TTF_Font *fuente, int ancho, int alto){
         }
 
         // Boton con el SALIR
-        SDL_Rect btn_salir = {10, alto - 50, 100, 35};
+        SDL_FRect btn_salir = {10, alto - 50, 100, 35};
         SDL_SetRenderDrawColor(renderer, 0, 120, 200, 255); // azul mas claro
         SDL_RenderFillRect(renderer, &btn_salir);
         dibujadoTexto(renderer, fuente, "Salir", 10, alto - 50);
 
         // Click en salir
-        if (evento.type == SDL_MOUSEBUTTONDOWN) {
+        if (evento.type == SDL_EVENT_MOUSE_BUTTON_DOWN) {
             int cx = evento.button.x;
             int cy = evento.button.y;
             if (cx >= 10 && cx <= 110 && cy >= alto - 50 && cy <= alto - 15)

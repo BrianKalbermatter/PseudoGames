@@ -8,11 +8,14 @@ OUTPUT="pseudogames-linux.tar.gz"
 # Crear saves/ vacio si no existe
 mkdir -p saves
 
-# Copiar libs SDL2 necesarias
+# Copiar libs SDL3 necesarias.
+# Se resuelve el symlink con -L: adentro del tar tiene que ir el archivo
+# real, no un enlace que apunte a /usr/lib de la maquina que empaqueto.
 mkdir -p lib
-cp /usr/lib/libSDL2-2.0.so.0     lib/
-cp /usr/lib/libSDL2_ttf-2.0.so.0  lib/
-cp /usr/lib/libSDL2_mixer-2.0.so.0 lib/
+cp -L /usr/lib/libSDL3.so.0       lib/
+cp -L /usr/lib/libSDL3_ttf.so.0   lib/
+cp -L /usr/lib/libSDL3_mixer.so.0 lib/
+cp -L /usr/lib/libSDL3_image.so.0 lib/
 
 echo "Empaquetando $OUTPUT..."
 

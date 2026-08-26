@@ -6,7 +6,7 @@
 #include "screenCEditor.h"
 #include "screenPJ.h"
 #include "pomodoro_bg.h"
-#include <SDL2/SDL_image.h>
+#include <SDL3_image/SDL_image.h>
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -20,12 +20,12 @@
 static void
 sh_text(SDL_Renderer *r, TTF_Font *f, const char *txt, int x, int y, SDL_Color c)
 {
-    SDL_Surface *s = TTF_RenderUTF8_Blended(f, txt, c);
+    SDL_Surface *s = TTF_RenderText_Blended(f, txt, 0, c);
     if (!s) return;
     SDL_Texture *t = SDL_CreateTextureFromSurface(r, s);
-    SDL_Rect dst   = {x, y, s->w, s->h};
-    SDL_RenderCopy(r, t, NULL, &dst);
-    SDL_FreeSurface(s);
+    SDL_FRect dst   = {x, y, s->w, s->h};
+    SDL_RenderTexture(r, t, NULL, &dst);
+    SDL_DestroySurface(s);
     SDL_DestroyTexture(t);
 }
 
@@ -33,18 +33,18 @@ static void
 sh_hline(SDL_Renderer *r, int x, int y, int w, SDL_Color c)
 {
     SDL_SetRenderDrawColor(r, c.r, c.g, c.b, c.a);
-    SDL_RenderDrawLine(r, x, y, x + w - 1, y);
+    SDL_RenderLine(r, x, y, x + w - 1, y);
 }
 
 static void
 sh_vline(SDL_Renderer *r, int x, int y, int h, SDL_Color c)
 {
     SDL_SetRenderDrawColor(r, c.r, c.g, c.b, c.a);
-    SDL_RenderDrawLine(r, x, y, x, y + h - 1);
+    SDL_RenderLine(r, x, y, x, y + h - 1);
 }
 
 static void
-sh_fill(SDL_Renderer *r, SDL_Rect rect, SDL_Color c)
+sh_fill(SDL_Renderer *r, SDL_FRect rect, SDL_Color c)
 {
     SDL_SetRenderDrawColor(r, c.r, c.g, c.b, c.a);
     SDL_RenderFillRect(r, &rect);
@@ -92,10 +92,10 @@ draw_sidebar(ShellCtx *ctx)
     int           h  = ctx->alto;
 
     int mx, my;
-    SDL_GetMouseState(&mx, &my);
+    ui_mouse(&mx, &my);
 
     /* Fondo del sidebar */
-    sh_fill(r, (SDL_Rect){0, 0, sw, h}, COL_SIDEBAR);
+    sh_fill(r, (SDL_FRect){0, 0, sw, h}, COL_SIDEBAR);
 
     /* Borde derecho */
     sh_vline(r, sw - 1, 0, h, COL_SEP);
@@ -103,7 +103,7 @@ draw_sidebar(ShellCtx *ctx)
     /* ── Sidebar colapsado: solo la flecha > ── */
     if (!ctx->sidebar_abierto) {
         int tw, th;
-        TTF_SizeUTF8(f, ">", &tw, &th);
+        TTF_GetStringSize(f, ">", 0, &tw, &th);
         int ax = (sw - tw) / 2;
         int ay = h / 2 - th / 2;
         int hover = (mx >= 0 && mx < sw && my >= 0 && my < h);
@@ -117,15 +117,15 @@ draw_sidebar(ShellCtx *ctx)
     int logo_y  = 10;
     int icon_sz = 16;
     if (ctx->logo) {
-        SDL_Rect dst = {14, logo_y, icon_sz, icon_sz};
-        SDL_RenderCopy(r, ctx->logo, NULL, &dst);
+        SDL_FRect dst = {14, logo_y, icon_sz, icon_sz};
+        SDL_RenderTexture(r, ctx->logo, NULL, &dst);
     }
     sh_text(r, f, "PSEUDOGAMES", 14 + icon_sz + 4, logo_y, COL_ACTIVE);
 
     /* Flecha < para colapsar (esquina superior derecha) */
     {
         int tw, th;
-        TTF_SizeUTF8(f, "<", &tw, &th);
+        TTF_GetStringSize(f, "<", 0, &tw, &th);
         int ax = sw - tw - 10;
         int ay = logo_y;
         int hover = (mx >= ax - 4 && mx <= ax + tw + 4 &&
@@ -167,14 +167,14 @@ draw_sidebar(ShellCtx *ctx)
 
         /* Barra izquierda neon verde si el tab esta activo */
         if (is_active) {
-            sh_fill(r, (SDL_Rect){0, iy, 2, item_h}, COL_ACCENT);
+            sh_fill(r, (SDL_FRect){0, iy, 2, item_h}, COL_ACCENT);
         }
 
         /* Fondo hover sutil */
         if (hover && !is_active) {
             SDL_SetRenderDrawBlendMode(r, SDL_BLENDMODE_BLEND);
             SDL_SetRenderDrawColor(r, 255, 255, 255, 10);
-            SDL_Rect hbg = {1, iy, sw - 2, item_h};
+            SDL_FRect hbg = {1, iy, sw - 2, item_h};
             SDL_RenderFillRect(r, &hbg);
             SDL_SetRenderDrawBlendMode(r, SDL_BLENDMODE_NONE);
         }
@@ -202,13 +202,13 @@ draw_sidebar(ShellCtx *ctx)
  * ════════════════════════════════════════════════════════════════════════════ */
 
 static void
-draw_tab_bar(ShellCtx *ctx, SDL_Rect bar)
+draw_tab_bar(ShellCtx *ctx, SDL_FRect bar)
 {
     SDL_Renderer *r = ctx->renderer;
     TTF_Font     *f = ctx->fuente;
 
     int mx, my;
-    SDL_GetMouseState(&mx, &my);
+    ui_mouse(&mx, &my);
 
     /* Fondo de la barra */
     sh_fill(r, bar, (SDL_Color){10, 10, 10, 255});
@@ -224,7 +224,7 @@ draw_tab_bar(ShellCtx *ctx, SDL_Rect bar)
 
     for (int i = 0; i < ctx->n_tabs; i++) {
         int tw, th;
-        TTF_SizeUTF8(f, ctx->tabs[i].nombre, &tw, &th);
+        TTF_GetStringSize(f, ctx->tabs[i].nombre, 0, &tw, &th);
 
         int close_w = 14;
         int tab_w   = pad_x + tw + 6 + close_w + pad_x;
@@ -235,7 +235,7 @@ draw_tab_bar(ShellCtx *ctx, SDL_Rect bar)
 
         /* Fondo del tab activo */
         if (is_active) {
-            sh_fill(r, (SDL_Rect){tx, bar.y, tab_w, tab_h}, COL_BG);
+            sh_fill(r, (SDL_FRect){tx, bar.y, tab_w, tab_h}, COL_BG);
         }
 
         /* Linea inferior: verde neon si activo, separador si no */
@@ -244,7 +244,7 @@ draw_tab_bar(ShellCtx *ctx, SDL_Rect bar)
         } else {
             SDL_SetRenderDrawColor(r, COL_SEP.r, COL_SEP.g, COL_SEP.b, 255);
         }
-        SDL_RenderDrawLine(r, tx, bar.y + tab_h - 1, tx + tab_w - 2, bar.y + tab_h - 1);
+        SDL_RenderLine(r, tx, bar.y + tab_h - 1, tx + tab_w - 2, bar.y + tab_h - 1);
 
         /* Separador derecho del tab */
         sh_vline(r, tx + tab_w - 1, bar.y + 4, tab_h - 8, COL_SEP);
@@ -372,7 +372,7 @@ sidebar_hit(ShellCtx *ctx, int cx, int cy)
 /* Retorna el indice del tab clickeado, -1 si nada.
  * *es_close = 1 si se hizo click en el boton × */
 static int
-tabbar_hit(ShellCtx *ctx, int px, int py, SDL_Rect bar, int *es_close)
+tabbar_hit(ShellCtx *ctx, int px, int py, SDL_FRect bar, int *es_close)
 {
     *es_close = 0;
     if (py < bar.y || py >= bar.y + bar.h) return -1;
@@ -383,7 +383,7 @@ tabbar_hit(ShellCtx *ctx, int px, int py, SDL_Rect bar, int *es_close)
 
     for (int i = 0; i < ctx->n_tabs; i++) {
         int tw;
-        TTF_SizeUTF8(ctx->fuente, ctx->tabs[i].nombre, &tw, NULL);
+        TTF_GetStringSize(ctx->fuente, ctx->tabs[i].nombre, 0, &tw, NULL);
         int close_w = 14;
         int tab_w   = pad_x + tw + 6 + close_w + pad_x;
 
@@ -402,7 +402,7 @@ tabbar_hit(ShellCtx *ctx, int px, int py, SDL_Rect bar, int *es_close)
  * ════════════════════════════════════════════════════════════════════════════ */
 
 static void
-draw_welcome(ShellCtx *ctx, SDL_Rect area)
+draw_welcome(ShellCtx *ctx, SDL_FRect area)
 {
     SDL_Renderer *r = ctx->renderer;
     TTF_Font     *f = ctx->fuente;
@@ -412,13 +412,13 @@ draw_welcome(ShellCtx *ctx, SDL_Rect area)
 
     int tw, th;
 
-    TTF_SizeUTF8(f, titulo, &tw, &th);
+    TTF_GetStringSize(f, titulo, 0, &tw, &th);
     sh_text(r, f, titulo,
         area.x + (area.w - tw) / 2,
         area.y + area.h / 2 - th - 10,
         COL_ACCENT);
 
-    TTF_SizeUTF8(f, sub, &tw, &th);
+    TTF_GetStringSize(f, sub, 0, &tw, &th);
     sh_text(r, f, sub,
         area.x + (area.w - tw) / 2,
         area.y + area.h / 2 + 10,
@@ -434,7 +434,7 @@ draw_welcome(ShellCtx *ctx, SDL_Rect area)
  *  El patron que se repite en cada panel real:
  *    init    → malloc del estado, cargar recursos
  *    event   → procesar teclado/mouse dentro del area
- *    draw    → SDL_RenderSetClipRect + dibujar + SDL_RenderSetClipRect(NULL)
+ *    draw    → SDL_SetRenderClipRect + dibujar + ui_clip(NULL)
  *    cleanup → liberar texturas, free del estado
  * ════════════════════════════════════════════════════════════════════════════ */
 
@@ -442,18 +442,30 @@ static void panel_noop_init   (ShellCtx *ctx, Tab *tab)              { (void)ctx
 static void panel_noop_event  (ShellCtx *ctx, Tab *tab, SDL_Event *e){ (void)ctx; (void)tab; (void)e; }
 static void panel_noop_cleanup(ShellCtx *ctx, Tab *tab)              { (void)ctx; (void)tab; }
 
+/* Puente temporal al editorBim.
+   Ese archivo lo mantiene Brian y todavia dibuja con SDL_Rect (enteros).
+   El resto del shell ya pasó a SDL_FRect, que es lo que pide SDL3 para
+   dibujar. Cuando editorBim.c migre, se borra este wrapper y se vuelve a
+   asignar editor_bim_draw directo en la tabla de paneles. */
 static void
-panel_placeholder_draw(ShellCtx *ctx, Tab *tab, SDL_Rect area)
+editor_bim_draw_panel(ShellCtx *ctx, Tab *tab, SDL_FRect area)
+{
+    SDL_Rect ir = { (int)area.x, (int)area.y, (int)area.w, (int)area.h };
+    editor_bim_draw(ctx, tab, ir);
+}
+
+static void
+panel_placeholder_draw(ShellCtx *ctx, Tab *tab, SDL_FRect area)
 {
     SDL_Renderer *r = ctx->renderer;
     TTF_Font     *f = ctx->fuente;
 
-    SDL_RenderSetClipRect(r, &area);
+    ui_clip(r, &area);
 
     int tw, th;
 
     /* Nombre del panel centrado */
-    TTF_SizeUTF8(f, tab->nombre, &tw, &th);
+    TTF_GetStringSize(f, tab->nombre, 0, &tw, &th);
     sh_text(r, f, tab->nombre,
         area.x + (area.w - tw) / 2,
         area.y + area.h / 2 - th - 8,
@@ -461,13 +473,13 @@ panel_placeholder_draw(ShellCtx *ctx, Tab *tab, SDL_Rect area)
 
     /* Subtitulo */
     const char *sub = "En construccion...";
-    TTF_SizeUTF8(f, sub, &tw, &th);
+    TTF_GetStringSize(f, sub, 0, &tw, &th);
     sh_text(r, f, sub,
         area.x + (area.w - tw) / 2,
         area.y + area.h / 2 + 8,
         COL_TEXT);
 
-    SDL_RenderSetClipRect(r, NULL);
+    ui_clip(r, NULL);
 }
 
 /* ════════════════════════════════════════════════════════════════════════════
@@ -478,27 +490,27 @@ panel_placeholder_draw(ShellCtx *ctx, Tab *tab, SDL_Rect area)
  * ════════════════════════════════════════════════════════════════════════════ */
 
 static void
-draw_launcher(ShellCtx *ctx, SDL_Rect area,
+draw_launcher(ShellCtx *ctx, SDL_FRect area,
               const char *titulo, const char *desc, const char *btn_lbl,
               int *btn_clicked)
 {
     SDL_Renderer *r = ctx->renderer;
     TTF_Font     *f = ctx->fuente;
     int mx, my;
-    SDL_GetMouseState(&mx, &my);
+    ui_mouse(&mx, &my);
 
-    SDL_RenderSetClipRect(r, &area);
+    ui_clip(r, &area);
 
     /* Titulo */
     int tw, th;
-    TTF_SizeUTF8(f, titulo, &tw, &th);
+    TTF_GetStringSize(f, titulo, 0, &tw, &th);
     sh_text(r, f, titulo,
         area.x + (area.w - tw) / 2,
         area.y + area.h / 2 - 60,
         COL_ACCENT);
 
     /* Descripcion */
-    TTF_SizeUTF8(f, desc, &tw, &th);
+    TTF_GetStringSize(f, desc, 0, &tw, &th);
     sh_text(r, f, desc,
         area.x + (area.w - tw) / 2,
         area.y + area.h / 2 - 30,
@@ -515,18 +527,18 @@ draw_launcher(ShellCtx *ctx, SDL_Rect area,
         hover ? COL_ACCENT.r : 20,
         hover ? COL_ACCENT.g : 20,
         hover ? COL_ACCENT.b : 20, 255);
-    SDL_Rect btn = {bx, by, bw, bh};
+    SDL_FRect btn = {bx, by, bw, bh};
     SDL_RenderFillRect(r, &btn);
     SDL_SetRenderDrawColor(r, COL_SEP.r, COL_SEP.g, COL_SEP.b, 255);
-    SDL_RenderDrawRect(r, &btn);
+    SDL_RenderRect(r, &btn);
 
-    TTF_SizeUTF8(f, btn_lbl, &tw, NULL);
+    TTF_GetStringSize(f, btn_lbl, 0, &tw, NULL);
     SDL_Color tc = hover ? COL_BG : COL_TEXT;
     sh_text(r, f, btn_lbl, bx + (bw - tw) / 2, by + 7, tc);
 
-    *btn_clicked = hover && (SDL_GetMouseState(NULL, NULL) & SDL_BUTTON(SDL_BUTTON_LEFT));
+    *btn_clicked = hover && (ui_mouse(NULL, NULL) & SDL_BUTTON_MASK(SDL_BUTTON_LEFT));
 
-    SDL_RenderSetClipRect(r, NULL);
+    ui_clip(r, NULL);
 }
 
 /* ════════════════════════════════════════════════════════════════════════════
@@ -540,14 +552,14 @@ static void
 pomodoro_handle_event(ShellCtx *ctx, Tab *tab, SDL_Event *e)
 {
     (void)tab;
-    if (e->type == SDL_KEYDOWN && e->key.keysym.sym == SDLK_RETURN) {
+    if (e->type == SDL_EVENT_KEY_DOWN && e->key.key == SDLK_RETURN) {
         SDL_GetWindowSize(ctx->ventana, &ctx->ancho, &ctx->alto);
         screenPomodoro(ctx->renderer, ctx->fuente, ctx->ancho, ctx->alto);
     }
 }
 
 static void
-pomodoro_draw(ShellCtx *ctx, Tab *tab, SDL_Rect area)
+pomodoro_draw(ShellCtx *ctx, Tab *tab, SDL_FRect area)
 {
     (void)tab;
     int clicked = 0;
@@ -584,7 +596,7 @@ static void
 doc_handle_event(ShellCtx *ctx, Tab *tab, SDL_Event *e)
 {
     if (!tab->state) return;
-    SDL_Rect area = {
+    SDL_FRect area = {
         ctx->sidebar_w, TAB_BAR_H,
         ctx->ancho - ctx->sidebar_w, ctx->alto - TAB_BAR_H
     };
@@ -592,7 +604,7 @@ doc_handle_event(ShellCtx *ctx, Tab *tab, SDL_Event *e)
 }
 
 static void
-doc_draw(ShellCtx *ctx, Tab *tab, SDL_Rect area)
+doc_draw(ShellCtx *ctx, Tab *tab, SDL_FRect area)
 {
     if (!tab->state) return;
     doc_dibujar((DocState *)tab->state, ctx->renderer, ctx->fuente, area);
@@ -620,13 +632,13 @@ static void
 niveles_handle_event(ShellCtx *ctx, Tab *tab, SDL_Event *e)
 {
     if (!tab->state) return;
-    SDL_Rect area = { ctx->sidebar_w, TAB_BAR_H,
+    SDL_FRect area = { ctx->sidebar_w, TAB_BAR_H,
                       ctx->ancho - ctx->sidebar_w, ctx->alto - TAB_BAR_H };
     niveles_evento((NivelesState *)tab->state, e, area);
 }
 
 static void
-niveles_draw(ShellCtx *ctx, Tab *tab, SDL_Rect area)
+niveles_draw(ShellCtx *ctx, Tab *tab, SDL_FRect area)
 {
     if (!tab->state) return;
     niveles_dibujar((NivelesState *)tab->state, ctx->renderer, ctx->fuente, area);
@@ -671,7 +683,7 @@ typedef struct {
 } ConfigState;
 
 /* Calcular el rect del panel central dentro del area de contenido */
-static SDL_Rect
+static SDL_FRect
 cfg_panel_rect(ShellCtx *ctx)
 {
     int pw = 520, ph = 440;
@@ -679,7 +691,7 @@ cfg_panel_rect(ShellCtx *ctx)
     int cy = TAB_BAR_H;
     int cw = ctx->ancho - ctx->sidebar_w;
     int ch = ctx->alto  - TAB_BAR_H;
-    return (SDL_Rect){
+    return (SDL_FRect){
         cx + (cw - pw) / 2,
         cy + (ch - ph) / 2,
         pw, ph
@@ -712,15 +724,15 @@ static void
 config_handle_event(ShellCtx *ctx, Tab *tab, SDL_Event *e)
 {
     ConfigState *s = (ConfigState *)tab->state;
-    SDL_Rect p     = cfg_panel_rect(ctx);
+    SDL_FRect p     = cfg_panel_rect(ctx);
 
     int track_x  = p.x + 140;
     int track_w  = p.w - 160;
     int handle_w = 14;
     int handle_h = 22;
 
-    if (e->type == SDL_KEYDOWN && s->tab_actual == 0) {
-        switch (e->key.keysym.sym) {
+    if (e->type == SDL_EVENT_KEY_DOWN && s->tab_actual == 0) {
+        switch (e->key.key) {
             case SDLK_UP:
                 s->opcion_sel = (s->opcion_sel - 1 + s->n_opciones) % s->n_opciones;
                 break;
@@ -741,7 +753,7 @@ config_handle_event(ShellCtx *ctx, Tab *tab, SDL_Event *e)
         }
     }
 
-    if (e->type == SDL_MOUSEBUTTONDOWN && e->button.button == SDL_BUTTON_LEFT) {
+    if (e->type == SDL_EVENT_MOUSE_BUTTON_DOWN && e->button.button == SDL_BUTTON_LEFT) {
         int cx = e->button.x;
         int cy = e->button.y;
 
@@ -785,7 +797,7 @@ config_handle_event(ShellCtx *ctx, Tab *tab, SDL_Event *e)
         }
     }
 
-    if (e->type == SDL_MOUSEBUTTONUP && e->button.button == SDL_BUTTON_LEFT) {
+    if (e->type == SDL_EVENT_MOUSE_BUTTON_UP && e->button.button == SDL_BUTTON_LEFT) {
         if (s->drag_vol) {
             config_set_volumen(s->vol);
             config_guardar();
@@ -793,7 +805,7 @@ config_handle_event(ShellCtx *ctx, Tab *tab, SDL_Event *e)
         s->drag_vol = 0;
     }
 
-    if (e->type == SDL_MOUSEMOTION && s->drag_vol) {
+    if (e->type == SDL_EVENT_MOUSE_MOTION && s->drag_vol) {
         s->vol = (e->motion.x - track_x) * 100 / (track_w - handle_w);
         if (s->vol < 0)   s->vol = 0;
         if (s->vol > 100) s->vol = 100;
@@ -803,14 +815,14 @@ config_handle_event(ShellCtx *ctx, Tab *tab, SDL_Event *e)
 
 /* ── config_draw ── */
 static void
-config_draw(ShellCtx *ctx, Tab *tab, SDL_Rect area)
+config_draw(ShellCtx *ctx, Tab *tab, SDL_FRect area)
 {
     ConfigState  *s = (ConfigState *)tab->state;
     SDL_Renderer *r = ctx->renderer;
     TTF_Font     *f = ctx->fuente;
-    SDL_Rect      p = cfg_panel_rect(ctx);
+    SDL_FRect      p = cfg_panel_rect(ctx);
 
-    SDL_RenderSetClipRect(r, &area);
+    ui_clip(r, &area);
 
     /* Fondo del panel */
     SDL_SetRenderDrawBlendMode(r, SDL_BLENDMODE_BLEND);
@@ -820,7 +832,7 @@ config_draw(ShellCtx *ctx, Tab *tab, SDL_Rect area)
 
     /* Borde del panel */
     SDL_SetRenderDrawColor(r, COL_SEP.r, COL_SEP.g, COL_SEP.b, 255);
-    SDL_RenderDrawRect(r, &p);
+    SDL_RenderRect(r, &p);
 
     /* Titulo */
     sh_text(r, f, "Config", p.x + 16, p.y + 14, COL_ACTIVE);
@@ -831,7 +843,7 @@ config_draw(ShellCtx *ctx, Tab *tab, SDL_Rect area)
     int tab0_x = p.x + p.w - tab_w * 2 - 16;
     int tab_y  = p.y + 10;
     int mx, my;
-    SDL_GetMouseState(&mx, &my);
+    ui_mouse(&mx, &my);
 
     for (int t = 0; t < 2; t++) {
         int tx      = tab0_x + t * (tab_w + 4);
@@ -839,16 +851,16 @@ config_draw(ShellCtx *ctx, Tab *tab, SDL_Rect area)
 
         SDL_SetRenderDrawBlendMode(r, SDL_BLENDMODE_BLEND);
         SDL_SetRenderDrawColor(r, is_act ? 30 : 14, is_act ? 30 : 14, is_act ? 30 : 14, 255);
-        SDL_Rect tbr = {tx, tab_y, tab_w, tab_h};
+        SDL_FRect tbr = {tx, tab_y, tab_w, tab_h};
         SDL_RenderFillRect(r, &tbr);
         SDL_SetRenderDrawBlendMode(r, SDL_BLENDMODE_NONE);
 
         SDL_SetRenderDrawColor(r, is_act ? COL_ACCENT.r : COL_SEP.r,
                                   is_act ? COL_ACCENT.g : COL_SEP.g,
                                   is_act ? COL_ACCENT.b : COL_SEP.b, 255);
-        SDL_RenderDrawRect(r, &tbr);
+        SDL_RenderRect(r, &tbr);
 
-        int tlw; TTF_SizeUTF8(f, tab_lbl[t], &tlw, NULL);
+        int tlw; TTF_GetStringSize(f, tab_lbl[t], 0, &tlw, NULL);
         SDL_Color tc = is_act ? COL_ACTIVE : COL_TEXT;
         sh_text(r, f, tab_lbl[t], tx + (tab_w - tlw) / 2, tab_y + 4, tc);
     }
@@ -870,7 +882,7 @@ config_draw(ShellCtx *ctx, Tab *tab, SDL_Rect area)
             if (i == s->opcion_sel || hover_row) {
                 SDL_SetRenderDrawBlendMode(r, SDL_BLENDMODE_BLEND);
                 SDL_SetRenderDrawColor(r, 255, 255, 255, 8);
-                SDL_Rect hbg = {p.x + 8, oy - 8, p.w - 16, 52};
+                SDL_FRect hbg = {p.x + 8, oy - 8, p.w - 16, 52};
                 SDL_RenderFillRect(r, &hbg);
                 SDL_SetRenderDrawBlendMode(r, SDL_BLENDMODE_NONE);
                 if (hover_row) s->opcion_sel = i;
@@ -885,7 +897,7 @@ config_draw(ShellCtx *ctx, Tab *tab, SDL_Rect area)
             sh_text(r, f, "<", vx, oy, (SDL_Color){80, 120, 255, 255});
 
             const char *val = s->opciones[i].valores[s->opciones[i].seleccion];
-            int vw; TTF_SizeUTF8(f, val, &vw, NULL);
+            int vw; TTF_GetStringSize(f, val, 0, &vw, NULL);
             sh_text(r, f, val, vx + 30 + (120 - vw) / 2, oy, COL_ACTIVE);
 
             sh_text(r, f, ">", vx + 160, oy, (SDL_Color){80, 120, 255, 255});
@@ -904,12 +916,12 @@ config_draw(ShellCtx *ctx, Tab *tab, SDL_Rect area)
 
         /* Track fondo */
         SDL_SetRenderDrawColor(r, 30, 30, 30, 255);
-        SDL_Rect tr_bg = {track_x, track_cy - 3, track_w, 6};
+        SDL_FRect tr_bg = {track_x, track_cy - 3, track_w, 6};
         SDL_RenderFillRect(r, &tr_bg);
 
         /* Fill hasta el handle */
         SDL_SetRenderDrawColor(r, COL_ACCENT.r, COL_ACCENT.g, COL_ACCENT.b, 255);
-        SDL_Rect tr_fill = {track_x, track_cy - 3, handle_x - track_x + handle_w / 2, 6};
+        SDL_FRect tr_fill = {track_x, track_cy - 3, handle_x - track_x + handle_w / 2, 6};
         SDL_RenderFillRect(r, &tr_fill);
 
         /* Handle */
@@ -919,7 +931,7 @@ config_draw(ShellCtx *ctx, Tab *tab, SDL_Rect area)
             (s->drag_vol || hov_h) ? 200 : 255,
             (s->drag_vol || hov_h) ? 220 : 255,
             (s->drag_vol || hov_h) ? 200 : 255, 255);
-        SDL_Rect handle_rect = {handle_x, sl_y, handle_w, handle_h};
+        SDL_FRect handle_rect = {handle_x, sl_y, handle_w, handle_h};
         SDL_RenderFillRect(r, &handle_rect);
 
         /* Porcentaje */
@@ -955,7 +967,7 @@ config_draw(ShellCtx *ctx, Tab *tab, SDL_Rect area)
             if (i % 2 == 0) {
                 SDL_SetRenderDrawBlendMode(r, SDL_BLENDMODE_BLEND);
                 SDL_SetRenderDrawColor(r, 255, 255, 255, 5);
-                SDL_Rect stripe = {p.x + 8, ry - 2, p.w - 16, rh - 2};
+                SDL_FRect stripe = {p.x + 8, ry - 2, p.w - 16, rh - 2};
                 SDL_RenderFillRect(r, &stripe);
                 SDL_SetRenderDrawBlendMode(r, SDL_BLENDMODE_NONE);
             }
@@ -965,7 +977,7 @@ config_draw(ShellCtx *ctx, Tab *tab, SDL_Rect area)
         }
     }
 
-    SDL_RenderSetClipRect(r, NULL);
+    ui_clip(r, NULL);
 }
 
 /* ── config_cleanup ── */
@@ -1009,24 +1021,24 @@ static void mazmorra_event  (ShellCtx *ctx, Tab *tab, SDL_Event *e) { (void)ctx;
 static void mazmorra_cleanup(ShellCtx *ctx, Tab *tab)               { (void)ctx; (void)tab; }
 
 static void
-mazmorra_draw(ShellCtx *ctx, Tab *tab, SDL_Rect area)
+mazmorra_draw(ShellCtx *ctx, Tab *tab, SDL_FRect area)
 {
     (void)tab;
     SDL_Renderer *r = ctx->renderer;
     TTF_Font     *f = ctx->fuente;
 
-    SDL_RenderSetClipRect(r, &area);
+    ui_clip(r, &area);
 
     const char *msg = "Mazmorra completada";
     int tw, th;
-    TTF_SizeUTF8(f, msg, &tw, &th);
+    TTF_GetStringSize(f, msg, 0, &tw, &th);
     sh_text(r, f, msg,
         area.x + (area.w - tw) / 2,
         area.y + area.h / 2 - th - 8,
         COL_ACCENT);
 
     const char *sub = "Cierra el tab para volver. Volvelo a abrir para reiniciar.";
-    TTF_SizeUTF8(f, sub, &tw, &th);
+    TTF_GetStringSize(f, sub, 0, &tw, &th);
     sh_text(r, f, sub,
         area.x + (area.w - tw) / 2,
         area.y + area.h / 2 + 8,
@@ -1037,26 +1049,26 @@ mazmorra_draw(ShellCtx *ctx, Tab *tab, SDL_Rect area)
     int bx = area.x + (area.w - bw) / 2;
     int by = area.y + area.h / 2 + th + 28;
     int mx, my;
-    SDL_GetMouseState(&mx, &my);
+    ui_mouse(&mx, &my);
     int hover = (mx >= bx && mx < bx + bw && my >= by && my < by + bh);
 
     SDL_SetRenderDrawColor(r, hover ? 30 : 14, hover ? 30 : 14, hover ? 30 : 14, 255);
-    SDL_Rect btn = {bx, by, bw, bh};
+    SDL_FRect btn = {bx, by, bw, bh};
     SDL_RenderFillRect(r, &btn);
     SDL_SetRenderDrawColor(r, COL_SEP.r, COL_SEP.g, COL_SEP.b, 255);
-    SDL_RenderDrawRect(r, &btn);
+    SDL_RenderRect(r, &btn);
 
     const char *blbl = "Recorrer de nuevo  [Enter]";
-    TTF_SizeUTF8(f, blbl, &tw, NULL);
+    TTF_GetStringSize(f, blbl, 0, &tw, NULL);
     sh_text(r, f, blbl, bx + (bw - tw) / 2, by + 6,
         hover ? COL_ACTIVE : COL_TEXT);
 
-    if (hover && (SDL_GetMouseState(NULL, NULL) & SDL_BUTTON(SDL_BUTTON_LEFT))) {
+    if (hover && (ui_mouse(NULL, NULL) & SDL_BUTTON_MASK(SDL_BUTTON_LEFT))) {
         SDL_GetWindowSize(ctx->ventana, &ctx->ancho, &ctx->alto);
         screenPJ_intro(ctx->renderer, ctx->ventana, ctx->ancho, ctx->alto);
     }
 
-    SDL_RenderSetClipRect(r, NULL);
+    ui_clip(r, NULL);
 }
 
 /* ── Registro de todos los paneles ── */
@@ -1096,7 +1108,7 @@ registrar_paneles(ShellCtx *ctx)
 
     ctx->defs[PANEL_EDITOR_LIBRE].init         = editor_bim_init;
     ctx->defs[PANEL_EDITOR_LIBRE].handle_event = editor_bim_handle_event;
-    ctx->defs[PANEL_EDITOR_LIBRE].draw         = editor_bim_draw;
+    ctx->defs[PANEL_EDITOR_LIBRE].draw         = editor_bim_draw_panel;
     ctx->defs[PANEL_EDITOR_LIBRE].cleanup      = editor_bim_cleanup;
 
     ctx->defs[PANEL_MAZMORRA].init         = mazmorra_init;
@@ -1139,7 +1151,7 @@ screenShell(SDL_Renderer *renderer, TTF_Font *fuente,
     {
         SDL_Surface *s = IMG_Load("assets/Icono/into-logo/logoIcon.png");
         ctx.logo = s ? SDL_CreateTextureFromSurface(renderer, s) : NULL;
-        if (s) SDL_FreeSurface(s);
+        if (s) SDL_DestroySurface(s);
     }
 
     /* ── Loop principal ── */
@@ -1162,7 +1174,7 @@ screenShell(SDL_Renderer *renderer, TTF_Font *fuente,
                     ctx.renderer = nr;
                     SDL_Surface *ls = IMG_Load("assets/Icono/into-logo/logoIcon.png");
                     ctx.logo = ls ? SDL_CreateTextureFromSurface(renderer, ls) : NULL;
-                    if (ls) SDL_FreeSurface(ls);
+                    if (ls) SDL_DestroySurface(ls);
                 } else {
                     /* Surface existe pero renderer falló — reintentar */
                     pending_resize = 1;
@@ -1187,13 +1199,13 @@ screenShell(SDL_Renderer *renderer, TTF_Font *fuente,
         ctx.sidebar_w = ctx.sidebar_abierto ? SIDEBAR_W : SIDEBAR_COLLAPSED_W;
 
         /* Calcular los rects de cada zona */
-        SDL_Rect content_rect = {
+        SDL_FRect content_rect = {
             ctx.sidebar_w,
             TAB_BAR_H,
             ctx.ancho - ctx.sidebar_w,
             ctx.alto  - TAB_BAR_H
         };
-        SDL_Rect tabbar_rect = {
+        SDL_FRect tabbar_rect = {
             ctx.sidebar_w,
             0,
             ctx.ancho - ctx.sidebar_w,
@@ -1208,7 +1220,7 @@ screenShell(SDL_Renderer *renderer, TTF_Font *fuente,
         SDL_Event e;
         while (SDL_PollEvent(&e)) {
 
-            if (e.type == SDL_QUIT) {
+            if (e.type == SDL_EVENT_QUIT) {
                 ctx.salir = 1;
                 break;
             }
@@ -1218,16 +1230,17 @@ screenShell(SDL_Renderer *renderer, TTF_Font *fuente,
              * eventos SIZE_CHANGED + RESIZED + MAXIMIZED en sucesión rápida y la
              * window surface queda transitoriamente inválida en WSL2/XWayland.
              * La recreación diferida (pending_resize) evita dangling pointers. */
-            if (e.type == SDL_WINDOWEVENT &&
-                (e.window.event == SDL_WINDOWEVENT_RESIZED      ||
-                 e.window.event == SDL_WINDOWEVENT_SIZE_CHANGED ||
-                 e.window.event == SDL_WINDOWEVENT_MAXIMIZED    ||
-                 e.window.event == SDL_WINDOWEVENT_RESTORED)) {
+            /* SDL3: se acabo el evento paraguas SDL_WINDOWEVENT con un
+               subcampo .window.event. Ahora cada uno es un type propio. */
+            if (e.type == SDL_EVENT_WINDOW_RESIZED            ||
+                e.type == SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED ||
+                e.type == SDL_EVENT_WINDOW_MAXIMIZED          ||
+                e.type == SDL_EVENT_WINDOW_RESTORED) {
                 pending_resize = 1;
             }
 
             /* Click del mouse */
-            if (e.type == SDL_MOUSEBUTTONDOWN &&
+            if (e.type == SDL_EVENT_MOUSE_BUTTON_DOWN &&
                 e.button.button == SDL_BUTTON_LEFT) {
 
                 int cx = e.button.x;
@@ -1256,7 +1269,7 @@ screenShell(SDL_Renderer *renderer, TTF_Font *fuente,
             }
 
             /* Pasar el evento al panel activo (si hay tabs abiertos) */
-            if (ctx.n_tabs > 0 && e.type != SDL_QUIT) {
+            if (ctx.n_tabs > 0 && e.type != SDL_EVENT_QUIT) {
                 Tab *tab = &ctx.tabs[ctx.tab_activo];
                 ctx.defs[tab->id].handle_event(&ctx, tab, &e);
             }

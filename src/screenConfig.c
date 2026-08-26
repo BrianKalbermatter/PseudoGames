@@ -1,5 +1,5 @@
-#include <SDL2/SDL.h>
-#include <SDL2/SDL_ttf.h>
+#include <SDL3/SDL.h>
+#include <SDL3_ttf/SDL_ttf.h>
 #include <stdio.h>
 #include "ui.h"
 #include "config.h"
@@ -41,9 +41,9 @@ screenConfig(SDL_Renderer *renderer, TTF_Font *fuente, int ancho, int alto,
         SDL_GetWindowSize(ventana, &ancho, &alto);
 
         while (SDL_PollEvent(&evento)) {
-            if (evento.type == SDL_QUIT)   return 0;
-            if (evento.type == SDL_KEYDOWN) {
-                switch (evento.key.keysym.sym) {
+            if (evento.type == SDL_EVENT_QUIT)   return 0;
+            if (evento.type == SDL_EVENT_KEY_DOWN) {
+                switch (evento.key.key) {
                     case SDLK_ESCAPE:
                         config_set_lluvia(opciones[0].seleccion);
                         config_set_brillo(opciones[1].seleccion);
@@ -74,13 +74,13 @@ screenConfig(SDL_Renderer *renderer, TTF_Font *fuente, int ancho, int alto,
                 }
 
             }
-            if (evento.type == SDL_MOUSEBUTTONDOWN &&
+            if (evento.type == SDL_EVENT_MOUSE_BUTTON_DOWN &&
                 evento.button.button == SDL_BUTTON_LEFT) {
                 clicked  = 1;
                 click_x  = evento.button.x;
                 click_y  = evento.button.y;
             }
-            if (evento.type == SDL_MOUSEBUTTONUP &&
+            if (evento.type == SDL_EVENT_MOUSE_BUTTON_UP &&
                 evento.button.button == SDL_BUTTON_LEFT) {
                 if (drag_vol) {
                     config_set_volumen(vol);
@@ -88,7 +88,7 @@ screenConfig(SDL_Renderer *renderer, TTF_Font *fuente, int ancho, int alto,
                 }
                 drag_vol = 0;
             }
-            if (evento.type == SDL_MOUSEMOTION && drag_vol) {
+            if (evento.type == SDL_EVENT_MOUSE_MOTION && drag_vol) {
                 int panel_x2 = (ancho - 520) / 2;
                 int track_x2 = panel_x2 + 140;
                 int track_w2 = 520 - 160;
@@ -111,10 +111,10 @@ screenConfig(SDL_Renderer *renderer, TTF_Font *fuente, int ancho, int alto,
         int panel_y = (alto  - panel_h) / 2;
         SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
         SDL_SetRenderDrawColor(renderer, 20, 20, 35, 220);
-        SDL_Rect panel = {panel_x, panel_y, panel_w, panel_h};
+        SDL_FRect panel = {panel_x, panel_y, panel_w, panel_h};
         SDL_RenderFillRect(renderer, &panel);
         SDL_SetRenderDrawColor(renderer, 60, 60, 100, 255);
-        SDL_RenderDrawRect(renderer, &panel);
+        SDL_RenderRect(renderer, &panel);
         SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_NONE);
 
         // titulo + tabs General / Atajos
@@ -133,16 +133,16 @@ screenConfig(SDL_Renderer *renderer, TTF_Font *fuente, int ancho, int alto,
                 SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
                 SDL_SetRenderDrawColor(renderer,
                     is_act ? 60 : 25, is_act ? 60 : 25, is_act ? 110 : 50, 220);
-                SDL_Rect tr = {tx, tab_btn_y, tab_btn_w, tab_btn_h};
+                SDL_FRect tr = {tx, tab_btn_y, tab_btn_w, tab_btn_h};
                 SDL_RenderFillRect(renderer, &tr);
                 SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_NONE);
                 SDL_SetRenderDrawColor(renderer,
                     is_act ? 120 : 60, is_act ? 120 : 60, is_act ? 220 : 100, 255);
-                SDL_RenderDrawRect(renderer, &tr);
+                SDL_RenderRect(renderer, &tr);
                 SDL_Color c_tlbl = is_act
                     ? (SDL_Color){220, 220, 255, 255}
                     : (SDL_Color){100, 100, 140, 255};
-                int tlw; TTF_SizeUTF8(fuente, tabs_lbl[t], &tlw, NULL);
+                int tlw; TTF_GetStringSize(fuente, tabs_lbl[t], 0, &tlw, NULL);
                 dibujadoTextoColor(renderer, fuente, tabs_lbl[t],
                     tx + (tab_btn_w - tlw) / 2 - 10, tab_btn_y - 2, c_tlbl);
 
@@ -153,13 +153,13 @@ screenConfig(SDL_Renderer *renderer, TTF_Font *fuente, int ancho, int alto,
             }
 
             SDL_SetRenderDrawColor(renderer, 60, 60, 100, 255);
-            SDL_RenderDrawLine(renderer,
+            SDL_RenderLine(renderer,
                 panel_x + 16, panel_y + 44,
                 panel_x + panel_w - 16, panel_y + 44);
         }
 
         int mx, my;
-        SDL_GetMouseState(&mx, &my);
+        ui_mouse(&mx, &my);
 
         if (tab_config == 0) {  /* ── General ── */
 
@@ -172,7 +172,7 @@ screenConfig(SDL_Renderer *renderer, TTF_Font *fuente, int ancho, int alto,
             if (i == seleccionada || hover_row) {
                 SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
                 SDL_SetRenderDrawColor(renderer, 40, 40, 80, 120);
-                SDL_Rect row_bg = {panel_x + 12, oy - 10,
+                SDL_FRect row_bg = {panel_x + 12, oy - 10,
                                    panel_w - 24, 62};
                 SDL_RenderFillRect(renderer, &row_bg);
                 SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_NONE);
@@ -194,7 +194,7 @@ screenConfig(SDL_Renderer *renderer, TTF_Font *fuente, int ancho, int alto,
             dibujadoTextoColor(renderer, fuente, "<", vx, oy, c_flecha);
 
             const char *val_actual = opciones[i].valores[opciones[i].seleccion];
-            int vw; TTF_SizeUTF8(fuente, val_actual, &vw, NULL);
+            int vw; TTF_GetStringSize(fuente, val_actual, 0, &vw, NULL);
             dibujadoTextoColor(renderer, fuente, val_actual,
                 vx + 30 + (120 - vw) / 2, oy, c_valor);
 
@@ -235,12 +235,12 @@ screenConfig(SDL_Renderer *renderer, TTF_Font *fuente, int ancho, int alto,
 
             /* track fondo */
             SDL_SetRenderDrawColor(renderer, 40, 40, 65, 255);
-            SDL_Rect track_bg = {track_x, track_cy - 4, track_w, 8};
+            SDL_FRect track_bg = {track_x, track_cy - 4, track_w, 8};
             SDL_RenderFillRect(renderer, &track_bg);
 
             /* fill hasta el handle */
             SDL_SetRenderDrawColor(renderer, 80, 130, 255, 255);
-            SDL_Rect track_fill = {track_x, track_cy - 4, handle_x - track_x + handle_w / 2, 8};
+            SDL_FRect track_fill = {track_x, track_cy - 4, handle_x - track_x + handle_w / 2, 8};
             SDL_RenderFillRect(renderer, &track_fill);
 
             /* handle */
@@ -250,7 +250,7 @@ screenConfig(SDL_Renderer *renderer, TTF_Font *fuente, int ancho, int alto,
                 (drag_vol || hov_handle) ? 160 : 220,
                 (drag_vol || hov_handle) ? 200 : 220,
                 255, 255);
-            SDL_Rect handle = {handle_x, sl_y, handle_w, handle_h};
+            SDL_FRect handle = {handle_x, sl_y, handle_w, handle_h};
             SDL_RenderFillRect(renderer, &handle);
 
             /* porcentaje */
@@ -303,7 +303,7 @@ screenConfig(SDL_Renderer *renderer, TTF_Font *fuente, int ancho, int alto,
                 if (i % 2 == 0) {
                     SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
                     SDL_SetRenderDrawColor(renderer, 30, 30, 55, 80);
-                    SDL_Rect stripe = {panel_x + 12, ry - 2, panel_w - 24, row_h - 2};
+                    SDL_FRect stripe = {panel_x + 12, ry - 2, panel_w - 24, row_h - 2};
                     SDL_RenderFillRect(renderer, &stripe);
                     SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_NONE);
                 }
@@ -326,16 +326,16 @@ screenConfig(SDL_Renderer *renderer, TTF_Font *fuente, int ancho, int alto,
         SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
         SDL_SetRenderDrawColor(renderer,
             fb_hover ? 60 : 30, fb_hover ? 45 : 22, fb_hover ? 120 : 60, 200);
-        SDL_Rect fb_btn = {fb_x, fb_y, fb_w, fb_h};
+        SDL_FRect fb_btn = {fb_x, fb_y, fb_w, fb_h};
         SDL_RenderFillRect(renderer, &fb_btn);
         SDL_SetRenderDrawColor(renderer,
             fb_hover ? 160 : 80, fb_hover ? 120 : 60, fb_hover ? 255 : 160, 255);
-        SDL_RenderDrawRect(renderer, &fb_btn);
+        SDL_RenderRect(renderer, &fb_btn);
         SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_NONE);
 
         SDL_Color c_fb = fb_hover ? (SDL_Color){220,200,255,255}
                                   : (SDL_Color){130,110,200,255};
-        int fbw, fbh; TTF_SizeUTF8(fuente, "Feedback", &fbw, &fbh);
+        int fbw, fbh; TTF_GetStringSize(fuente, "Feedback", 0, &fbw, &fbh);
         // dibujadoTextoColor aplica +10 en x y +12 en y internamente, hay que compensarlo
         dibujadoTextoColor(renderer, fuente, "Feedback",
             fb_x + (fb_w - fbw) / 2 - 10, fb_y + (fb_h - fbh) / 2 - 12, c_fb);

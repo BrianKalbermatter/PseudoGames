@@ -5,18 +5,19 @@
 #include "ui.h"
 #include <string.h>
 #include <stdio.h>
+#include <stdlib.h>
 
 /* Dibuja texto en (x, y) exacto, sin offsets extra */
 static void
 dibujadoTextoSimple(SDL_Renderer *renderer, TTF_Font *fuente,
                     const char *texto, int x, int y, SDL_Color color)
 {
-    SDL_Surface *s = TTF_RenderUTF8_Blended(fuente, texto, color);
+    SDL_Surface *s = TTF_RenderText_Blended(fuente, texto, 0, color);
     if (!s) return;
     SDL_Texture *t = SDL_CreateTextureFromSurface(renderer, s);
-    SDL_Rect pos   = { x, y, s->w, s->h };
-    SDL_RenderCopy(renderer, t, NULL, &pos);
-    SDL_FreeSurface(s);
+    SDL_FRect pos   = { x, y, s->w, s->h };
+    SDL_RenderTexture(renderer, t, NULL, &pos);
+    SDL_DestroySurface(s);
     SDL_DestroyTexture(t);
 }
 
@@ -35,27 +36,27 @@ dibujadoTextoSimple(SDL_Renderer *renderer, TTF_Font *fuente,
  * Se puede llamar desde cualquier pantalla para embeber el editor.
  * ─────────────────────────────────────────────────────────────────── */
 void
-drawEditorText(SDL_Renderer *renderer, TTF_Font *fuente, SDL_Rect area)
+drawEditorText(SDL_Renderer *renderer, TTF_Font *fuente, SDL_FRect area)
 {
-    int line_h = TTF_FontHeight(fuente) + 4;
+    int line_h = TTF_GetFontHeight(fuente) + 4;
     int x = area.x;
     int y = area.y;
     int h = area.h;
 
-    SDL_RenderSetClipRect(renderer, &area);
+    ui_clip(renderer, &area);
 
     /* Fondo del editor */
     SDL_SetRenderDrawColor(renderer, BG_R, 255);
     SDL_RenderFillRect(renderer, &area);
 
     /* Gutter */
-    SDL_Rect gutter = { x, y, GUTTER_W, h };
+    SDL_FRect gutter = { x, y, GUTTER_W, h };
     SDL_SetRenderDrawColor(renderer, GT_R, 255);
     SDL_RenderFillRect(renderer, &gutter);
 
     /* Separador gutter / contenido */
     SDL_SetRenderDrawColor(renderer, LN_R, 255);
-    SDL_RenderDrawLine(renderer, x + GUTTER_W, y, x + GUTTER_W, y + h);
+    SDL_RenderLine(renderer, x + GUTTER_W, y, x + GUTTER_W, y + h);
 
     SDL_Color c_linea_num   = { LN_R, 255 };
     SDL_Color c_placeholder = { PH_R, 255 };
@@ -69,37 +70,37 @@ drawEditorText(SDL_Renderer *renderer, TTF_Font *fuente, SDL_Rect area)
         char num[8];
         snprintf(num, sizeof(num), "%d", i + 1);
         int num_w;
-        TTF_SizeUTF8(fuente, num, &num_w, NULL);
+        TTF_GetStringSize(fuente, num, 0, &num_w, NULL);
 
-        SDL_Surface *s_num = TTF_RenderUTF8_Blended(fuente, num, c_linea_num);
+        SDL_Surface *s_num = TTF_RenderText_Blended(fuente, num, 0, c_linea_num);
         if (s_num) {
             SDL_Texture *t_num = SDL_CreateTextureFromSurface(renderer, s_num);
-            SDL_Rect pos = { x + GUTTER_W - num_w - 8, ly, s_num->w, s_num->h };
-            SDL_RenderCopy(renderer, t_num, NULL, &pos);
-            SDL_FreeSurface(s_num);
+            SDL_FRect pos = { x + GUTTER_W - num_w - 8, ly, s_num->w, s_num->h };
+            SDL_RenderTexture(renderer, t_num, NULL, &pos);
+            SDL_DestroySurface(s_num);
             SDL_DestroyTexture(t_num);
         }
 
         /* placeholder en linea 1 */
         if (i == 0) {
             const char *ph = "Escribe tu codigo aqui...";
-            SDL_Surface *s_ph = TTF_RenderUTF8_Blended(fuente, ph, c_placeholder);
+            SDL_Surface *s_ph = TTF_RenderText_Blended(fuente, ph, 0, c_placeholder);
             if (s_ph) {
                 SDL_Texture *t_ph = SDL_CreateTextureFromSurface(renderer, s_ph);
-                SDL_Rect pos = { x + GUTTER_W + 12, ly, s_ph->w, s_ph->h };
-                SDL_RenderCopy(renderer, t_ph, NULL, &pos);
-                SDL_FreeSurface(s_ph);
+                SDL_FRect pos = { x + GUTTER_W + 12, ly, s_ph->w, s_ph->h };
+                SDL_RenderTexture(renderer, t_ph, NULL, &pos);
+                SDL_DestroySurface(s_ph);
                 SDL_DestroyTexture(t_ph);
             }
 
             /* cursor fijo */
             SDL_SetRenderDrawColor(renderer, c_cursor.r, c_cursor.g, c_cursor.b, c_cursor.a);
-            SDL_Rect cursor = { x + GUTTER_W + 12, ly, 2, line_h - 2 };
+            SDL_FRect cursor = { x + GUTTER_W + 12, ly, 2, line_h - 2 };
             SDL_RenderFillRect(renderer, &cursor);
         }
     }
 
-    SDL_RenderSetClipRect(renderer, NULL);
+    ui_clip(renderer, NULL);
 }
 
 /* ── Paleta syntax highlighting (gruvbox dimmed ~65%) ───────────── */
@@ -191,7 +192,7 @@ render_highlighted(SDL_Renderer *renderer, TTF_Font *fuente,
 
         /* Espacios: avanzar x sin dibujar */
         if (c == ' ') {
-            int sw; TTF_SizeUTF8(fuente, " ", &sw, NULL);
+            int sw; TTF_GetStringSize(fuente, " ", 0, &sw, NULL);
             x += sw;
             p++;
             continue;
@@ -253,13 +254,13 @@ render_highlighted(SDL_Renderer *renderer, TTF_Font *fuente,
         }
 
         /* Renderizar token */
-        SDL_Surface *s = TTF_RenderUTF8_Blended(fuente, tok, color);
+        SDL_Surface *s = TTF_RenderText_Blended(fuente, tok, 0, color);
         if (s) {
             SDL_Texture *t = SDL_CreateTextureFromSurface(renderer, s);
-            SDL_Rect dst = { x, y, s->w, s->h };
-            SDL_RenderCopy(renderer, t, NULL, &dst);
+            SDL_FRect dst = { x, y, s->w, s->h };
+            SDL_RenderTexture(renderer, t, NULL, &dst);
             x += s->w;
-            SDL_FreeSurface(s);
+            SDL_DestroySurface(s);
             SDL_DestroyTexture(t);
         }
 
@@ -284,7 +285,7 @@ render_highlighted_wrap(SDL_Renderer *renderer, TTF_Font *fuente,
     int y      = y_start;
     int vlines = 1;
     int col    = 0;   /* columna de carácter actual para tracking del cursor */
-    int sw1; TTF_SizeUTF8(fuente, " ", &sw1, NULL);
+    int sw1; TTF_GetStringSize(fuente, " ", 0, &sw1, NULL);
 
     /* Cursor al inicio de línea vacía */
     if (cx && cursor_col == 0) { *cx = x; *cy = y; }
@@ -347,8 +348,8 @@ render_highlighted_wrap(SDL_Renderer *renderer, TTF_Font *fuente,
         /* ── Medir token ───────────────────────────────────────── */
         int tw = sw1;
         if (!is_space) {
-            SDL_Surface *sm = TTF_RenderUTF8_Blended(fuente, tok, color);
-            if (sm) { tw = sm->w; SDL_FreeSurface(sm); }
+            SDL_Surface *sm = TTF_RenderText_Blended(fuente, tok, 0, color);
+            if (sm) { tw = sm->w; SDL_DestroySurface(sm); }
         }
 
         /* ── Wrap: si no cabe y no estamos al inicio de visual-line ─ */
@@ -364,7 +365,7 @@ render_highlighted_wrap(SDL_Renderer *renderer, TTF_Font *fuente,
             int before = cursor_col - col;
             if (before > 0) {
                 char tmp[512]; strncpy(tmp, tok, before); tmp[before] = '\0';
-                int bw; TTF_SizeUTF8(fuente, tmp, &bw, NULL);
+                int bw; TTF_GetStringSize(fuente, tmp, 0, &bw, NULL);
                 *cx = x + bw;
             } else {
                 *cx = x;
@@ -376,12 +377,12 @@ render_highlighted_wrap(SDL_Renderer *renderer, TTF_Font *fuente,
         if (is_space) {
             x += sw1;
         } else {
-            SDL_Surface *s = TTF_RenderUTF8_Blended(fuente, tok, color);
+            SDL_Surface *s = TTF_RenderText_Blended(fuente, tok, 0, color);
             if (s) {
                 SDL_Texture *t = SDL_CreateTextureFromSurface(renderer, s);
-                SDL_RenderCopy(renderer, t, NULL, &(SDL_Rect){x, y, s->w, s->h});
+                SDL_RenderTexture(renderer, t, NULL, &(SDL_FRect){x, y, s->w, s->h});
                 x += s->w;
-                SDL_FreeSurface(s); SDL_DestroyTexture(t);
+                SDL_DestroySurface(s); SDL_DestroyTexture(t);
             }
         }
 
@@ -630,18 +631,18 @@ screenEditorText(SDL_Renderer *renderer, TTF_Font *fuente,
     int tiene_consigna = (cons_titulo && cons_titulo[0] != '\0');
     int editor_x  = tiene_consigna ? ancho / 2 : 0;
     int editor_w  = tiene_consigna ? ancho / 2 : ancho;
-    int line_h    = TTF_FontHeight(fuente) + 4;
+    int line_h    = TTF_GetFontHeight(fuente) + 4;
     int out_h     = line_h * 6 + 24;
     int edit_h    = alto - out_h;          /* y donde empieza la salida */
     int vis_lines = (edit_h - TAB_H - 8) / line_h;
 
     /* Boton |> RUN (panel de salida, extremo derecho) */
     int btn_run_w = 72;
-    SDL_Rect btn_run = { editor_x + editor_w - btn_run_w - 6, edit_h + 3, btn_run_w, line_h };
+    SDL_FRect btn_run = { editor_x + editor_w - btn_run_w - 6, edit_h + 3, btn_run_w, line_h };
 
     /* Boton menu ≡ (a la izquierda del RUN) */
     int btn_menu_w = 30;
-    SDL_Rect btn_menu = { btn_run.x - btn_menu_w - 6, edit_h + 3, btn_menu_w, line_h };
+    SDL_FRect btn_menu = { btn_run.x - btn_menu_w - 6, edit_h + 3, btn_menu_w, line_h };
 
     /* Dropdown del mini menu */
     int   mini_menu   = 0;
@@ -649,7 +650,7 @@ screenEditorText(SDL_Renderer *renderer, TTF_Font *fuente,
     int   mitem_h   = line_h + 6;
     int   mdrop_w   = 260;
     int   mdrop_h   = mitem_h * 2 + 6;
-    SDL_Rect mdrop  = { btn_menu.x + btn_menu_w - mdrop_w,
+    SDL_FRect mdrop  = { btn_menu.x + btn_menu_w - mdrop_w,
                         edit_h - mdrop_h - 4,
                         mdrop_w, mdrop_h };
 
@@ -704,9 +705,9 @@ screenEditorText(SDL_Renderer *renderer, TTF_Font *fuente,
     SDL_Color c_out_hd = {   0, 155,  50, 255 };
 
 
-    SDL_Rect btn_nuevo = {0, 0, 0, 0};  /* boton "Nuevo archivo" del estado vacio */
+    SDL_FRect btn_nuevo = {0, 0, 0, 0};  /* boton "Nuevo archivo" del estado vacio */
 
-    SDL_StartTextInput();
+    ui_text_input(true);
     SDL_Event evento;
     int corriendo = 1;
 
@@ -714,15 +715,15 @@ screenEditorText(SDL_Renderer *renderer, TTF_Font *fuente,
 
         /* ── Eventos ──────────────────────────────────────────────── */
         while (SDL_PollEvent(&evento)) {
-            if (evento.type == SDL_QUIT) { SDL_StopTextInput(); return 0; }
+            if (evento.type == SDL_EVENT_QUIT) { ui_text_input(false); return 0; }
 
-            if (evento.type == SDL_KEYDOWN) {
-                SDL_Keycode k = evento.key.keysym.sym;
+            if (evento.type == SDL_EVENT_KEY_DOWN) {
+                SDL_Keycode k = evento.key.key;
 
                 /* ── Dialogo confirmar salida ──────────────────────── */
                 if (confirm_salir) {
-                    if (k == SDLK_s || k == SDLK_RETURN) { corriendo = 0; }
-                    if (k == SDLK_n || k == SDLK_ESCAPE)  confirm_salir = 0;
+                    if (k == SDLK_S || k == SDLK_RETURN) { corriendo = 0; }
+                    if (k == SDLK_N || k == SDLK_ESCAPE)  confirm_salir = 0;
                     break;
                 }
 
@@ -870,14 +871,14 @@ screenEditorText(SDL_Renderer *renderer, TTF_Font *fuente,
                     break;
                 }
                 if (k == SDLK_F8)  { audio_sfx_btn(); screenDoc(renderer, fuente, ancho, alto); break; }
-                if (k == SDLK_TAB && (SDL_GetModState() & KMOD_CTRL)) {
+                if (k == SDLK_TAB && (SDL_GetModState() & SDL_KMOD_CTRL)) {
                     /* Ctrl+Tab = siguiente tab */
                     audio_sfx_btn();
                     tab_activo = (tab_activo + 1) % n_tabs;
                     ep = &tabs[tab_activo];
                     break;
                 }
-                if (k == SDLK_TAB && !(SDL_GetModState() & KMOD_CTRL)) {
+                if (k == SDLK_TAB && !(SDL_GetModState() & SDL_KMOD_CTRL)) {
                     char *ln = ep->buf[ep->cursor_row];
                     int len = (int)strlen(ln);
                     if (len + 4 < 511) {
@@ -890,7 +891,7 @@ screenEditorText(SDL_Renderer *renderer, TTF_Font *fuente,
                 }
 
                 /* Nueva tab: Ctrl+T */
-                if (k == SDLK_t && (SDL_GetModState() & KMOD_CTRL)) {
+                if (k == SDLK_T && (SDL_GetModState() & SDL_KMOD_CTRL)) {
                     if (n_tabs < MAX_TABS) {
                         audio_sfx_btn();
                         tab_activo = n_tabs;
@@ -902,7 +903,7 @@ screenEditorText(SDL_Renderer *renderer, TTF_Font *fuente,
                     break;
                 }
                 /* Cerrar tab activa: Ctrl+W */
-                if (k == SDLK_w && (SDL_GetModState() & KMOD_CTRL)) {
+                if (k == SDLK_W && (SDL_GetModState() & SDL_KMOD_CTRL)) {
                     if (n_tabs > 1) {
                         audio_sfx_btn();
                         for (int i = tab_activo; i < n_tabs - 1; i++)
@@ -983,18 +984,18 @@ screenEditorText(SDL_Renderer *renderer, TTF_Font *fuente,
                 if (k == SDLK_END)  ep->cursor_col = (int)strlen(ep->buf[ep->cursor_row]);
 
                 /* Ctrl+C: copiar linea actual */
-                if (k == SDLK_c && (evento.key.keysym.mod & KMOD_CTRL))
+                if (k == SDLK_C && (evento.key.mod & SDL_KMOD_CTRL))
                     editor_copiar(ep->buf, ep->cursor_row, ep->cursor_row);
 
                 /* Ctrl+X: cortar linea actual */
-                if (k == SDLK_x && (evento.key.keysym.mod & KMOD_CTRL)) {
+                if (k == SDLK_X && (evento.key.mod & SDL_KMOD_CTRL)) {
                     editor_cortar(ep->buf, &ep->n_lines, ep->cursor_row, ep->cursor_row,
                                   &ep->cursor_row, &ep->cursor_col);
                     ep->dirty = 1;
                 }
 
                 /* Ctrl+V: pegar (una o multiples lineas) */
-                if (k == SDLK_v && (evento.key.keysym.mod & KMOD_CTRL)) {
+                if (k == SDLK_V && (evento.key.mod & SDL_KMOD_CTRL)) {
                     editor_pegar(ep->buf, &ep->n_lines, &ep->cursor_row, &ep->cursor_col);
                     ep->dirty = 1;
                 }
@@ -1044,7 +1045,7 @@ screenEditorText(SDL_Renderer *renderer, TTF_Font *fuente,
             }
 
             /* Click en [X] de la lista de guardado */
-            if (evento.type == SDL_MOUSEBUTTONDOWN && (guardando || cargando) &&
+            if (evento.type == SDL_EVENT_MOUSE_BUTTON_DOWN && (guardando || cargando) &&
                 evento.button.button == SDL_BUTTON_LEFT) {
                 int mx = evento.button.x, my = evento.button.y;
                 /* recalcular layout del overlay (igual que en render) */
@@ -1056,7 +1057,7 @@ screenEditorText(SDL_Renderer *renderer, TTF_Font *fuente,
                 for (int i = 0; i < vis2 && (saves_offset + i) < saves_n; i++) {
                     int idx = saves_offset + i;
                     int fy  = ly2 + i * (line_h + 2);
-                    SDL_Rect btn = { x_btn, fy - 2, 28, line_h + 4 };
+                    SDL_FRect btn = { x_btn, fy - 2, 28, line_h + 4 };
                     if (mx >= btn.x && mx <= btn.x + btn.w &&
                         my >= btn.y && my <= btn.y + btn.h) {
                         char path[128];
@@ -1074,7 +1075,7 @@ screenEditorText(SDL_Renderer *renderer, TTF_Font *fuente,
             }
 
             /* Click en "Nuevo archivo" (estado vacio) */
-            if (evento.type == SDL_MOUSEBUTTONDOWN && !guardando && !cargando &&
+            if (evento.type == SDL_EVENT_MOUSE_BUTTON_DOWN && !guardando && !cargando &&
                 evento.button.button == SDL_BUTTON_LEFT &&
                 btn_nuevo.w > 0) {
                 int mx = evento.button.x, my = evento.button.y;
@@ -1089,7 +1090,7 @@ screenEditorText(SDL_Renderer *renderer, TTF_Font *fuente,
             }
 
             /* Click en la barra de tabs */
-            if (evento.type == SDL_MOUSEBUTTONDOWN && !guardando && !cargando &&
+            if (evento.type == SDL_EVENT_MOUSE_BUTTON_DOWN && !guardando && !cargando &&
                 evento.button.button == SDL_BUTTON_LEFT &&
                 evento.button.y < TAB_H) {
                 int mx = evento.button.x, my = evento.button.y;
@@ -1130,7 +1131,7 @@ screenEditorText(SDL_Renderer *renderer, TTF_Font *fuente,
             }
 
             /* Click en boton |> ejecutar */
-            if (evento.type == SDL_MOUSEBUTTONDOWN && !guardando && !cargando &&
+            if (evento.type == SDL_EVENT_MOUSE_BUTTON_DOWN && !guardando && !cargando &&
                 evento.button.button == SDL_BUTTON_LEFT) {
                 int mx = evento.button.x, my = evento.button.y;
                 if (mx >= btn_run.x && mx < btn_run.x + btn_run.w &&
@@ -1186,7 +1187,7 @@ screenEditorText(SDL_Renderer *renderer, TTF_Font *fuente,
                 }
             }
 
-            if (evento.type == SDL_TEXTINPUT) {
+            if (evento.type == SDL_EVENT_TEXT_INPUT) {
                 if (guardando || cargando) {
                     int add = (int)strlen(evento.text.text);
                     if (prompt_len + add < (int)sizeof(prompt_buf) - 1) {
@@ -1221,19 +1222,19 @@ screenEditorText(SDL_Renderer *renderer, TTF_Font *fuente,
 
         /* Panel consigna (izquierda) */
         if (tiene_consigna) {
-            SDL_Rect panel_izq = { 0, 0, editor_x, alto };
+            SDL_FRect panel_izq = { 0, 0, editor_x, alto };
             SDL_SetRenderDrawColor(renderer, 10, 18, 10, 255);
             SDL_RenderFillRect(renderer, &panel_izq);
             SDL_Color c_tit = { 0, 230, 80, 255 };
             SDL_Color c_txt = { 0, 190, 70, 255 };
             dibujadoTextoColor(renderer, fuente, cons_titulo, 14, 12, c_tit);
             SDL_SetRenderDrawColor(renderer, 0, 130, 50, 255);
-            SDL_RenderDrawLine(renderer, 14, 46, editor_x - 14, 46);
+            SDL_RenderLine(renderer, 14, 46, editor_x - 14, 46);
             dibujadoTextoMultilineaColor(renderer, fuente, cons_texto,
                                          14, 56, editor_x - 28, c_txt);
             /* separador vertical */
             SDL_SetRenderDrawColor(renderer, 0, 100, 40, 255);
-            SDL_RenderDrawLine(renderer, editor_x, 0, editor_x, alto);
+            SDL_RenderLine(renderer, editor_x, 0, editor_x, alto);
         }
 
         int vacio = (ep->n_lines == 1 && ep->buf[0][0] == '\0' && ep->nombre_arch[0] == '\0');
@@ -1241,20 +1242,20 @@ screenEditorText(SDL_Renderer *renderer, TTF_Font *fuente,
         if (!vacio) {
 
         /* Fondo editor (debajo de los tabs) */
-        SDL_Rect editor_bg = { p_x, TAB_H, p_w, edit_h - TAB_H };
+        SDL_FRect editor_bg = { p_x, TAB_H, p_w, edit_h - TAB_H };
         SDL_SetRenderDrawColor(renderer, BG_R, 255);
         SDL_RenderFillRect(renderer, &editor_bg);
 
         /* Gutter */
-        SDL_Rect gutter = { p_x, TAB_H, GUTTER_W, edit_h - TAB_H };
+        SDL_FRect gutter = { p_x, TAB_H, GUTTER_W, edit_h - TAB_H };
         SDL_SetRenderDrawColor(renderer, GT_R, 255);
         SDL_RenderFillRect(renderer, &gutter);
         SDL_SetRenderDrawColor(renderer, LN_R, 255);
-        SDL_RenderDrawLine(renderer, p_x + GUTTER_W, TAB_H, p_x + GUTTER_W, edit_h);
+        SDL_RenderLine(renderer, p_x + GUTTER_W, TAB_H, p_x + GUTTER_W, edit_h);
 
         /* Lineas visibles */
-        SDL_Rect edit_clip = { p_x, TAB_H, p_w, edit_h - TAB_H };
-        SDL_RenderSetClipRect(renderer, &edit_clip);
+        SDL_FRect edit_clip = { p_x, TAB_H, p_w, edit_h - TAB_H };
+        ui_clip(renderer, &edit_clip);
 
         for (int i = 0; i < vis_lines; i++) {
             int row = ep->offset_row + i;
@@ -1264,13 +1265,13 @@ screenEditorText(SDL_Renderer *renderer, TTF_Font *fuente,
             /* Numero de linea alineado a la derecha del gutter */
             char num[12];
             snprintf(num, sizeof(num), "%d", row + 1);
-            int nw; TTF_SizeUTF8(fuente, num, &nw, NULL);
-            SDL_Surface *sn = TTF_RenderUTF8_Blended(fuente, num, c_num);
+            int nw; TTF_GetStringSize(fuente, num, 0, &nw, NULL);
+            SDL_Surface *sn = TTF_RenderText_Blended(fuente, num, 0, c_num);
             if (sn) {
                 SDL_Texture *t = SDL_CreateTextureFromSurface(renderer, sn);
-                SDL_Rect pos = { p_x + GUTTER_W - nw - 8, y, sn->w, sn->h };
-                SDL_RenderCopy(renderer, t, NULL, &pos);
-                SDL_FreeSurface(sn); SDL_DestroyTexture(t);
+                SDL_FRect pos = { p_x + GUTTER_W - nw - 8, y, sn->w, sn->h };
+                SDL_RenderTexture(renderer, t, NULL, &pos);
+                SDL_DestroySurface(sn); SDL_DestroyTexture(t);
             }
 
             /* Guias de indentacion */
@@ -1282,7 +1283,7 @@ screenEditorText(SDL_Renderer *renderer, TTF_Font *fuente,
                     { 20, 50, 90,  60 },   /* nivel 4 — azul     */
                     { 70, 20, 75,  60 },   /* nivel 5 — violeta  */
                 };
-                int sp_w; TTF_SizeUTF8(fuente, "    ", &sp_w, NULL);
+                int sp_w; TTF_GetStringSize(fuente, "    ", 0, &sp_w, NULL);
                 int espacios = 0;
                 while (ep->buf[row][espacios] == ' ') espacios++;
                 int niveles = espacios / 4;
@@ -1290,24 +1291,24 @@ screenEditorText(SDL_Renderer *renderer, TTF_Font *fuente,
                 for (int lv = 0; lv < niveles && lv < 5; lv++) {
                     SDL_Color gc = indent_col[lv];
                     SDL_SetRenderDrawColor(renderer, gc.r, gc.g, gc.b, gc.a);
-                    SDL_Rect zona = { p_tx + lv * sp_w, y, sp_w, line_h - 1 };
+                    SDL_FRect zona = { p_tx + lv * sp_w, y, sp_w, line_h - 1 };
                     SDL_RenderFillRect(renderer, &zona);
                     /* linea vertical al borde izquierdo de cada nivel */
                     SDL_SetRenderDrawColor(renderer, gc.r, gc.g, gc.b, 130);
-                    SDL_RenderDrawLine(renderer, zona.x, y, zona.x, y + line_h - 2);
+                    SDL_RenderLine(renderer, zona.x, y, zona.x, y + line_h - 2);
                 }
                 SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_NONE);
             }
 
             /* Texto de la linea (o placeholder en linea 1 vacia) */
             if (ep->buf[row][0] == '\0' && ep->n_lines == 1) {
-                SDL_Surface *s = TTF_RenderUTF8_Blended(fuente,
-                                     "Escribe tu codigo aqui...", c_ph);
+                SDL_Surface *s = TTF_RenderText_Blended(fuente,
+                                     "Escribe tu codigo aqui...", 0, c_ph);
                 if (s) {
                     SDL_Texture *t = SDL_CreateTextureFromSurface(renderer, s);
-                    SDL_Rect pos = { p_tx, y, s->w, s->h };
-                    SDL_RenderCopy(renderer, t, NULL, &pos);
-                    SDL_FreeSurface(s); SDL_DestroyTexture(t);
+                    SDL_FRect pos = { p_tx, y, s->w, s->h };
+                    SDL_RenderTexture(renderer, t, NULL, &pos);
+                    SDL_DestroySurface(s); SDL_DestroyTexture(t);
                 }
             } else if (ep->buf[row][0] != '\0') {
                 render_highlighted(renderer, fuente, ep->buf[row], p_tx, y);
@@ -1320,15 +1321,15 @@ screenEditorText(SDL_Renderer *renderer, TTF_Font *fuente,
                     char antes[512];
                     strncpy(antes, ep->buf[ep->cursor_row], ep->cursor_col);
                     antes[ep->cursor_col] = '\0';
-                    int tw; TTF_SizeUTF8(fuente, antes, &tw, NULL);
+                    int tw; TTF_GetStringSize(fuente, antes, 0, &tw, NULL);
                     cx = p_tx + tw;
                 }
                 SDL_SetRenderDrawColor(renderer, TX_R, 200);
-                SDL_Rect cur = { cx, y, 2, line_h - 2 };
+                SDL_FRect cur = { cx, y, 2, line_h - 2 };
                 SDL_RenderFillRect(renderer, &cur);
             }
         }
-        SDL_RenderSetClipRect(renderer, NULL);
+        ui_clip(renderer, NULL);
 
         } /* end if (!vacio) */
 
@@ -1343,43 +1344,43 @@ screenEditorText(SDL_Renderer *renderer, TTF_Font *fuente,
             int ix = cx - iw / 2, iy = cy - ih / 2;
             SDL_SetRenderDrawColor(renderer, 55, 55, 65, 255);
             /* cuerpo */
-            SDL_Rect page = { ix, iy + fold, iw, ih - fold };
+            SDL_FRect page = { ix, iy + fold, iw, ih - fold };
             SDL_RenderFillRect(renderer, &page);
-            SDL_Rect page_top = { ix, iy, iw - fold, fold };
+            SDL_FRect page_top = { ix, iy, iw - fold, fold };
             SDL_RenderFillRect(renderer, &page_top);
             /* esquina doblada */
             SDL_SetRenderDrawColor(renderer, 35, 35, 45, 255);
-            SDL_Rect corner = { ix + iw - fold, iy, fold, fold };
+            SDL_FRect corner = { ix + iw - fold, iy, fold, fold };
             SDL_RenderFillRect(renderer, &corner);
             SDL_SetRenderDrawColor(renderer, 70, 70, 85, 255);
-            SDL_RenderDrawLine(renderer, ix + iw - fold, iy, ix + iw - fold, iy + fold);
-            SDL_RenderDrawLine(renderer, ix + iw - fold, iy + fold, ix + iw, iy + fold);
+            SDL_RenderLine(renderer, ix + iw - fold, iy, ix + iw - fold, iy + fold);
+            SDL_RenderLine(renderer, ix + iw - fold, iy + fold, ix + iw, iy + fold);
             /* lineas de texto dentro del icono */
             SDL_SetRenderDrawColor(renderer, 80, 80, 95, 255);
             for (int li = 0; li < 4; li++)
-                SDL_RenderDrawLine(renderer,
+                SDL_RenderLine(renderer,
                     ix + 6, iy + fold + 8 + li * 9,
                     ix + iw - 6, iy + fold + 8 + li * 9);
 
             /* Descripcion */
             SDL_Color c_desc = { 80, 80, 95, 255 };
             const char *desc = "No hay ningun archivo abierto";
-            int dw; TTF_SizeUTF8(fuente, desc, &dw, NULL);
+            int dw; TTF_GetStringSize(fuente, desc, 0, &dw, NULL);
             dibujadoTextoSimple(renderer, fuente, desc, cx - dw / 2, cy + ih / 2 + 14, c_desc);
 
             /* Boton "Nuevo archivo" */
             int bw = 160, bh = 28;
             int bx = cx - bw / 2, by = cy + ih / 2 + 14 + line_h + 10;
-            int mx_h, my_h; SDL_GetMouseState(&mx_h, &my_h);
+            int mx_h, my_h; ui_mouse(&mx_h, &my_h);
             int bhov = (mx_h >= bx && mx_h < bx + bw && my_h >= by && my_h < by + bh);
             SDL_SetRenderDrawColor(renderer,
                 bhov ? 15 : 8, bhov ? 100 : 65, bhov ? 40 : 25, 255);
-            SDL_Rect br = { bx, by, bw, bh };
+            SDL_FRect br = { bx, by, bw, bh };
             SDL_RenderFillRect(renderer, &br);
             SDL_SetRenderDrawColor(renderer, 0, 170, 60, 255);
-            SDL_RenderDrawRect(renderer, &br);
+            SDL_RenderRect(renderer, &br);
             const char *blbl = "Nuevo archivo";
-            int blw; TTF_SizeUTF8(fuente, blbl, &blw, NULL);
+            int blw; TTF_GetStringSize(fuente, blbl, 0, &blw, NULL);
             SDL_Color c_blbl = { 0, 220, 80, 255 };
             dibujadoTextoSimple(renderer, fuente, blbl, bx + (bw - blw) / 2, by + 4, c_blbl);
 
@@ -1388,10 +1389,10 @@ screenEditorText(SDL_Renderer *renderer, TTF_Font *fuente,
 
         /* ── Barra de tabs ──────────────────────────────────────────── */
         {
-            int mx_t, my_t; SDL_GetMouseState(&mx_t, &my_t);
+            int mx_t, my_t; ui_mouse(&mx_t, &my_t);
 
             /* Fondo de la barra */
-            SDL_Rect tab_bar = { editor_x, 0, editor_w, TAB_H };
+            SDL_FRect tab_bar = { editor_x, 0, editor_w, TAB_H };
             SDL_SetRenderDrawColor(renderer, 20, 20, 26, 255);
             SDL_RenderFillRect(renderer, &tab_bar);
 
@@ -1404,13 +1405,13 @@ screenEditorText(SDL_Renderer *renderer, TTF_Font *fuente,
                     activ ? 40 : 28,
                     activ ? 40 : 28,
                     activ ? 40 : 32, 255);
-                SDL_Rect tr = { tx, 0, tw, TAB_H };
+                SDL_FRect tr = { tx, 0, tw, TAB_H };
                 SDL_RenderFillRect(renderer, &tr);
 
                 /* Borde superior verde en tab activa */
                 if (activ) {
                     SDL_SetRenderDrawColor(renderer, 0, 200, 70, 255);
-                    SDL_RenderDrawLine(renderer, tx, 0, tx + tw - 1, 0);
+                    SDL_RenderLine(renderer, tx, 0, tx + tw - 1, 0);
                 }
 
                 /* Nombre */
@@ -1437,7 +1438,7 @@ screenEditorText(SDL_Renderer *renderer, TTF_Font *fuente,
 
                 /* Separador vertical entre tabs */
                 SDL_SetRenderDrawColor(renderer, 45, 45, 55, 255);
-                SDL_RenderDrawLine(renderer, tx + tw - 1, 4, tx + tw - 1, TAB_H - 4);
+                SDL_RenderLine(renderer, tx + tw - 1, 4, tx + tw - 1, TAB_H - 4);
             }
 
             /* Boton + (nueva tab) */
@@ -1446,34 +1447,34 @@ screenEditorText(SDL_Renderer *renderer, TTF_Font *fuente,
                             my_t >= 0 && my_t < TAB_H);
             SDL_SetRenderDrawColor(renderer,
                 plus_hov ? 40 : 25, plus_hov ? 80 : 40, plus_hov ? 40 : 25, 255);
-            SDL_Rect plus_r = { plus_x, 4, 26, TAB_H - 8 };
+            SDL_FRect plus_r = { plus_x, 4, 26, TAB_H - 8 };
             SDL_RenderFillRect(renderer, &plus_r);
             SDL_Color c_plus = { 0, 200, 70, 255 };
             dibujadoTextoSimple(renderer, fuente, "+", plus_x + 6, 6, c_plus);
 
             /* Linea inferior de la barra */
             SDL_SetRenderDrawColor(renderer, 0, 130, 45, 255);
-            SDL_RenderDrawLine(renderer, editor_x, TAB_H - 1, editor_x + editor_w, TAB_H - 1);
+            SDL_RenderLine(renderer, editor_x, TAB_H - 1, editor_x + editor_w, TAB_H - 1);
         }
 
         /* ── Panel de salida ─────────────────────────────────────── */
         SDL_SetRenderDrawColor(renderer, 0, 170, 55, 255);
-        SDL_RenderDrawLine(renderer, editor_x, edit_h, editor_x + editor_w, edit_h);
+        SDL_RenderLine(renderer, editor_x, edit_h, editor_x + editor_w, edit_h);
         SDL_SetRenderDrawColor(renderer, 0, 70, 22, 255);
-        SDL_RenderDrawLine(renderer, editor_x, edit_h + 1, editor_x + editor_w, edit_h + 1);
+        SDL_RenderLine(renderer, editor_x, edit_h + 1, editor_x + editor_w, edit_h + 1);
 
-        SDL_Rect out_area = { editor_x, edit_h + 2, editor_w, out_h - 2 };
+        SDL_FRect out_area = { editor_x, edit_h + 2, editor_w, out_h - 2 };
         SDL_SetRenderDrawColor(renderer, 6, 12, 6, 255);
         SDL_RenderFillRect(renderer, &out_area);
 
-        SDL_Rect hd = { editor_x, edit_h + 2, editor_w, line_h + 4 };
+        SDL_FRect hd = { editor_x, edit_h + 2, editor_w, line_h + 4 };
         SDL_SetRenderDrawColor(renderer, 0, 38, 13, 255);
         SDL_RenderFillRect(renderer, &hd);
         dibujadoTextoSimple(renderer, fuente, "SALIDA", editor_x + 4, edit_h + 4, c_out_hd);
 
         /* Boton menu ≡ */
         {
-            int mx_h, my_h; SDL_GetMouseState(&mx_h, &my_h);
+            int mx_h, my_h; ui_mouse(&mx_h, &my_h);
             int hov = (mx_h >= btn_menu.x && mx_h < btn_menu.x + btn_menu.w &&
                        my_h >= btn_menu.y && my_h < btn_menu.y + btn_menu.h);
             SDL_SetRenderDrawColor(renderer, hov || mini_menu ? 50 : 25,
@@ -1481,8 +1482,8 @@ screenEditorText(SDL_Renderer *renderer, TTF_Font *fuente,
                                              hov || mini_menu ? 50 : 25, 255);
             SDL_RenderFillRect(renderer, &btn_menu);
             SDL_SetRenderDrawColor(renderer, 0, 160, 55, 255);
-            SDL_RenderDrawRect(renderer, &btn_menu);
-            int lw2; TTF_SizeUTF8(fuente, "=", &lw2, NULL);
+            SDL_RenderRect(renderer, &btn_menu);
+            int lw2; TTF_GetStringSize(fuente, "=", 0, &lw2, NULL);
             dibujadoTextoSimple(renderer, fuente, "=",
                                 btn_menu.x + (btn_menu.w - lw2) / 2,
                                 btn_menu.y, (SDL_Color){180, 200, 180, 255});
@@ -1490,7 +1491,7 @@ screenEditorText(SDL_Renderer *renderer, TTF_Font *fuente,
 
         /* Boton |> RUN al extremo derecho */
         {
-            int mx_h, my_h; SDL_GetMouseState(&mx_h, &my_h);
+            int mx_h, my_h; ui_mouse(&mx_h, &my_h);
             int hover = (mx_h >= btn_run.x && mx_h < btn_run.x + btn_run.w &&
                          my_h >= btn_run.y && my_h < btn_run.y + btn_run.h);
             if (hover)
@@ -1499,9 +1500,9 @@ screenEditorText(SDL_Renderer *renderer, TTF_Font *fuente,
                 SDL_SetRenderDrawColor(renderer, 20, 160, 55, 255);
             SDL_RenderFillRect(renderer, &btn_run);
             SDL_SetRenderDrawColor(renderer, 0, 230, 80, 255);
-            SDL_RenderDrawRect(renderer, &btn_run);
+            SDL_RenderRect(renderer, &btn_run);
             /* centrar texto "|> RUN" dentro del boton */
-            int lbl_w; TTF_SizeUTF8(fuente, "|> RUN", &lbl_w, NULL);
+            int lbl_w; TTF_GetStringSize(fuente, "|> RUN", 0, &lbl_w, NULL);
             int lbl_x = btn_run.x + (btn_run.w - lbl_w) / 2;
             dibujadoTextoSimple(renderer, fuente, "|> RUN",
                                 lbl_x, btn_run.y, (SDL_Color){10, 10, 10, 255});
@@ -1509,17 +1510,17 @@ screenEditorText(SDL_Renderer *renderer, TTF_Font *fuente,
 
         /* Dropdown mini menu */
         if (mini_menu) {
-            int mx_d, my_d; SDL_GetMouseState(&mx_d, &my_d);
+            int mx_d, my_d; ui_mouse(&mx_d, &my_d);
             SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
             SDL_SetRenderDrawColor(renderer, 10, 18, 10, 240);
             SDL_RenderFillRect(renderer, &mdrop);
             SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_NONE);
             SDL_SetRenderDrawColor(renderer, 0, 180, 60, 255);
-            SDL_RenderDrawRect(renderer, &mdrop);
+            SDL_RenderRect(renderer, &mdrop);
 
             for (int i = 0; i < 3; i++) {
                 int iy = mdrop.y + 3 + i * mitem_h;
-                SDL_Rect item_r = { mdrop.x + 2, iy, mdrop.w - 4, mitem_h };
+                SDL_FRect item_r = { mdrop.x + 2, iy, mdrop.w - 4, mitem_h };
                 int hov_i = (mx_d >= item_r.x && mx_d < item_r.x + item_r.w &&
                              my_d >= item_r.y && my_d < item_r.y + item_r.h);
                 if (hov_i) {
@@ -1529,7 +1530,7 @@ screenEditorText(SDL_Renderer *renderer, TTF_Font *fuente,
                 /* separador entre items */
                 if (i > 0) {
                     SDL_SetRenderDrawColor(renderer, 0, 70, 25, 255);
-                    SDL_RenderDrawLine(renderer, mdrop.x + 6, iy - 1,
+                    SDL_RenderLine(renderer, mdrop.x + 6, iy - 1,
                                                 mdrop.x + mdrop.w - 6, iy - 1);
                 }
                 SDL_Color c_mi = hov_i ? (SDL_Color){200, 240, 200, 255}
@@ -1540,9 +1541,9 @@ screenEditorText(SDL_Renderer *renderer, TTF_Font *fuente,
         }
 
         SDL_SetRenderDrawColor(renderer, 0, 55, 18, 160);
-        SDL_RenderDrawLine(renderer, editor_x, edit_h + line_h + 8, editor_x + editor_w, edit_h + line_h + 8);
+        SDL_RenderLine(renderer, editor_x, edit_h + line_h + 8, editor_x + editor_w, edit_h + line_h + 8);
 
-        SDL_RenderSetClipRect(renderer, &out_area);
+        ui_clip(renderer, &out_area);
         int oy = edit_h + line_h + 12;
         for (int i = 0; i < n_out; i++) {
             if (oy + line_h > alto) break;
@@ -1550,25 +1551,25 @@ screenEditorText(SDL_Renderer *renderer, TTF_Font *fuente,
             dibujadoTextoSimple(renderer, fuente, ms, editor_x + 10, oy, c_out);
             oy += line_h + 2;
         }
-        SDL_RenderSetClipRect(renderer, NULL);
+        ui_clip(renderer, NULL);
 
         /* ── Pantalla de guardado (overlay) ─────────────────────────── */
         if (guardando) {
             /* oscurecer fondo */
             SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
             SDL_SetRenderDrawColor(renderer, 0, 0, 0, 180);
-            SDL_Rect sombra2 = { 0, 0, ancho, alto };
+            SDL_FRect sombra2 = { 0, 0, ancho, alto };
             SDL_RenderFillRect(renderer, &sombra2);
             SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_NONE);
 
             /* caja centrada */
             int bw = editor_w - 40;  int bh = alto - 80;
             int bx = editor_x + 20;  int by = 40;
-            SDL_Rect box = { bx, by, bw, bh };
+            SDL_FRect box = { bx, by, bw, bh };
             SDL_SetRenderDrawColor(renderer, 20, 22, 20, 255);
             SDL_RenderFillRect(renderer, &box);
             SDL_SetRenderDrawColor(renderer, 0, 170, 55, 255);
-            SDL_RenderDrawRect(renderer, &box);
+            SDL_RenderRect(renderer, &box);
 
             SDL_Color c_hdr  = {   0, 210,  75, 255 };
             SDL_Color c_lbl  = { 146, 131, 116, 255 };
@@ -1581,28 +1582,28 @@ screenEditorText(SDL_Renderer *renderer, TTF_Font *fuente,
             dibujadoTextoSimple(renderer, fuente, "Guardar archivo",
                                 bx + 14, by + 10, c_hdr);
             SDL_SetRenderDrawColor(renderer, 0, 120, 40, 255);
-            SDL_RenderDrawLine(renderer, bx + 10, by + line_h + 14,
+            SDL_RenderLine(renderer, bx + 10, by + line_h + 14,
                                           bx + bw - 10, by + line_h + 14);
 
             /* campo de nombre (input) */
             int iy = by + line_h + 22;
             dibujadoTextoSimple(renderer, fuente, "Nombre:", bx + 14, iy, c_lbl);
-            int lw; TTF_SizeUTF8(fuente, "Nombre: ", &lw, NULL);
+            int lw; TTF_GetStringSize(fuente, "Nombre: ", 0, &lw, NULL);
 
-            SDL_Rect input_bg = { bx + 12, iy - 2, bw - 24, line_h + 4 };
+            SDL_FRect input_bg = { bx + 12, iy - 2, bw - 24, line_h + 4 };
             SDL_SetRenderDrawColor(renderer, 30, 40, 30, 255);
             SDL_RenderFillRect(renderer, &input_bg);
             SDL_SetRenderDrawColor(renderer, 0, 130, 50, 255);
-            SDL_RenderDrawRect(renderer, &input_bg);
+            SDL_RenderRect(renderer, &input_bg);
 
             dibujadoTextoSimple(renderer, fuente, prompt_buf,
                                 bx + 14 + lw, iy, c_txt);
             /* cursor de texto */
             {
                 int tw = 0;
-                if (prompt_len > 0) TTF_SizeUTF8(fuente, prompt_buf, &tw, NULL);
+                if (prompt_len > 0) TTF_GetStringSize(fuente, prompt_buf, 0, &tw, NULL);
                 SDL_SetRenderDrawColor(renderer, 235, 219, 178, 200);
-                SDL_Rect pc = { bx + 14 + lw + tw, iy, 2, line_h - 2 };
+                SDL_FRect pc = { bx + 14 + lw + tw, iy, 2, line_h - 2 };
                 SDL_RenderFillRect(renderer, &pc);
             }
 
@@ -1612,7 +1613,7 @@ screenEditorText(SDL_Renderer *renderer, TTF_Font *fuente,
                                 bx + 14, ly, c_lbl);
             ly += line_h + 4;
             SDL_SetRenderDrawColor(renderer, 0, 80, 25, 255);
-            SDL_RenderDrawLine(renderer, bx + 10, ly, bx + bw - 10, ly);
+            SDL_RenderLine(renderer, bx + 10, ly, bx + bw - 10, ly);
             ly += 4;
 
             int vis_saves = (by + bh - ly - line_h - 20) / (line_h + 2);
@@ -1626,7 +1627,7 @@ screenEditorText(SDL_Renderer *renderer, TTF_Font *fuente,
                 int idx = saves_offset + i;
                 int fy  = ly + i * (line_h + 2);
                 if (idx == saves_sel) {
-                    SDL_Rect sel_bg = { bx + 10, fy - 2, bw - 20, line_h + 4 };
+                    SDL_FRect sel_bg = { bx + 10, fy - 2, bw - 20, line_h + 4 };
                     SDL_SetRenderDrawColor(renderer, c_sel.r, c_sel.g, c_sel.b, 255);
                     SDL_RenderFillRect(renderer, &sel_bg);
                 }
@@ -1636,11 +1637,11 @@ screenEditorText(SDL_Renderer *renderer, TTF_Font *fuente,
                 dibujadoTextoSimple(renderer, fuente, entry, bx + 20, fy, ce);
 
                 /* boton [X] rojo a la derecha */
-                SDL_Rect btn_x = { bx + bw - 36, fy - 2, 28, line_h + 4 };
+                SDL_FRect btn_x = { bx + bw - 36, fy - 2, 28, line_h + 4 };
                 SDL_SetRenderDrawColor(renderer, 100, 15, 15, 255);
                 SDL_RenderFillRect(renderer, &btn_x);
                 SDL_SetRenderDrawColor(renderer, 200, 30, 30, 255);
-                SDL_RenderDrawRect(renderer, &btn_x);
+                SDL_RenderRect(renderer, &btn_x);
                 SDL_Color c_x = { 251, 73, 52, 255 };
                 dibujadoTextoSimple(renderer, fuente, "X",
                                     btn_x.x + 8, fy, c_x);
@@ -1656,17 +1657,17 @@ screenEditorText(SDL_Renderer *renderer, TTF_Font *fuente,
         if (cargando) {
             SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
             SDL_SetRenderDrawColor(renderer, 0, 0, 0, 180);
-            SDL_Rect sombra3 = { 0, 0, ancho, alto };
+            SDL_FRect sombra3 = { 0, 0, ancho, alto };
             SDL_RenderFillRect(renderer, &sombra3);
             SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_NONE);
 
             int bw = editor_w - 40;  int bh = alto - 80;
             int bx = editor_x + 20;  int by = 40;
-            SDL_Rect box = { bx, by, bw, bh };
+            SDL_FRect box = { bx, by, bw, bh };
             SDL_SetRenderDrawColor(renderer, 20, 22, 20, 255);
             SDL_RenderFillRect(renderer, &box);
             SDL_SetRenderDrawColor(renderer, 0, 170, 55, 255);
-            SDL_RenderDrawRect(renderer, &box);
+            SDL_RenderRect(renderer, &box);
 
             SDL_Color c_hdr  = {   0, 210,  75, 255 };
             SDL_Color c_lbl  = { 146, 131, 116, 255 };
@@ -1678,26 +1679,26 @@ screenEditorText(SDL_Renderer *renderer, TTF_Font *fuente,
             dibujadoTextoSimple(renderer, fuente, "Cargar archivo",
                                 bx + 14, by + 10, c_hdr);
             SDL_SetRenderDrawColor(renderer, 0, 120, 40, 255);
-            SDL_RenderDrawLine(renderer, bx + 10, by + line_h + 14,
+            SDL_RenderLine(renderer, bx + 10, by + line_h + 14,
                                           bx + bw - 10, by + line_h + 14);
 
             /* campo de nombre */
             int iy = by + line_h + 22;
             dibujadoTextoSimple(renderer, fuente, "Nombre:", bx + 14, iy, c_lbl);
-            int lw; TTF_SizeUTF8(fuente, "Nombre: ", &lw, NULL);
+            int lw; TTF_GetStringSize(fuente, "Nombre: ", 0, &lw, NULL);
 
-            SDL_Rect input_bg = { bx + 12, iy - 2, bw - 24, line_h + 4 };
+            SDL_FRect input_bg = { bx + 12, iy - 2, bw - 24, line_h + 4 };
             SDL_SetRenderDrawColor(renderer, 30, 40, 30, 255);
             SDL_RenderFillRect(renderer, &input_bg);
             SDL_SetRenderDrawColor(renderer, 0, 130, 50, 255);
-            SDL_RenderDrawRect(renderer, &input_bg);
+            SDL_RenderRect(renderer, &input_bg);
             dibujadoTextoSimple(renderer, fuente, prompt_buf,
                                 bx + 14 + lw, iy, c_txt);
             {
                 int tw = 0;
-                if (prompt_len > 0) TTF_SizeUTF8(fuente, prompt_buf, &tw, NULL);
+                if (prompt_len > 0) TTF_GetStringSize(fuente, prompt_buf, 0, &tw, NULL);
                 SDL_SetRenderDrawColor(renderer, 235, 219, 178, 200);
-                SDL_Rect pc = { bx + 14 + lw + tw, iy, 2, line_h - 2 };
+                SDL_FRect pc = { bx + 14 + lw + tw, iy, 2, line_h - 2 };
                 SDL_RenderFillRect(renderer, &pc);
             }
 
@@ -1707,7 +1708,7 @@ screenEditorText(SDL_Renderer *renderer, TTF_Font *fuente,
                                 bx + 14, ly, c_lbl);
             ly += line_h + 4;
             SDL_SetRenderDrawColor(renderer, 0, 80, 25, 255);
-            SDL_RenderDrawLine(renderer, bx + 10, ly, bx + bw - 10, ly);
+            SDL_RenderLine(renderer, bx + 10, ly, bx + bw - 10, ly);
             ly += 4;
 
             int vis_saves = (by + bh - ly - line_h - 20) / (line_h + 2);
@@ -1721,7 +1722,7 @@ screenEditorText(SDL_Renderer *renderer, TTF_Font *fuente,
                 int idx = saves_offset + i;
                 int fy  = ly + i * (line_h + 2);
                 if (idx == saves_sel) {
-                    SDL_Rect sel_bg = { bx + 10, fy - 2, bw - 20, line_h + 4 };
+                    SDL_FRect sel_bg = { bx + 10, fy - 2, bw - 20, line_h + 4 };
                     SDL_SetRenderDrawColor(renderer, c_sel.r, c_sel.g, c_sel.b, 255);
                     SDL_RenderFillRect(renderer, &sel_bg);
                 }
@@ -1731,11 +1732,11 @@ screenEditorText(SDL_Renderer *renderer, TTF_Font *fuente,
                 dibujadoTextoSimple(renderer, fuente, entry, bx + 20, fy, ce);
 
                 /* boton [X] */
-                SDL_Rect btn_x = { bx + bw - 36, fy - 2, 28, line_h + 4 };
+                SDL_FRect btn_x = { bx + bw - 36, fy - 2, 28, line_h + 4 };
                 SDL_SetRenderDrawColor(renderer, 100, 15, 15, 255);
                 SDL_RenderFillRect(renderer, &btn_x);
                 SDL_SetRenderDrawColor(renderer, 200, 30, 30, 255);
-                SDL_RenderDrawRect(renderer, &btn_x);
+                SDL_RenderRect(renderer, &btn_x);
                 SDL_Color c_x = { 251, 73, 52, 255 };
                 dibujadoTextoSimple(renderer, fuente, "X", btn_x.x + 8, fy, c_x);
             }
@@ -1750,18 +1751,18 @@ screenEditorText(SDL_Renderer *renderer, TTF_Font *fuente,
             /* oscurecer fondo */
             SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
             SDL_SetRenderDrawColor(renderer, 0, 0, 0, 160);
-            SDL_Rect sombra = { 0, 0, ancho, alto };
+            SDL_FRect sombra = { 0, 0, ancho, alto };
             SDL_RenderFillRect(renderer, &sombra);
             SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_NONE);
 
             /* caja centrada */
             int bw = 380, bh = 80;
             int bx = editor_x + (editor_w - bw) / 2, by = (alto - bh) / 2;
-            SDL_Rect box = { bx, by, bw, bh };
+            SDL_FRect box = { bx, by, bw, bh };
             SDL_SetRenderDrawColor(renderer, 28, 24, 22, 255);
             SDL_RenderFillRect(renderer, &box);
             SDL_SetRenderDrawColor(renderer, 251, 73, 52, 255);   /* rojo gruvbox */
-            SDL_RenderDrawRect(renderer, &box);
+            SDL_RenderRect(renderer, &box);
 
             SDL_Color c_pregunta = { 235, 219, 178, 255 };
             SDL_Color c_opciones = { 146, 131, 116, 255 };
@@ -1777,7 +1778,7 @@ screenEditorText(SDL_Renderer *renderer, TTF_Font *fuente,
         SDL_Delay(16);
     }
 
-    SDL_StopTextInput();
+    ui_text_input(false);
     return 0;
 }
 
@@ -1785,7 +1786,7 @@ screenEditorText(SDL_Renderer *renderer, TTF_Font *fuente,
 //  API DE PANEL — Editor Libre integrado en el shell de tabs
 //
 //  Mismo patrón que panel DOC:
-//  - SDL_RenderSetViewport para render sin cambiar coordenadas
+//  - SDL_SetRenderViewport para render sin cambiar coordenadas
 //  - Traduccion de mouse en evento (resta area.x / area.y)
 //  - Estado en heap (EditorLibreState)
 // =============================================================
@@ -1795,19 +1796,19 @@ typedef struct {
     int ancho, alto;
     int line_h, out_h, edit_h, vis_lines;
     int editor_x, editor_w;
-    SDL_Rect btn_run, btn_menu, mdrop;
+    SDL_FRect btn_run, btn_menu, mdrop;
     int btn_run_w, btn_menu_w;
     int mitem_h, mdrop_w, mdrop_h;
     int tw;   /* ancho de cada tab interna del editor */
 } EditorLayout;
 
 static EditorLayout
-el_layout(TTF_Font *fuente, SDL_Rect area, int n_tabs_interno)
+el_layout(TTF_Font *fuente, SDL_FRect area, int n_tabs_interno)
 {
     EditorLayout L;
     L.ancho      = area.w;
     L.alto       = area.h;
-    L.line_h     = TTF_FontHeight(fuente) + 4;
+    L.line_h     = TTF_GetFontHeight(fuente) + 4;
     L.out_h      = L.line_h * 6 + 24;
     L.edit_h     = L.alto - L.out_h;
     L.vis_lines  = (L.edit_h - TAB_H - 8) / L.line_h;
@@ -1815,15 +1816,15 @@ el_layout(TTF_Font *fuente, SDL_Rect area, int n_tabs_interno)
     L.editor_x   = 0;
     L.editor_w   = L.ancho;
     L.btn_run_w  = 72;
-    L.btn_run    = (SDL_Rect){ L.editor_x + L.editor_w - L.btn_run_w - 6,
+    L.btn_run    = (SDL_FRect){ L.editor_x + L.editor_w - L.btn_run_w - 6,
                                L.edit_h + 3, L.btn_run_w, L.line_h };
     L.btn_menu_w = 30;
-    L.btn_menu   = (SDL_Rect){ L.btn_run.x - L.btn_menu_w - 6,
+    L.btn_menu   = (SDL_FRect){ L.btn_run.x - L.btn_menu_w - 6,
                                L.edit_h + 3, L.btn_menu_w, L.line_h };
     L.mitem_h    = L.line_h + 6;
     L.mdrop_w    = 260;
     L.mdrop_h    = L.mitem_h * 2 + 6;
-    L.mdrop      = (SDL_Rect){ L.btn_menu.x + L.btn_menu_w - L.mdrop_w,
+    L.mdrop      = (SDL_FRect){ L.btn_menu.x + L.btn_menu_w - L.mdrop_w,
                                L.edit_h - L.mdrop_h - 4, L.mdrop_w, L.mdrop_h };
     L.tw         = (L.editor_w - 30) / (n_tabs_interno > 0 ? n_tabs_interno : 1);
     if (L.tw > 160) L.tw = 160;
@@ -1860,7 +1861,7 @@ struct EditorLibreState {
     Uint32      last_edit_tick;   /* timestamp del último tipeo        */
     int         diag_pending;     /* 1 = hay cambios sin re-analizar   */
 
-    SDL_Rect btn_nuevo;   /* calculado en dibujar, usado en evento */
+    SDL_FRect btn_nuevo;   /* calculado en dibujar, usado en evento */
 };
 
 /* ── editor_libre_crear ────────────────────────────────────────────────────── */
@@ -1873,7 +1874,7 @@ editor_libre_crear(TTF_Font *fuente)
     s->n_tabs     = 1;
     s->tab_activo = 0;
     s->tabs[0].n_lines = 1;
-    SDL_StartTextInput();
+    ui_text_input(true);
     return s;
 }
 
@@ -1881,30 +1882,30 @@ editor_libre_crear(TTF_Font *fuente)
 void
 editor_libre_destruir(EditorLibreState *s)
 {
-    SDL_StopTextInput();
+    ui_text_input(false);
     free(s);
 }
 
 /* ── editor_libre_evento ───────────────────────────────────────────────────── */
 void
-editor_libre_evento(EditorLibreState *s, TTF_Font *fuente, SDL_Event *e, SDL_Rect area)
+editor_libre_evento(EditorLibreState *s, TTF_Font *fuente, SDL_Event *e, SDL_FRect area)
 {
     if (!s) return;
 
     /* Traducir coordenadas de mouse al espacio local del panel */
-    if (e->type == SDL_MOUSEBUTTONDOWN || e->type == SDL_MOUSEBUTTONUP) {
+    if (e->type == SDL_EVENT_MOUSE_BUTTON_DOWN || e->type == SDL_EVENT_MOUSE_BUTTON_UP) {
         e->button.x -= area.x;
         e->button.y -= area.y;
-    } else if (e->type == SDL_MOUSEMOTION) {
+    } else if (e->type == SDL_EVENT_MOUSE_MOTION) {
         e->motion.x -= area.x;
         e->motion.y -= area.y;
     }
 
     /* Si está cerrado, Enter lo reabre */
     if (s->cerrado) {
-        if (e->type == SDL_KEYDOWN && e->key.keysym.sym == SDLK_RETURN) {
+        if (e->type == SDL_EVENT_KEY_DOWN && e->key.key == SDLK_RETURN) {
             s->cerrado = 0;
-            SDL_StartTextInput();
+            ui_text_input(true);
         }
         return;
     }
@@ -1914,17 +1915,17 @@ editor_libre_evento(EditorLibreState *s, TTF_Font *fuente, SDL_Event *e, SDL_Rec
     int ancho       = L.ancho;
     int alto        = L.alto;
 
-    if (e->type == SDL_KEYDOWN) {
-        SDL_Keycode k = e->key.keysym.sym;
+    if (e->type == SDL_EVENT_KEY_DOWN) {
+        SDL_Keycode k = e->key.key;
 
         /* ── Confirmar salida ── */
         if (s->confirm_salir) {
-            if (k == SDLK_s || k == SDLK_RETURN) {
+            if (k == SDLK_S || k == SDLK_RETURN) {
                 s->confirm_salir = 0;
                 s->cerrado = 1;
-                SDL_StopTextInput();
+                ui_text_input(false);
             }
-            if (k == SDLK_n || k == SDLK_ESCAPE) s->confirm_salir = 0;
+            if (k == SDLK_N || k == SDLK_ESCAPE) s->confirm_salir = 0;
             return;
         }
 
@@ -2061,12 +2062,12 @@ editor_libre_evento(EditorLibreState *s, TTF_Font *fuente, SDL_Event *e, SDL_Rec
         if (k == SDLK_F10) {
             audio_sfx_btn();
             if (ep->dirty) s->confirm_salir = 1;
-            else { s->cerrado = 1; SDL_StopTextInput(); }
+            else { s->cerrado = 1; ui_text_input(false); }
             return;
         }
 
         /* Ctrl+Tab: siguiente tab interna */
-        if (k == SDLK_TAB && (SDL_GetModState() & KMOD_CTRL)) {
+        if (k == SDLK_TAB && (SDL_GetModState() & SDL_KMOD_CTRL)) {
             audio_sfx_btn();
             s->tab_activo = (s->tab_activo + 1) % s->n_tabs;
             ep = &s->tabs[s->tab_activo];
@@ -2085,7 +2086,7 @@ editor_libre_evento(EditorLibreState *s, TTF_Font *fuente, SDL_Event *e, SDL_Rec
             return;
         }
         /* Ctrl+T: nueva tab interna */
-        if (k == SDLK_t && (SDL_GetModState() & KMOD_CTRL)) {
+        if (k == SDLK_T && (SDL_GetModState() & SDL_KMOD_CTRL)) {
             if (s->n_tabs < MAX_TABS) {
                 audio_sfx_btn();
                 s->tab_activo = s->n_tabs++;
@@ -2096,7 +2097,7 @@ editor_libre_evento(EditorLibreState *s, TTF_Font *fuente, SDL_Event *e, SDL_Rec
             return;
         }
         /* Ctrl+W: cerrar tab interna */
-        if (k == SDLK_w && (SDL_GetModState() & KMOD_CTRL)) {
+        if (k == SDLK_W && (SDL_GetModState() & SDL_KMOD_CTRL)) {
             if (s->n_tabs > 1) {
                 audio_sfx_btn();
                 for (int i = s->tab_activo; i < s->n_tabs - 1; i++)
@@ -2156,14 +2157,14 @@ editor_libre_evento(EditorLibreState *s, TTF_Font *fuente, SDL_Event *e, SDL_Rec
         if (k == SDLK_END)  ep->cursor_col = (int)strlen(ep->buf[ep->cursor_row]);
 
         /* Ctrl+C/X/V */
-        if (k == SDLK_c && (e->key.keysym.mod & KMOD_CTRL))
+        if (k == SDLK_C && (e->key.mod & SDL_KMOD_CTRL))
             editor_copiar(ep->buf, ep->cursor_row, ep->cursor_row);
-        if (k == SDLK_x && (e->key.keysym.mod & KMOD_CTRL)) {
+        if (k == SDLK_X && (e->key.mod & SDL_KMOD_CTRL)) {
             editor_cortar(ep->buf, &ep->n_lines, ep->cursor_row, ep->cursor_row,
                           &ep->cursor_row, &ep->cursor_col);
             ep->dirty = 1;
         }
-        if (k == SDLK_v && (e->key.keysym.mod & KMOD_CTRL)) {
+        if (k == SDLK_V && (e->key.mod & SDL_KMOD_CTRL)) {
             editor_pegar(ep->buf, &ep->n_lines, &ep->cursor_row, &ep->cursor_col);
             ep->dirty = 1;
         }
@@ -2201,7 +2202,7 @@ editor_libre_evento(EditorLibreState *s, TTF_Font *fuente, SDL_Event *e, SDL_Rec
     }
 
     /* Click en lista de guardado/cargado: botón [X] */
-    if (e->type == SDL_MOUSEBUTTONDOWN && (s->guardando || s->cargando) &&
+    if (e->type == SDL_EVENT_MOUSE_BUTTON_DOWN && (s->guardando || s->cargando) &&
         e->button.button == SDL_BUTTON_LEFT) {
         int mx = e->button.x, my = e->button.y;
         int bw2 = L.editor_w - 40, bx2 = L.editor_x + 20, by2 = 40;
@@ -2212,7 +2213,7 @@ editor_libre_evento(EditorLibreState *s, TTF_Font *fuente, SDL_Event *e, SDL_Rec
         for (int i = 0; i < vis2 && (s->saves_offset + i) < s->saves_n; i++) {
             int idx = s->saves_offset + i;
             int fy  = ly2 + i * (L.line_h + 2);
-            SDL_Rect btn = { x_btn, fy - 2, 28, L.line_h + 4 };
+            SDL_FRect btn = { x_btn, fy - 2, 28, L.line_h + 4 };
             if (mx >= btn.x && mx <= btn.x + btn.w && my >= btn.y && my <= btn.y + btn.h) {
                 char path[128];
                 snprintf(path, sizeof(path), "saves/%s.paed", s->saves_lista[idx]);
@@ -2229,7 +2230,7 @@ editor_libre_evento(EditorLibreState *s, TTF_Font *fuente, SDL_Event *e, SDL_Rec
     }
 
     /* Click en "Nuevo archivo" */
-    if (e->type == SDL_MOUSEBUTTONDOWN && !s->guardando && !s->cargando &&
+    if (e->type == SDL_EVENT_MOUSE_BUTTON_DOWN && !s->guardando && !s->cargando &&
         e->button.button == SDL_BUTTON_LEFT && s->btn_nuevo.w > 0) {
         int mx = e->button.x, my = e->button.y;
         if (mx >= s->btn_nuevo.x && mx < s->btn_nuevo.x + s->btn_nuevo.w &&
@@ -2242,7 +2243,7 @@ editor_libre_evento(EditorLibreState *s, TTF_Font *fuente, SDL_Event *e, SDL_Rec
     }
 
     /* Click en barra de tabs interna */
-    if (e->type == SDL_MOUSEBUTTONDOWN && !s->guardando && !s->cargando &&
+    if (e->type == SDL_EVENT_MOUSE_BUTTON_DOWN && !s->guardando && !s->cargando &&
         e->button.button == SDL_BUTTON_LEFT && e->button.y < TAB_H) {
         int mx = e->button.x;
         int plus_x = L.editor_x + s->n_tabs * L.tw;
@@ -2271,7 +2272,7 @@ editor_libre_evento(EditorLibreState *s, TTF_Font *fuente, SDL_Event *e, SDL_Rec
     }
 
     /* Click en |> RUN */
-    if (e->type == SDL_MOUSEBUTTONDOWN && !s->guardando && !s->cargando &&
+    if (e->type == SDL_EVENT_MOUSE_BUTTON_DOWN && !s->guardando && !s->cargando &&
         e->button.button == SDL_BUTTON_LEFT) {
         int mx = e->button.x, my = e->button.y;
         if (mx >= L.btn_run.x && mx < L.btn_run.x + L.btn_run.w &&
@@ -2309,7 +2310,7 @@ editor_libre_evento(EditorLibreState *s, TTF_Font *fuente, SDL_Event *e, SDL_Rec
     }
 
     /* Texto */
-    if (e->type == SDL_TEXTINPUT) {
+    if (e->type == SDL_EVENT_TEXT_INPUT) {
         if (s->guardando || s->cargando) {
             int add = (int)strlen(e->text.text);
             if (s->prompt_len + add < (int)sizeof(s->prompt_buf) - 1) {
@@ -2333,8 +2334,8 @@ editor_libre_evento(EditorLibreState *s, TTF_Font *fuente, SDL_Event *e, SDL_Rec
     }
 
     /* Marcar diagnóstico pendiente en cualquier tecla de edición */
-    if (e->type == SDL_KEYDOWN && !s->guardando && !s->cargando) {
-        SDL_Keycode k2 = e->key.keysym.sym;
+    if (e->type == SDL_EVENT_KEY_DOWN && !s->guardando && !s->cargando) {
+        SDL_Keycode k2 = e->key.key;
         if (k2 == SDLK_RETURN || k2 == SDLK_BACKSPACE || k2 == SDLK_DELETE) {
             s->diag_pending   = 1;
             s->last_edit_tick = SDL_GetTicks();
@@ -2344,17 +2345,17 @@ editor_libre_evento(EditorLibreState *s, TTF_Font *fuente, SDL_Event *e, SDL_Rec
 
 /* ── editor_libre_dibujar ─────────────────────────────────────────────────── */
 void
-editor_libre_dibujar(EditorLibreState *s, SDL_Renderer *renderer, TTF_Font *fuente, SDL_Rect area)
+editor_libre_dibujar(EditorLibreState *s, SDL_Renderer *renderer, TTF_Font *fuente, SDL_FRect area)
 {
     if (!s) return;
 
     /* Viewport: el código de render usa (0,0) como origen; el viewport lo desplaza */
-    SDL_RenderSetViewport(renderer, &area);
-    SDL_RenderSetClipRect(renderer, NULL);
+    ui_viewport(renderer, &area);
+    ui_clip(renderer, NULL);
 
     /* Helper: SDL_GetMouseState traducido al espacio local */
     #define LOCAL_MOUSE(mx, my) do { \
-        SDL_GetMouseState(&(mx), &(my)); \
+        ui_mouse(&(mx), &(my)); \
         (mx) -= area.x; (my) -= area.y; \
     } while(0)
 
@@ -2362,12 +2363,12 @@ editor_libre_dibujar(EditorLibreState *s, SDL_Renderer *renderer, TTF_Font *fuen
     if (s->cerrado) {
         int ancho = area.w, alto = area.h;
         SDL_SetRenderDrawColor(renderer, 40, 40, 40, 255);
-        SDL_RenderFillRect(renderer, &(SDL_Rect){0, 0, ancho, alto});
+        SDL_RenderFillRect(renderer, &(SDL_FRect){0, 0, ancho, alto});
         SDL_Color c = {100, 100, 100, 255};
         dibujadoTextoSimple(renderer, fuente, "Editor cerrado.  Presiona Enter para reabrir.",
                             ancho/2 - 180, alto/2 - 8, c);
-        SDL_RenderSetViewport(renderer, NULL);
-        SDL_RenderSetClipRect(renderer, NULL);
+        ui_viewport(renderer, NULL);
+        ui_clip(renderer, NULL);
         return;
     }
 
@@ -2391,7 +2392,7 @@ editor_libre_dibujar(EditorLibreState *s, SDL_Renderer *renderer, TTF_Font *fuen
 
     /* Fondo general */
     SDL_SetRenderDrawColor(renderer, BG_R, 255);
-    SDL_RenderFillRect(renderer, &(SDL_Rect){0, 0, ancho, alto});
+    SDL_RenderFillRect(renderer, &(SDL_FRect){0, 0, ancho, alto});
 
     int p_w  = L.editor_w;
     int p_x  = L.editor_x;
@@ -2401,20 +2402,20 @@ editor_libre_dibujar(EditorLibreState *s, SDL_Renderer *renderer, TTF_Font *fuen
 
     if (!vacio) {
         /* Fondo editor */
-        SDL_Rect editor_bg = { p_x, TAB_H, p_w, L.edit_h - TAB_H };
+        SDL_FRect editor_bg = { p_x, TAB_H, p_w, L.edit_h - TAB_H };
         SDL_SetRenderDrawColor(renderer, BG_R, 255);
         SDL_RenderFillRect(renderer, &editor_bg);
 
         /* Gutter */
-        SDL_Rect gutter = { p_x, TAB_H, GUTTER_W, L.edit_h - TAB_H };
+        SDL_FRect gutter = { p_x, TAB_H, GUTTER_W, L.edit_h - TAB_H };
         SDL_SetRenderDrawColor(renderer, GT_R, 255);
         SDL_RenderFillRect(renderer, &gutter);
         SDL_SetRenderDrawColor(renderer, LN_R, 255);
-        SDL_RenderDrawLine(renderer, p_x + GUTTER_W, TAB_H, p_x + GUTTER_W, L.edit_h);
+        SDL_RenderLine(renderer, p_x + GUTTER_W, TAB_H, p_x + GUTTER_W, L.edit_h);
 
         /* Lineas con word-wrap */
-        SDL_Rect edit_clip = { p_x, TAB_H, p_w, L.edit_h - TAB_H };
-        SDL_RenderSetClipRect(renderer, &edit_clip);
+        SDL_FRect edit_clip = { p_x, TAB_H, p_w, L.edit_h - TAB_H };
+        ui_clip(renderer, &edit_clip);
 
         int wrap_w  = p_w - GUTTER_W - 12;   /* ancho disponible para texto  */
         int vis_y   = TAB_H + 8;             /* posición Y visual actual      */
@@ -2433,21 +2434,21 @@ editor_libre_dibujar(EditorLibreState *s, SDL_Renderer *renderer, TTF_Font *fuen
             if (diag_linea) {
                 SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
                 SDL_SetRenderDrawColor(renderer, 180, 30, 30, 45);
-                SDL_RenderFillRect(renderer, &(SDL_Rect){p_x + GUTTER_W + 1, y, p_w - GUTTER_W - 1, L.line_h - 1});
+                SDL_RenderFillRect(renderer, &(SDL_FRect){p_x + GUTTER_W + 1, y, p_w - GUTTER_W - 1, L.line_h - 1});
                 SDL_SetRenderDrawColor(renderer, 200, 50, 50, 220);
-                SDL_RenderFillRect(renderer, &(SDL_Rect){p_x + GUTTER_W - 3, y, 3, L.line_h - 1});
+                SDL_RenderFillRect(renderer, &(SDL_FRect){p_x + GUTTER_W - 3, y, 3, L.line_h - 1});
                 SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_NONE);
             }
 
             /* Número de línea (solo en la primera visual-line de cada buffer-line) */
             SDL_Color c_num_row = diag_linea ? (SDL_Color){200, 80, 80, 255} : c_num;
             char num[12]; snprintf(num, sizeof(num), "%d", row + 1);
-            int nw; TTF_SizeUTF8(fuente, num, &nw, NULL);
-            SDL_Surface *sn = TTF_RenderUTF8_Blended(fuente, num, c_num_row);
+            int nw; TTF_GetStringSize(fuente, num, 0, &nw, NULL);
+            SDL_Surface *sn = TTF_RenderText_Blended(fuente, num, 0, c_num_row);
             if (sn) {
                 SDL_Texture *t = SDL_CreateTextureFromSurface(renderer, sn);
-                SDL_RenderCopy(renderer, t, NULL, &(SDL_Rect){p_x + GUTTER_W - nw - 8, y, sn->w, sn->h});
-                SDL_FreeSurface(sn); SDL_DestroyTexture(t);
+                SDL_RenderTexture(renderer, t, NULL, &(SDL_FRect){p_x + GUTTER_W - nw - 8, y, sn->w, sn->h});
+                SDL_DestroySurface(sn); SDL_DestroyTexture(t);
             }
 
             /* Guías de indentación */
@@ -2455,7 +2456,7 @@ editor_libre_dibujar(EditorLibreState *s, SDL_Renderer *renderer, TTF_Font *fuen
                 static const SDL_Color indent_col[] = {
                     {90,25,25,60},{25,80,25,60},{85,75,10,60},{20,50,90,60},{70,20,75,60}
                 };
-                int sp_w; TTF_SizeUTF8(fuente, "    ", &sp_w, NULL);
+                int sp_w; TTF_GetStringSize(fuente, "    ", 0, &sp_w, NULL);
                 int espacios = 0;
                 while (ep->buf[row][espacios] == ' ') espacios++;
                 int niveles = espacios / 4;
@@ -2463,10 +2464,10 @@ editor_libre_dibujar(EditorLibreState *s, SDL_Renderer *renderer, TTF_Font *fuen
                 for (int lv = 0; lv < niveles && lv < 5; lv++) {
                     SDL_Color gc = indent_col[lv];
                     SDL_SetRenderDrawColor(renderer, gc.r, gc.g, gc.b, gc.a);
-                    SDL_Rect zona = { p_tx + lv * sp_w, y, sp_w, L.line_h - 1 };
+                    SDL_FRect zona = { p_tx + lv * sp_w, y, sp_w, L.line_h - 1 };
                     SDL_RenderFillRect(renderer, &zona);
                     SDL_SetRenderDrawColor(renderer, gc.r, gc.g, gc.b, 130);
-                    SDL_RenderDrawLine(renderer, zona.x, y, zona.x, y + L.line_h - 2);
+                    SDL_RenderLine(renderer, zona.x, y, zona.x, y + L.line_h - 2);
                 }
                 SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_NONE);
             }
@@ -2474,11 +2475,11 @@ editor_libre_dibujar(EditorLibreState *s, SDL_Renderer *renderer, TTF_Font *fuen
             /* Texto con word-wrap */
             int vlines = 1;
             if (ep->buf[row][0] == '\0' && ep->n_lines == 1) {
-                SDL_Surface *sph = TTF_RenderUTF8_Blended(fuente, "Escribe tu codigo aqui...", c_ph);
+                SDL_Surface *sph = TTF_RenderText_Blended(fuente, "Escribe tu codigo aqui...", 0, c_ph);
                 if (sph) {
                     SDL_Texture *t = SDL_CreateTextureFromSurface(renderer, sph);
-                    SDL_RenderCopy(renderer, t, NULL, &(SDL_Rect){p_tx, y, sph->w, sph->h});
-                    SDL_FreeSurface(sph); SDL_DestroyTexture(t);
+                    SDL_RenderTexture(renderer, t, NULL, &(SDL_FRect){p_tx, y, sph->w, sph->h});
+                    SDL_DestroySurface(sph); SDL_DestroyTexture(t);
                 }
             } else if (ep->buf[row][0] != '\0') {
                 /* cursor tracking: solo si es la línea del cursor */
@@ -2495,12 +2496,12 @@ editor_libre_dibujar(EditorLibreState *s, SDL_Renderer *renderer, TTF_Font *fuen
                     int draw_cx = (cx_cur >= 0) ? cx_cur : p_tx;
                     int draw_cy = (cy_cur >= 0) ? cy_cur : y;
                     SDL_SetRenderDrawColor(renderer, TX_R, 200);
-                    SDL_RenderFillRect(renderer, &(SDL_Rect){draw_cx, draw_cy, 2, L.line_h - 2});
+                    SDL_RenderFillRect(renderer, &(SDL_FRect){draw_cx, draw_cy, 2, L.line_h - 2});
                 }
             } else if (row == ep->cursor_row) {
                 /* Línea vacía con cursor */
                 SDL_SetRenderDrawColor(renderer, TX_R, 200);
-                SDL_RenderFillRect(renderer, &(SDL_Rect){p_tx, y, 2, L.line_h - 2});
+                SDL_RenderFillRect(renderer, &(SDL_FRect){p_tx, y, 2, L.line_h - 2});
             }
 
             /* Mensaje de error inline */
@@ -2508,21 +2509,21 @@ editor_libre_dibujar(EditorLibreState *s, SDL_Renderer *renderer, TTF_Font *fuen
                 int last_y = y + (vlines - 1) * L.line_h;
                 SDL_Color c_err_msg = {200, 80, 80, 180};
                 char label[140]; snprintf(label, sizeof(label), "  %s", diag_linea->msg);
-                SDL_Surface *se = TTF_RenderUTF8_Blended(fuente, label, c_err_msg);
+                SDL_Surface *se = TTF_RenderText_Blended(fuente, label, 0, c_err_msg);
                 if (se) {
                     SDL_Texture *te = SDL_CreateTextureFromSurface(renderer, se);
                     SDL_SetTextureAlphaMod(te, 180);
                     int msg_x = p_tx + 4;
-                    SDL_RenderCopy(renderer, te, NULL, &(SDL_Rect){msg_x, last_y, se->w, se->h});
-                    SDL_FreeSurface(se); SDL_DestroyTexture(te);
+                    SDL_RenderTexture(renderer, te, NULL, &(SDL_FRect){msg_x, last_y, se->w, se->h});
+                    SDL_DestroySurface(se); SDL_DestroyTexture(te);
                 }
                 /* Subrayado ondulado en la última visual-line */
                 SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
                 SDL_SetRenderDrawColor(renderer, 220, 60, 60, 200);
                 int uy = last_y + L.line_h - 3;
                 for (int ux = p_tx; ux < p_tx + wrap_w - 1; ux += 4) {
-                    SDL_RenderDrawLine(renderer, ux,   uy,   ux+2, uy+1);
-                    SDL_RenderDrawLine(renderer, ux+2, uy+1, ux+4, uy);
+                    SDL_RenderLine(renderer, ux,   uy,   ux+2, uy+1);
+                    SDL_RenderLine(renderer, ux+2, uy+1, ux+4, uy);
                 }
                 SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_NONE);
             }
@@ -2530,7 +2531,7 @@ editor_libre_dibujar(EditorLibreState *s, SDL_Renderer *renderer, TTF_Font *fuen
             vis_y += vlines * L.line_h;
             row++;
         }
-        SDL_RenderSetClipRect(renderer, NULL);
+        ui_clip(renderer, NULL);
     }
 
     /* Estado vacio */
@@ -2541,20 +2542,20 @@ editor_libre_dibujar(EditorLibreState *s, SDL_Renderer *renderer, TTF_Font *fuen
         int iw = 40, ih = 52, fold = 12;
         int ix = cx - iw/2, iy = cy - ih/2;
         SDL_SetRenderDrawColor(renderer, 55, 55, 65, 255);
-        SDL_RenderFillRect(renderer, &(SDL_Rect){ix, iy+fold, iw, ih-fold});
-        SDL_RenderFillRect(renderer, &(SDL_Rect){ix, iy, iw-fold, fold});
+        SDL_RenderFillRect(renderer, &(SDL_FRect){ix, iy+fold, iw, ih-fold});
+        SDL_RenderFillRect(renderer, &(SDL_FRect){ix, iy, iw-fold, fold});
         SDL_SetRenderDrawColor(renderer, 35, 35, 45, 255);
-        SDL_RenderFillRect(renderer, &(SDL_Rect){ix+iw-fold, iy, fold, fold});
+        SDL_RenderFillRect(renderer, &(SDL_FRect){ix+iw-fold, iy, fold, fold});
         SDL_SetRenderDrawColor(renderer, 70, 70, 85, 255);
-        SDL_RenderDrawLine(renderer, ix+iw-fold, iy, ix+iw-fold, iy+fold);
-        SDL_RenderDrawLine(renderer, ix+iw-fold, iy+fold, ix+iw, iy+fold);
+        SDL_RenderLine(renderer, ix+iw-fold, iy, ix+iw-fold, iy+fold);
+        SDL_RenderLine(renderer, ix+iw-fold, iy+fold, ix+iw, iy+fold);
         SDL_SetRenderDrawColor(renderer, 80, 80, 95, 255);
         for (int li = 0; li < 4; li++)
-            SDL_RenderDrawLine(renderer, ix+6, iy+fold+8+li*9, ix+iw-6, iy+fold+8+li*9);
+            SDL_RenderLine(renderer, ix+6, iy+fold+8+li*9, ix+iw-6, iy+fold+8+li*9);
 
         SDL_Color c_desc = {80, 80, 95, 255};
         const char *desc = "No hay ningun archivo abierto";
-        int dw; TTF_SizeUTF8(fuente, desc, &dw, NULL);
+        int dw; TTF_GetStringSize(fuente, desc, 0, &dw, NULL);
         dibujadoTextoSimple(renderer, fuente, desc, cx - dw/2, cy + ih/2 + 14, c_desc);
 
         int bw = 160, bh = 28;
@@ -2562,19 +2563,19 @@ editor_libre_dibujar(EditorLibreState *s, SDL_Renderer *renderer, TTF_Font *fuen
         int mx_h, my_h; LOCAL_MOUSE(mx_h, my_h);
         int bhov = (mx_h >= bx && mx_h < bx+bw && my_h >= by && my_h < by+bh);
         SDL_SetRenderDrawColor(renderer, bhov?15:8, bhov?100:65, bhov?40:25, 255);
-        SDL_RenderFillRect(renderer, &(SDL_Rect){bx, by, bw, bh});
+        SDL_RenderFillRect(renderer, &(SDL_FRect){bx, by, bw, bh});
         SDL_SetRenderDrawColor(renderer, 0, 170, 60, 255);
-        SDL_RenderDrawRect(renderer, &(SDL_Rect){bx, by, bw, bh});
+        SDL_RenderRect(renderer, &(SDL_FRect){bx, by, bw, bh});
         const char *blbl = "Nuevo archivo";
-        int blw; TTF_SizeUTF8(fuente, blbl, &blw, NULL);
+        int blw; TTF_GetStringSize(fuente, blbl, 0, &blw, NULL);
         dibujadoTextoSimple(renderer, fuente, blbl, bx+(bw-blw)/2, by+4, (SDL_Color){0,220,80,255});
-        s->btn_nuevo = (SDL_Rect){bx, by, bw, bh};
+        s->btn_nuevo = (SDL_FRect){bx, by, bw, bh};
     }
 
     /* Barra de tabs interna */
     {
         int mx_t, my_t; LOCAL_MOUSE(mx_t, my_t);
-        SDL_Rect tab_bar = { L.editor_x, 0, L.editor_w, TAB_H };
+        SDL_FRect tab_bar = { L.editor_x, 0, L.editor_w, TAB_H };
         SDL_SetRenderDrawColor(renderer, 20, 20, 26, 255);
         SDL_RenderFillRect(renderer, &tab_bar);
 
@@ -2582,10 +2583,10 @@ editor_libre_dibujar(EditorLibreState *s, SDL_Renderer *renderer, TTF_Font *fuen
             int tx = L.editor_x + i * L.tw;
             int activ = (i == s->tab_activo);
             SDL_SetRenderDrawColor(renderer, activ?40:28, activ?40:28, activ?40:32, 255);
-            SDL_RenderFillRect(renderer, &(SDL_Rect){tx, 0, L.tw, TAB_H});
+            SDL_RenderFillRect(renderer, &(SDL_FRect){tx, 0, L.tw, TAB_H});
             if (activ) {
                 SDL_SetRenderDrawColor(renderer, 0, 200, 70, 255);
-                SDL_RenderDrawLine(renderer, tx, 0, tx + L.tw - 1, 0);
+                SDL_RenderLine(renderer, tx, 0, tx + L.tw - 1, 0);
             }
             char tab_name[48];
             if (s->tabs[i].nombre_arch[0] != '\0')
@@ -2601,26 +2602,26 @@ editor_libre_dibujar(EditorLibreState *s, SDL_Renderer *renderer, TTF_Font *fuen
             SDL_Color c_xb = xb_hov ? (SDL_Color){255,80,80,255} : (SDL_Color){70,70,70,255};
             dibujadoTextoSimple(renderer, fuente, "x", xbx, 6, c_xb);
             SDL_SetRenderDrawColor(renderer, 45, 45, 55, 255);
-            SDL_RenderDrawLine(renderer, tx+L.tw-1, 4, tx+L.tw-1, TAB_H-4);
+            SDL_RenderLine(renderer, tx+L.tw-1, 4, tx+L.tw-1, TAB_H-4);
         }
         int plus_x = L.editor_x + s->n_tabs * L.tw;
         int plus_hov = (mx_t >= plus_x && mx_t < plus_x+30 && my_t >= 0 && my_t < TAB_H);
         SDL_SetRenderDrawColor(renderer, plus_hov?40:25, plus_hov?80:40, plus_hov?40:25, 255);
-        SDL_RenderFillRect(renderer, &(SDL_Rect){plus_x, 4, 26, TAB_H-8});
+        SDL_RenderFillRect(renderer, &(SDL_FRect){plus_x, 4, 26, TAB_H-8});
         dibujadoTextoSimple(renderer, fuente, "+", plus_x+6, 6, (SDL_Color){0,200,70,255});
         SDL_SetRenderDrawColor(renderer, 0, 130, 45, 255);
-        SDL_RenderDrawLine(renderer, L.editor_x, TAB_H-1, L.editor_x+L.editor_w, TAB_H-1);
+        SDL_RenderLine(renderer, L.editor_x, TAB_H-1, L.editor_x+L.editor_w, TAB_H-1);
     }
 
     /* Panel de salida */
     SDL_SetRenderDrawColor(renderer, 0, 170, 55, 255);
-    SDL_RenderDrawLine(renderer, L.editor_x, L.edit_h, L.editor_x+L.editor_w, L.edit_h);
+    SDL_RenderLine(renderer, L.editor_x, L.edit_h, L.editor_x+L.editor_w, L.edit_h);
     SDL_SetRenderDrawColor(renderer, 0, 70, 22, 255);
-    SDL_RenderDrawLine(renderer, L.editor_x, L.edit_h+1, L.editor_x+L.editor_w, L.edit_h+1);
-    SDL_Rect out_area2 = { L.editor_x, L.edit_h+2, L.editor_w, L.out_h-2 };
+    SDL_RenderLine(renderer, L.editor_x, L.edit_h+1, L.editor_x+L.editor_w, L.edit_h+1);
+    SDL_FRect out_area2 = { L.editor_x, L.edit_h+2, L.editor_w, L.out_h-2 };
     SDL_SetRenderDrawColor(renderer, 6, 12, 6, 255);
     SDL_RenderFillRect(renderer, &out_area2);
-    SDL_Rect hd = { L.editor_x, L.edit_h+2, L.editor_w, L.line_h+4 };
+    SDL_FRect hd = { L.editor_x, L.edit_h+2, L.editor_w, L.line_h+4 };
     SDL_SetRenderDrawColor(renderer, 0, 38, 13, 255);
     SDL_RenderFillRect(renderer, &hd);
     dibujadoTextoSimple(renderer, fuente, "SALIDA", L.editor_x+4, L.edit_h+4, c_out_hd);
@@ -2633,8 +2634,8 @@ editor_libre_dibujar(EditorLibreState *s, SDL_Renderer *renderer, TTF_Font *fuen
         SDL_SetRenderDrawColor(renderer, hov||s->mini_menu?50:25, hov||s->mini_menu?80:45, hov||s->mini_menu?50:25, 255);
         SDL_RenderFillRect(renderer, &L.btn_menu);
         SDL_SetRenderDrawColor(renderer, 0, 160, 55, 255);
-        SDL_RenderDrawRect(renderer, &L.btn_menu);
-        int lw2; TTF_SizeUTF8(fuente, "=", &lw2, NULL);
+        SDL_RenderRect(renderer, &L.btn_menu);
+        int lw2; TTF_GetStringSize(fuente, "=", 0, &lw2, NULL);
         dibujadoTextoSimple(renderer, fuente, "=", L.btn_menu.x+(L.btn_menu.w-lw2)/2, L.btn_menu.y, (SDL_Color){180,200,180,255});
     }
     /* Boton |> RUN */
@@ -2645,8 +2646,8 @@ editor_libre_dibujar(EditorLibreState *s, SDL_Renderer *renderer, TTF_Font *fuen
         SDL_SetRenderDrawColor(renderer, hover?60:20, hover?220:160, hover?90:55, 255);
         SDL_RenderFillRect(renderer, &L.btn_run);
         SDL_SetRenderDrawColor(renderer, 0, 230, 80, 255);
-        SDL_RenderDrawRect(renderer, &L.btn_run);
-        int lbl_w; TTF_SizeUTF8(fuente, "|> RUN", &lbl_w, NULL);
+        SDL_RenderRect(renderer, &L.btn_run);
+        int lbl_w; TTF_GetStringSize(fuente, "|> RUN", 0, &lbl_w, NULL);
         dibujadoTextoSimple(renderer, fuente, "|> RUN", L.btn_run.x+(L.btn_run.w-lbl_w)/2, L.btn_run.y, (SDL_Color){10,10,10,255});
     }
     /* Dropdown */
@@ -2658,23 +2659,23 @@ editor_libre_dibujar(EditorLibreState *s, SDL_Renderer *renderer, TTF_Font *fuen
         SDL_RenderFillRect(renderer, &L.mdrop);
         SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_NONE);
         SDL_SetRenderDrawColor(renderer, 0, 180, 60, 255);
-        SDL_RenderDrawRect(renderer, &L.mdrop);
+        SDL_RenderRect(renderer, &L.mdrop);
         for (int i = 0; i < 2; i++) {
             int iy2 = L.mdrop.y + 3 + i * L.mitem_h;
-            SDL_Rect item_r = { L.mdrop.x+2, iy2, L.mdrop.w-4, L.mitem_h };
+            SDL_FRect item_r = { L.mdrop.x+2, iy2, L.mdrop.w-4, L.mitem_h };
             int hov_i = (mx_d >= item_r.x && mx_d < item_r.x+item_r.w &&
                          my_d >= item_r.y && my_d < item_r.y+item_r.h);
             if (hov_i) { SDL_SetRenderDrawColor(renderer, 20, 60, 25, 255); SDL_RenderFillRect(renderer, &item_r); }
-            if (i > 0) { SDL_SetRenderDrawColor(renderer, 0, 70, 25, 255); SDL_RenderDrawLine(renderer, L.mdrop.x+6, iy2-1, L.mdrop.x+L.mdrop.w-6, iy2-1); }
+            if (i > 0) { SDL_SetRenderDrawColor(renderer, 0, 70, 25, 255); SDL_RenderLine(renderer, L.mdrop.x+6, iy2-1, L.mdrop.x+L.mdrop.w-6, iy2-1); }
             SDL_Color c_mi = hov_i ? (SDL_Color){200,240,200,255} : (SDL_Color){142,192,124,255};
             dibujadoTextoSimple(renderer, fuente, menu_items[i], L.mdrop.x+10, iy2+2, c_mi);
         }
     }
 
     SDL_SetRenderDrawColor(renderer, 0, 55, 18, 160);
-    SDL_RenderDrawLine(renderer, L.editor_x, L.edit_h+L.line_h+8, L.editor_x+L.editor_w, L.edit_h+L.line_h+8);
+    SDL_RenderLine(renderer, L.editor_x, L.edit_h+L.line_h+8, L.editor_x+L.editor_w, L.edit_h+L.line_h+8);
 
-    SDL_RenderSetClipRect(renderer, &out_area2);
+    ui_clip(renderer, &out_area2);
     int oy = L.edit_h + L.line_h + 12;
     for (int i = 0; i < s->n_out; i++) {
         if (oy + L.line_h > alto) break;
@@ -2682,43 +2683,43 @@ editor_libre_dibujar(EditorLibreState *s, SDL_Renderer *renderer, TTF_Font *fuen
         dibujadoTextoSimple(renderer, fuente, ms, L.editor_x+10, oy, c_out);
         oy += L.line_h + 2;
     }
-    SDL_RenderSetClipRect(renderer, NULL);
+    ui_clip(renderer, NULL);
 
     /* Overlay: guardar */
     if (s->guardando) {
         SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
         SDL_SetRenderDrawColor(renderer, 0, 0, 0, 180);
-        SDL_RenderFillRect(renderer, &(SDL_Rect){0, 0, ancho, alto});
+        SDL_RenderFillRect(renderer, &(SDL_FRect){0, 0, ancho, alto});
         SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_NONE);
         int bw = L.editor_w-40, bh = alto-80, bx = L.editor_x+20, by = 40;
-        SDL_SetRenderDrawColor(renderer, 20, 22, 20, 255); SDL_RenderFillRect(renderer, &(SDL_Rect){bx,by,bw,bh});
-        SDL_SetRenderDrawColor(renderer, 0, 170, 55, 255); SDL_RenderDrawRect(renderer, &(SDL_Rect){bx,by,bw,bh});
+        SDL_SetRenderDrawColor(renderer, 20, 22, 20, 255); SDL_RenderFillRect(renderer, &(SDL_FRect){bx,by,bw,bh});
+        SDL_SetRenderDrawColor(renderer, 0, 170, 55, 255); SDL_RenderRect(renderer, &(SDL_FRect){bx,by,bw,bh});
         SDL_Color c_hdr={0,210,75,255}, c_lbl={146,131,116,255}, c_txt2={235,219,178,255};
         SDL_Color c_sel2={0,80,30,255}, c_item={142,192,124,255}, c_hint2={80,73,69,255};
         dibujadoTextoSimple(renderer, fuente, "Guardar archivo", bx+14, by+10, c_hdr);
         SDL_SetRenderDrawColor(renderer, 0, 120, 40, 255);
-        SDL_RenderDrawLine(renderer, bx+10, by+L.line_h+14, bx+bw-10, by+L.line_h+14);
+        SDL_RenderLine(renderer, bx+10, by+L.line_h+14, bx+bw-10, by+L.line_h+14);
         int iy = by+L.line_h+22;
         dibujadoTextoSimple(renderer, fuente, "Nombre:", bx+14, iy, c_lbl);
-        int lw; TTF_SizeUTF8(fuente, "Nombre: ", &lw, NULL);
-        SDL_SetRenderDrawColor(renderer, 30, 40, 30, 255); SDL_RenderFillRect(renderer, &(SDL_Rect){bx+12, iy-2, bw-24, L.line_h+4});
-        SDL_SetRenderDrawColor(renderer, 0, 130, 50, 255); SDL_RenderDrawRect(renderer, &(SDL_Rect){bx+12, iy-2, bw-24, L.line_h+4});
+        int lw; TTF_GetStringSize(fuente, "Nombre: ", 0, &lw, NULL);
+        SDL_SetRenderDrawColor(renderer, 30, 40, 30, 255); SDL_RenderFillRect(renderer, &(SDL_FRect){bx+12, iy-2, bw-24, L.line_h+4});
+        SDL_SetRenderDrawColor(renderer, 0, 130, 50, 255); SDL_RenderRect(renderer, &(SDL_FRect){bx+12, iy-2, bw-24, L.line_h+4});
         dibujadoTextoSimple(renderer, fuente, s->prompt_buf, bx+14+lw, iy, c_txt2);
-        { int tw3=0; if(s->prompt_len>0)TTF_SizeUTF8(fuente,s->prompt_buf,&tw3,NULL); SDL_SetRenderDrawColor(renderer,235,219,178,200); SDL_RenderFillRect(renderer,&(SDL_Rect){bx+14+lw+tw3,iy,2,L.line_h-2}); }
+        { int tw3=0; if(s->prompt_len>0)TTF_GetStringSize(fuente,s->prompt_buf, 0, &tw3, NULL); SDL_SetRenderDrawColor(renderer,235,219,178,200); SDL_RenderFillRect(renderer,&(SDL_FRect){bx+14+lw+tw3,iy,2,L.line_h-2}); }
         int ly = iy+L.line_h+10;
         dibujadoTextoSimple(renderer, fuente, "Archivos guardados:", bx+14, ly, c_lbl);
         ly += L.line_h+4;
-        SDL_SetRenderDrawColor(renderer, 0, 80, 25, 255); SDL_RenderDrawLine(renderer, bx+10, ly, bx+bw-10, ly); ly+=4;
+        SDL_SetRenderDrawColor(renderer, 0, 80, 25, 255); SDL_RenderLine(renderer, bx+10, ly, bx+bw-10, ly); ly+=4;
         int vis_saves=(by+bh-ly-L.line_h-20)/(L.line_h+2); if(vis_saves<1)vis_saves=1;
         if (s->saves_n == 0) dibujadoTextoSimple(renderer, fuente, "(no hay archivos guardados)", bx+20, ly, c_hint2);
         for (int i = 0; i < vis_saves && (s->saves_offset+i) < s->saves_n; i++) {
             int idx=s->saves_offset+i, fy=ly+i*(L.line_h+2);
-            if (idx==s->saves_sel) { SDL_SetRenderDrawColor(renderer,c_sel2.r,c_sel2.g,c_sel2.b,255); SDL_RenderFillRect(renderer,&(SDL_Rect){bx+10,fy-2,bw-20,L.line_h+4}); }
+            if (idx==s->saves_sel) { SDL_SetRenderDrawColor(renderer,c_sel2.r,c_sel2.g,c_sel2.b,255); SDL_RenderFillRect(renderer,&(SDL_FRect){bx+10,fy-2,bw-20,L.line_h+4}); }
             char entry[80]; snprintf(entry,sizeof(entry),"%s.paed",s->saves_lista[idx]);
             dibujadoTextoSimple(renderer, fuente, entry, bx+20, fy, idx==s->saves_sel?c_txt2:c_item);
-            SDL_Rect btn_x={bx+bw-36,fy-2,28,L.line_h+4};
+            SDL_FRect btn_x={bx+bw-36,fy-2,28,L.line_h+4};
             SDL_SetRenderDrawColor(renderer,100,15,15,255); SDL_RenderFillRect(renderer,&btn_x);
-            SDL_SetRenderDrawColor(renderer,200,30,30,255); SDL_RenderDrawRect(renderer,&btn_x);
+            SDL_SetRenderDrawColor(renderer,200,30,30,255); SDL_RenderRect(renderer,&btn_x);
             dibujadoTextoSimple(renderer, fuente, "X", btn_x.x+8, fy, (SDL_Color){251,73,52,255});
         }
         dibujadoTextoSimple(renderer, fuente, "[↑↓] seleccionar   [Enter] guardar   [ESC] cancelar", bx+14, by+bh-L.line_h-8, c_hint2);
@@ -2728,36 +2729,36 @@ editor_libre_dibujar(EditorLibreState *s, SDL_Renderer *renderer, TTF_Font *fuen
     if (s->cargando) {
         SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
         SDL_SetRenderDrawColor(renderer, 0, 0, 0, 180);
-        SDL_RenderFillRect(renderer, &(SDL_Rect){0, 0, ancho, alto});
+        SDL_RenderFillRect(renderer, &(SDL_FRect){0, 0, ancho, alto});
         SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_NONE);
         int bw=L.editor_w-40, bh=alto-80, bx=L.editor_x+20, by=40;
-        SDL_SetRenderDrawColor(renderer,20,22,20,255); SDL_RenderFillRect(renderer,&(SDL_Rect){bx,by,bw,bh});
-        SDL_SetRenderDrawColor(renderer,0,170,55,255); SDL_RenderDrawRect(renderer,&(SDL_Rect){bx,by,bw,bh});
+        SDL_SetRenderDrawColor(renderer,20,22,20,255); SDL_RenderFillRect(renderer,&(SDL_FRect){bx,by,bw,bh});
+        SDL_SetRenderDrawColor(renderer,0,170,55,255); SDL_RenderRect(renderer,&(SDL_FRect){bx,by,bw,bh});
         SDL_Color c_hdr={0,210,75,255},c_lbl={146,131,116,255},c_txt2={235,219,178,255};
         SDL_Color c_sel2={0,80,30,255},c_item={142,192,124,255},c_hint2={80,73,69,255};
         dibujadoTextoSimple(renderer, fuente, "Cargar archivo", bx+14, by+10, c_hdr);
-        SDL_SetRenderDrawColor(renderer,0,120,40,255); SDL_RenderDrawLine(renderer, bx+10, by+L.line_h+14, bx+bw-10, by+L.line_h+14);
+        SDL_SetRenderDrawColor(renderer,0,120,40,255); SDL_RenderLine(renderer, bx+10, by+L.line_h+14, bx+bw-10, by+L.line_h+14);
         int iy=by+L.line_h+22;
         dibujadoTextoSimple(renderer, fuente, "Nombre:", bx+14, iy, c_lbl);
-        int lw; TTF_SizeUTF8(fuente, "Nombre: ", &lw, NULL);
-        SDL_SetRenderDrawColor(renderer,30,40,30,255); SDL_RenderFillRect(renderer,&(SDL_Rect){bx+12,iy-2,bw-24,L.line_h+4});
-        SDL_SetRenderDrawColor(renderer,0,130,50,255); SDL_RenderDrawRect(renderer,&(SDL_Rect){bx+12,iy-2,bw-24,L.line_h+4});
+        int lw; TTF_GetStringSize(fuente, "Nombre: ", 0, &lw, NULL);
+        SDL_SetRenderDrawColor(renderer,30,40,30,255); SDL_RenderFillRect(renderer,&(SDL_FRect){bx+12,iy-2,bw-24,L.line_h+4});
+        SDL_SetRenderDrawColor(renderer,0,130,50,255); SDL_RenderRect(renderer,&(SDL_FRect){bx+12,iy-2,bw-24,L.line_h+4});
         dibujadoTextoSimple(renderer, fuente, s->prompt_buf, bx+14+lw, iy, c_txt2);
-        { int tw3=0; if(s->prompt_len>0)TTF_SizeUTF8(fuente,s->prompt_buf,&tw3,NULL); SDL_SetRenderDrawColor(renderer,235,219,178,200); SDL_RenderFillRect(renderer,&(SDL_Rect){bx+14+lw+tw3,iy,2,L.line_h-2}); }
+        { int tw3=0; if(s->prompt_len>0)TTF_GetStringSize(fuente,s->prompt_buf, 0, &tw3, NULL); SDL_SetRenderDrawColor(renderer,235,219,178,200); SDL_RenderFillRect(renderer,&(SDL_FRect){bx+14+lw+tw3,iy,2,L.line_h-2}); }
         int ly=iy+L.line_h+10;
         dibujadoTextoSimple(renderer, fuente, "Archivos guardados:", bx+14, ly, c_lbl);
         ly+=L.line_h+4;
-        SDL_SetRenderDrawColor(renderer,0,80,25,255); SDL_RenderDrawLine(renderer, bx+10, ly, bx+bw-10, ly); ly+=4;
+        SDL_SetRenderDrawColor(renderer,0,80,25,255); SDL_RenderLine(renderer, bx+10, ly, bx+bw-10, ly); ly+=4;
         int vis_saves=(by+bh-ly-L.line_h-20)/(L.line_h+2); if(vis_saves<1)vis_saves=1;
         if (s->saves_n==0) dibujadoTextoSimple(renderer, fuente, "(no hay archivos guardados)", bx+20, ly, c_hint2);
         for (int i=0; i<vis_saves&&(s->saves_offset+i)<s->saves_n; i++) {
             int idx=s->saves_offset+i, fy=ly+i*(L.line_h+2);
-            if (idx==s->saves_sel) { SDL_SetRenderDrawColor(renderer,c_sel2.r,c_sel2.g,c_sel2.b,255); SDL_RenderFillRect(renderer,&(SDL_Rect){bx+10,fy-2,bw-20,L.line_h+4}); }
+            if (idx==s->saves_sel) { SDL_SetRenderDrawColor(renderer,c_sel2.r,c_sel2.g,c_sel2.b,255); SDL_RenderFillRect(renderer,&(SDL_FRect){bx+10,fy-2,bw-20,L.line_h+4}); }
             char entry[80]; snprintf(entry,sizeof(entry),"%s.paed",s->saves_lista[idx]);
             dibujadoTextoSimple(renderer, fuente, entry, bx+20, fy, idx==s->saves_sel?c_txt2:c_item);
-            SDL_Rect btn_x={bx+bw-36,fy-2,28,L.line_h+4};
+            SDL_FRect btn_x={bx+bw-36,fy-2,28,L.line_h+4};
             SDL_SetRenderDrawColor(renderer,100,15,15,255); SDL_RenderFillRect(renderer,&btn_x);
-            SDL_SetRenderDrawColor(renderer,200,30,30,255); SDL_RenderDrawRect(renderer,&btn_x);
+            SDL_SetRenderDrawColor(renderer,200,30,30,255); SDL_RenderRect(renderer,&btn_x);
             dibujadoTextoSimple(renderer, fuente, "X", btn_x.x+8, fy, (SDL_Color){251,73,52,255});
         }
         dibujadoTextoSimple(renderer, fuente, "[↑↓] seleccionar   [Enter] cargar   [ESC] cancelar", bx+14, by+bh-L.line_h-8, c_hint2);
@@ -2767,16 +2768,16 @@ editor_libre_dibujar(EditorLibreState *s, SDL_Renderer *renderer, TTF_Font *fuen
     if (s->confirm_salir) {
         SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
         SDL_SetRenderDrawColor(renderer, 0, 0, 0, 160);
-        SDL_RenderFillRect(renderer, &(SDL_Rect){0, 0, ancho, alto});
+        SDL_RenderFillRect(renderer, &(SDL_FRect){0, 0, ancho, alto});
         SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_NONE);
         int bw=380, bh=80, bx=L.editor_x+(L.editor_w-bw)/2, by=(alto-bh)/2;
-        SDL_SetRenderDrawColor(renderer,28,24,22,255); SDL_RenderFillRect(renderer,&(SDL_Rect){bx,by,bw,bh});
-        SDL_SetRenderDrawColor(renderer,251,73,52,255); SDL_RenderDrawRect(renderer,&(SDL_Rect){bx,by,bw,bh});
+        SDL_SetRenderDrawColor(renderer,28,24,22,255); SDL_RenderFillRect(renderer,&(SDL_FRect){bx,by,bw,bh});
+        SDL_SetRenderDrawColor(renderer,251,73,52,255); SDL_RenderRect(renderer,&(SDL_FRect){bx,by,bw,bh});
         dibujadoTextoSimple(renderer, fuente, "Salir sin guardar?", bx+20, by+12, (SDL_Color){235,219,178,255});
         dibujadoTextoSimple(renderer, fuente, "[S / Enter] Si     [N / ESC] No", bx+20, by+12+L.line_h+4, (SDL_Color){146,131,116,255});
     }
 
-    SDL_RenderSetViewport(renderer, NULL);
-    SDL_RenderSetClipRect(renderer, NULL);
+    ui_viewport(renderer, NULL);
+    ui_clip(renderer, NULL);
     #undef LOCAL_MOUSE
 }

@@ -1,5 +1,5 @@
-#include <SDL2/SDL.h>
-#include <SDL2/SDL_ttf.h>
+#include <SDL3/SDL.h>
+#include <SDL3_ttf/SDL_ttf.h>
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
@@ -144,7 +144,7 @@ pixel_a_char(TTF_Font *fuente, const char *texto, int px_rel)
         strncpy(tmp, texto, i);
         tmp[i] = '\0';
         int w;
-        TTF_SizeUTF8(fuente, tmp, &w, NULL);
+        TTF_GetStringSize(fuente, tmp, 0, &w, NULL);
         if (w > px_rel) return i - 1;
     }
     return len;
@@ -164,12 +164,12 @@ render_texto_xy(SDL_Renderer *renderer, TTF_Font *fuente,
                 const char *texto, int x, int y, SDL_Color color)
 {
     if (!texto || !texto[0]) return;
-    SDL_Surface *s = TTF_RenderUTF8_Blended(fuente, texto, color);
+    SDL_Surface *s = TTF_RenderText_Blended(fuente, texto, 0, color);
     if (!s) return;
     SDL_Texture *t = SDL_CreateTextureFromSurface(renderer, s);
-    SDL_Rect r = {x, y, s->w, s->h};
-    SDL_RenderCopy(renderer, t, NULL, &r);
-    SDL_FreeSurface(s);
+    SDL_FRect r = {x, y, s->w, s->h};
+    SDL_RenderTexture(renderer, t, NULL, &r);
+    SDL_DestroySurface(s);
     SDL_DestroyTexture(t);
 }
 
@@ -178,7 +178,7 @@ altura_wrap(TTF_Font *fuente, const char *texto, int max_ancho)
 {
     char copia[256];
     strncpy(copia, texto, 255); copia[255] = '\0';
-    int al = TTF_FontHeight(fuente) + 4;
+    int al = TTF_GetFontHeight(fuente) + 4;
     char linea[256] = "";
     int  cnt = 0;
     char *palabra = strtok(copia, " \n\r\t");
@@ -186,7 +186,7 @@ altura_wrap(TTF_Font *fuente, const char *texto, int max_ancho)
         char prueba[256];
         snprintf(prueba, sizeof(prueba), "%s%s%s",
                  linea, linea[0] ? " " : "", palabra);
-        int w; TTF_SizeUTF8(fuente, prueba, &w, NULL);
+        int w; TTF_GetStringSize(fuente, prueba, 0, &w, NULL);
         if (w > max_ancho && linea[0]) { cnt++; snprintf(linea, sizeof(linea), "%s", palabra); }
         else                            snprintf(linea, sizeof(linea), "%s", prueba);
         palabra = strtok(NULL, " \n\r\t");
@@ -273,8 +273,8 @@ screenDoc(SDL_Renderer *renderer, TTF_Font *fuente, int ancho, int alto)
     int scrollbar_w     = 14;
     int contenido_x     = panel_izq_w + 1;
     int contenido_w     = ancho - panel_izq_w - scrollbar_w - 4;
-    int alto_linea      = TTF_FontHeight(fuente) + 4;
-    int bar_h           = TTF_FontHeight(fuente) + 4;
+    int alto_linea      = TTF_GetFontHeight(fuente) + 4;
+    int bar_h           = TTF_GetFontHeight(fuente) + 4;
     int lineas_visibles = (alto - bar_h) / alto_linea;
     int foco            = 0;
 
@@ -345,11 +345,11 @@ screenDoc(SDL_Renderer *renderer, TTF_Font *fuente, int ancho, int alto)
 
         // ── EVENTOS ──
         while (SDL_PollEvent(&evento)) {
-            if (evento.type == SDL_QUIT) {
-                SDL_RenderSetClipRect(renderer, NULL); return 0;
+            if (evento.type == SDL_EVENT_QUIT) {
+                ui_clip(renderer, NULL); return 0;
             }
 
-            if (evento.type == SDL_MOUSEBUTTONDOWN &&
+            if (evento.type == SDL_EVENT_MOUSE_BUTTON_DOWN &&
                 evento.button.button == SDL_BUTTON_LEFT) {
                 clicked = 1; click_x = evento.button.x; click_y = evento.button.y;
 
@@ -404,7 +404,7 @@ screenDoc(SDL_Renderer *renderer, TTF_Font *fuente, int ancho, int alto)
                 }
             }
 
-            if (evento.type == SDL_MOUSEMOTION && sel_arrastrando) {
+            if (evento.type == SDL_EVENT_MOUSE_MOTION && sel_arrastrando) {
                 int mx = evento.motion.x, my = evento.motion.y;
                 if (mx >= contenido_x && mx < contenido_x + contenido_w &&
                     my >= 0 && my < alto - bar_h) {
@@ -415,7 +415,7 @@ screenDoc(SDL_Renderer *renderer, TTF_Font *fuente, int ancho, int alto)
                 }
             }
 
-            if (evento.type == SDL_MOUSEBUTTONUP &&
+            if (evento.type == SDL_EVENT_MOUSE_BUTTON_UP &&
                 evento.button.button == SDL_BUTTON_LEFT) {
                 sel_arrastrando = 0;
                 sel_activa = (sel_lin_ini != sel_lin_fin ||
@@ -445,8 +445,8 @@ screenDoc(SDL_Renderer *renderer, TTF_Font *fuente, int ancho, int alto)
                 }
             }
 
-            if (evento.type == SDL_KEYDOWN) {
-                SDL_Keycode k = evento.key.keysym.sym;
+            if (evento.type == SDL_EVENT_KEY_DOWN) {
+                SDL_Keycode k = evento.key.key;
                 if (vista == 1) {
                     if (k == SDLK_ESCAPE) {
                         if (popup_visible) { popup_visible = 0; sel_activa = 0; }
@@ -455,7 +455,7 @@ screenDoc(SDL_Renderer *renderer, TTF_Font *fuente, int ancho, int alto)
                     else if (k == SDLK_PAGEUP)   scroll -= lineas_visibles / 2;
                     else if (k == SDLK_PAGEDOWN)  scroll += lineas_visibles / 2;
                 } else if (foco == 0) {
-                    if (k == SDLK_ESCAPE || k == SDLK_F9) { SDL_RenderSetClipRect(renderer, NULL); return 0; }
+                    if (k == SDLK_ESCAPE || k == SDLK_F9) { ui_clip(renderer, NULL); return 0; }
                     else if (k == SDLK_UP)   { capitulo_sel--; episodio_sel = 0; scroll = 0; }
                     else if (k == SDLK_DOWN) { capitulo_sel++; episodio_sel = 0; scroll = 0; }
                     else if (k == SDLK_RETURN || k == SDLK_RIGHT) foco = 1;
@@ -471,7 +471,7 @@ screenDoc(SDL_Renderer *renderer, TTF_Font *fuente, int ancho, int alto)
                 if (ep_count > 0 && episodio_sel >= ep_count) episodio_sel = ep_count-1;
             }
 
-            if (evento.type == SDL_MOUSEWHEEL) {
+            if (evento.type == SDL_EVENT_MOUSE_WHEEL) {
                 if (vista == 1) {
                     scroll -= evento.wheel.y * 3;
                     popup_visible = 0; sel_activa = 0;
@@ -496,17 +496,17 @@ screenDoc(SDL_Renderer *renderer, TTF_Font *fuente, int ancho, int alto)
         SDL_RenderClear(renderer);
 
         // Fondos
-        SDL_Rect panel_izq = {0, 0, panel_izq_w, alto};
+        SDL_FRect panel_izq = {0, 0, panel_izq_w, alto};
         SDL_SetRenderDrawColor(renderer, 22, 22, 40, 255);
         SDL_RenderFillRect(renderer, &panel_izq);
-        SDL_Rect panel_der = {contenido_x, 0, contenido_w + scrollbar_w + 4, alto};
+        SDL_FRect panel_der = {contenido_x, 0, contenido_w + scrollbar_w + 4, alto};
         SDL_SetRenderDrawColor(renderer, 14, 14, 24, 255);
         SDL_RenderFillRect(renderer, &panel_der);
         SDL_SetRenderDrawColor(renderer, foco==1?120:60, 60, foco==1?200:100, 255);
-        SDL_RenderDrawLine(renderer, panel_izq_w, 0, panel_izq_w, alto);
+        SDL_RenderLine(renderer, panel_izq_w, 0, panel_izq_w, alto);
 
         // ── PANEL IZQUIERDO ──
-        SDL_RenderSetClipRect(renderer, &(SDL_Rect){0, 0, panel_izq_w, alto});
+        ui_clip(renderer, &(SDL_FRect){0, 0, panel_izq_w, alto});
         int item_y = 10;
         for (int i = 0; i < total_capitulos; i++) {
             int imw  = panel_izq_w - 20;
@@ -515,10 +515,10 @@ screenDoc(SDL_Renderer *renderer, TTF_Font *fuente, int ancho, int alto)
             int sel  = (i == capitulo_sel);
             if (sel) {
                 SDL_SetRenderDrawColor(renderer, foco==0?50:35, 35, foco==0?110:75, 255);
-                SDL_Rect hl = {4, item_y-2, panel_izq_w-8, ih+4};
+                SDL_FRect hl = {4, item_y-2, panel_izq_w-8, ih+4};
                 SDL_RenderFillRect(renderer, &hl);
                 SDL_SetRenderDrawColor(renderer, foco==0?120:80, 80, foco==0?220:140, 255);
-                SDL_RenderDrawRect(renderer, &hl);
+                SDL_RenderRect(renderer, &hl);
             }
             SDL_Color ci = sel ? (SDL_Color){210,210,255,255} : (SDL_Color){110,110,160,255};
             dibujadoTextoMultilineaColor(renderer, fuente, capitulos[i].titulo,
@@ -531,15 +531,15 @@ screenDoc(SDL_Renderer *renderer, TTF_Font *fuente, int ancho, int alto)
         }
 
         // ── PANEL DERECHO ──
-        SDL_RenderSetClipRect(renderer, &(SDL_Rect){contenido_x, 0, contenido_w, alto});
+        ui_clip(renderer, &(SDL_FRect){contenido_x, 0, contenido_w, alto});
 
         if (vista == 0) {
             // Esquema
             int cy  = 20;
             int ch  = altura_wrap(fuente, capitulos[capitulo_sel].titulo, contenido_w-30) + 20;
-            SDL_Rect caja = {contenido_x+10, cy, contenido_w-20, ch};
+            SDL_FRect caja = {contenido_x+10, cy, contenido_w-20, ch};
             SDL_SetRenderDrawColor(renderer, 30,30,60,255); SDL_RenderFillRect(renderer, &caja);
-            SDL_SetRenderDrawColor(renderer, 100,100,200,255); SDL_RenderDrawRect(renderer, &caja);
+            SDL_SetRenderDrawColor(renderer, 100,100,200,255); SDL_RenderRect(renderer, &caja);
             dibujadoTextoMultilineaColor(renderer, fuente, capitulos[capitulo_sel].titulo,
                                          contenido_x+14, cy+2, contenido_w-30,
                                          (SDL_Color){180,180,255,255});
@@ -547,7 +547,7 @@ screenDoc(SDL_Renderer *renderer, TTF_Font *fuente, int ancho, int alto)
             dibujadoTextoColor(renderer, fuente, "Episodios:",
                                contenido_x+6, ey-12, (SDL_Color){80,160,100,255});
             SDL_SetRenderDrawColor(renderer, 50,100,70,255);
-            SDL_RenderDrawLine(renderer, contenido_x+10, ey+22, contenido_x+contenido_w-10, ey+22);
+            SDL_RenderLine(renderer, contenido_x+10, ey+22, contenido_x+contenido_w-10, ey+22);
             ey += 30;
             for (int i = 0; i < ep_count; i++) {
                 int ei  = ep_base + i;
@@ -555,9 +555,9 @@ screenDoc(SDL_Renderer *renderer, TTF_Font *fuente, int ancho, int alto)
                 int eph = altura_wrap(fuente, episodios[ei].titulo, contenido_w-40);
                 if (eph < alto_linea) eph = alto_linea;
                 if (sp) {
-                    SDL_Rect hl = {contenido_x+8, ey-2, contenido_w-16, eph+6};
+                    SDL_FRect hl = {contenido_x+8, ey-2, contenido_w-16, eph+6};
                     SDL_SetRenderDrawColor(renderer,30,60,50,255); SDL_RenderFillRect(renderer,&hl);
-                    SDL_SetRenderDrawColor(renderer,60,180,100,255); SDL_RenderDrawRect(renderer,&hl);
+                    SDL_SetRenderDrawColor(renderer,60,180,100,255); SDL_RenderRect(renderer,&hl);
                 }
                 dibujadoTextoColor(renderer, fuente, sp?">":" ", contenido_x+10, ey-12,
                                    sp?(SDL_Color){80,255,130,255}:(SDL_Color){50,130,80,255});
@@ -604,14 +604,14 @@ screenDoc(SDL_Renderer *renderer, TTF_Font *fuente, int ancho, int alto)
                     int x1 = 0, x2 = 0;
                     if (cs > 0) {
                         char part[512]; strncpy(part, lin, cs); part[cs] = '\0';
-                        TTF_SizeUTF8(fuente, part, &x1, NULL);
+                        TTF_GetStringSize(fuente, part, 0, &x1, NULL);
                     }
                     if (ce > 0) {
                         char part[512]; strncpy(part, lin, ce); part[ce] = '\0';
-                        TTF_SizeUTF8(fuente, part, &x2, NULL);
+                        TTF_GetStringSize(fuente, part, 0, &x2, NULL);
                     }
                     // padding de 2px arriba y abajo → parece marcador real
-                    SDL_Rect hr = {texto_real_x + x1 - 2,
+                    SDL_FRect hr = {texto_real_x + x1 - 2,
                                    y_txt - 2,
                                    x2 - x1 + 4,
                                    alto_linea + 2};
@@ -634,17 +634,17 @@ screenDoc(SDL_Renderer *renderer, TTF_Font *fuente, int ancho, int alto)
                     int x1 = 0, x2 = 0;
                     if (cs > 0) {
                         char part[512]; strncpy(part, lin, cs); part[cs] = '\0';
-                        TTF_SizeUTF8(fuente, part, &x1, NULL);
+                        TTF_GetStringSize(fuente, part, 0, &x1, NULL);
                     }
                     if (ce > 0) {
                         char part[512]; strncpy(part, lin, ce); part[ce] = '\0';
-                        TTF_SizeUTF8(fuente, part, &x2, NULL);
+                        TTF_GetStringSize(fuente, part, 0, &x2, NULL);
                     }
                     if (x2 - x1 < 2 && ce > cs) x2 = x1 + 2;
 
                     SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
                     SDL_SetRenderDrawColor(renderer, 70, 130, 200, 130);
-                    SDL_Rect sr = {texto_real_x + x1, y_txt, x2 - x1, alto_linea - 2};
+                    SDL_FRect sr = {texto_real_x + x1, y_txt, x2 - x1, alto_linea - 2};
                     SDL_RenderFillRect(renderer, &sr);
                     SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_NONE);
                 }
@@ -676,11 +676,11 @@ screenDoc(SDL_Renderer *renderer, TTF_Font *fuente, int ancho, int alto)
                     int x1 = 0, x2 = 0;
                     if (cs > 0) {
                         char p[512]; strncpy(p, lin, cs); p[cs] = '\0';
-                        TTF_SizeUTF8(fuente, p, &x1, NULL);
+                        TTF_GetStringSize(fuente, p, 0, &x1, NULL);
                     }
                     if (ce > 0) {
                         char p[512]; strncpy(p, lin, ce); p[ce] = '\0';
-                        TTF_SizeUTF8(fuente, p, &x2, NULL);
+                        TTF_GetStringSize(fuente, p, 0, &x2, NULL);
                     }
 
                     // Segmento 1: antes del highlight
@@ -709,18 +709,18 @@ screenDoc(SDL_Renderer *renderer, TTF_Font *fuente, int ancho, int alto)
             }
 
             // Scrollbar
-            SDL_RenderSetClipRect(renderer, NULL);
+            ui_clip(renderer, NULL);
             int sb_x = ancho - scrollbar_w - 2;
-            SDL_Rect track = {sb_x, 4, scrollbar_w, alto-8};
+            SDL_FRect track = {sb_x, 4, scrollbar_w, alto-8};
             SDL_SetRenderDrawColor(renderer, 30,30,50,255); SDL_RenderFillRect(renderer, &track);
-            SDL_SetRenderDrawColor(renderer, 55,55,85,255); SDL_RenderDrawRect(renderer, &track);
+            SDL_SetRenderDrawColor(renderer, 55,55,85,255); SDL_RenderRect(renderer, &track);
             if (total_ep_lineas > 0) {
                 float ratio = (float)lineas_visibles / total_ep_lineas;
                 if (ratio > 1.0f) ratio = 1.0f;
                 int th = (int)((alto-8)*ratio); if (th < 20) th = 20;
                 int ty = 4 + (max_scroll > 0
                          ? (int)((float)scroll/max_scroll*(alto-8-th)) : 0);
-                SDL_Rect thumb = {sb_x+2, ty, scrollbar_w-4, th};
+                SDL_FRect thumb = {sb_x+2, ty, scrollbar_w-4, th};
                 SDL_SetRenderDrawColor(renderer, 90,90,170,255);
                 SDL_RenderFillRect(renderer, &thumb);
                 if (clicked && click_x >= sb_x && click_x <= sb_x+scrollbar_w &&
@@ -732,28 +732,28 @@ screenDoc(SDL_Renderer *renderer, TTF_Font *fuente, int ancho, int alto)
 
             // ── POPUP de colores ──
             if (popup_visible) {
-                SDL_RenderSetClipRect(renderer, NULL);
-                SDL_Rect pop = {popup_x, popup_y, popup_w, popup_h};
+                ui_clip(renderer, NULL);
+                SDL_FRect pop = {popup_x, popup_y, popup_w, popup_h};
                 SDL_SetRenderDrawColor(renderer, 20, 20, 35, 245);
                 SDL_RenderFillRect(renderer, &pop);
                 SDL_SetRenderDrawColor(renderer, 100, 100, 160, 255);
-                SDL_RenderDrawRect(renderer, &pop);
+                SDL_RenderRect(renderer, &pop);
 
-                    int mx, my; SDL_GetMouseState(&mx, &my);
+                    int mx, my; ui_mouse(&mx, &my);
 
                     // cuadros de color
                     for (int ci = 0; ci < NUM_COLORES; ci++) {
-                        SDL_Rect sq_r = {popup_x + pad + ci*(sq+gap), popup_y + pad, sq, sq};
+                        SDL_FRect sq_r = {popup_x + pad + ci*(sq+gap), popup_y + pad, sq, sq};
                         SDL_Color c = paleta[ci];
                         SDL_SetRenderDrawColor(renderer, c.r, c.g, c.b, 255);
                         SDL_RenderFillRect(renderer, &sq_r);
                         SDL_SetRenderDrawColor(renderer, 200, 200, 200, 80);
-                        SDL_RenderDrawRect(renderer, &sq_r);
+                        SDL_RenderRect(renderer, &sq_r);
                         if (mx >= sq_r.x && mx < sq_r.x+sq &&
                             my >= sq_r.y && my < sq_r.y+sq) {
                             SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
-                            SDL_Rect outer = {sq_r.x-1, sq_r.y-1, sq_r.w+2, sq_r.h+2};
-                            SDL_RenderDrawRect(renderer, &outer);
+                            SDL_FRect outer = {sq_r.x-1, sq_r.y-1, sq_r.w+2, sq_r.h+2};
+                            SDL_RenderRect(renderer, &outer);
                         }
                     }
 
@@ -761,50 +761,49 @@ screenDoc(SDL_Renderer *renderer, TTF_Font *fuente, int ancho, int alto)
                     {
                         int del_x = popup_x + pad + NUM_COLORES * (sq + gap);
                         int del_y = popup_y + pad;
-                        SDL_Rect del_r = {del_x, del_y, sq, sq};
+                        SDL_FRect del_r = {del_x, del_y, sq, sq};
                         SDL_SetRenderDrawColor(renderer, 80, 25, 25, 255);
                         SDL_RenderFillRect(renderer, &del_r);
                         SDL_SetRenderDrawColor(renderer, 200, 60, 60, 255);
-                        SDL_RenderDrawRect(renderer, &del_r);
+                        SDL_RenderRect(renderer, &del_r);
                         if (mx >= del_x && mx < del_x+sq && my >= del_y && my < del_y+sq) {
                             SDL_SetRenderDrawColor(renderer, 255, 100, 100, 255);
-                            SDL_Rect outer = {del_r.x-1, del_r.y-1, del_r.w+2, del_r.h+2};
-                            SDL_RenderDrawRect(renderer, &outer);
+                            SDL_FRect outer = {del_r.x-1, del_r.y-1, del_r.w+2, del_r.h+2};
+                            SDL_RenderRect(renderer, &outer);
                         }
-                        SDL_Surface *xs = TTF_RenderUTF8_Blended(fuente, "X",
-                                          (SDL_Color){220, 80, 80, 255});
+                        SDL_Surface *xs = TTF_RenderText_Blended(fuente, "X", 0, (SDL_Color){220, 80, 80, 255});
                         if (xs) {
                             SDL_Texture *xt = SDL_CreateTextureFromSurface(renderer, xs);
-                            SDL_Rect xr = {del_x + (sq - xs->w)/2,
+                            SDL_FRect xr = {del_x + (sq - xs->w)/2,
                                            del_y + (sq - xs->h)/2,
                                            xs->w, xs->h};
-                            SDL_RenderCopy(renderer, xt, NULL, &xr);
-                            SDL_FreeSurface(xs); SDL_DestroyTexture(xt);
+                            SDL_RenderTexture(renderer, xt, NULL, &xr);
+                            SDL_DestroySurface(xs); SDL_DestroyTexture(xt);
                         }
                     }
             }
         }
 
-        SDL_RenderSetClipRect(renderer, NULL);
+        ui_clip(renderer, NULL);
 
         // ── Barra de atajos ──
         {
             int by = alto - bar_h;
-            SDL_Rect bar = {0, by, ancho, bar_h};
+            SDL_FRect bar = {0, by, ancho, bar_h};
             SDL_SetRenderDrawColor(renderer, 15,15,28,255); SDL_RenderFillRect(renderer, &bar);
             SDL_SetRenderDrawColor(renderer, 50,50,80,255);
-            SDL_RenderDrawLine(renderer, 0, by, ancho, by);
+            SDL_RenderLine(renderer, 0, by, ancho, by);
             const char *hint = (vista == 0)
                 ? (foco==0 ? "[ENTER/→] entrar  [ESC] salir"
                            : "[↑↓] navegar  [ENTER] abrir  [←/ESC] volver")
                 : "[drag] seleccionar → elegir color  [PgUp/Dn] scroll  [ESC] volver";
             SDL_Color ch = {100,100,160,255};
-            SDL_Surface *s = TTF_RenderUTF8_Blended(fuente, hint, ch);
+            SDL_Surface *s = TTF_RenderText_Blended(fuente, hint, 0, ch);
             if (s) {
                 SDL_Texture *t = SDL_CreateTextureFromSurface(renderer, s);
-                SDL_Rect r = {10, by+2, s->w, s->h};
-                SDL_RenderCopy(renderer, t, NULL, &r);
-                SDL_FreeSurface(s); SDL_DestroyTexture(t);
+                SDL_FRect r = {10, by+2, s->w, s->h};
+                SDL_RenderTexture(renderer, t, NULL, &r);
+                SDL_DestroySurface(s); SDL_DestroyTexture(t);
             }
         }
 
@@ -821,7 +820,7 @@ screenDoc(SDL_Renderer *renderer, TTF_Font *fuente, int ancho, int alto)
 // =============================================================
 //  API DE PANEL  — integración con el shell de tabs
 //
-//  Truco clave: SDL_RenderSetViewport(renderer, &area) antes de
+//  Truco clave: ui_viewport(renderer, &area) antes de
 //  dibujar hace que (0,0) en el código existente mapee a
 //  (area.x, area.y) en pantalla — sin tocar ninguna coordenada.
 //  Los eventos de mouse se traducen restando area.x / area.y.
@@ -924,14 +923,14 @@ doc_destruir(DocState *s)
 
 /* ── doc_evento ────────────────────────────────────────────────────────────── */
 void
-doc_evento(DocState *s, TTF_Font *fuente, SDL_Event *e, SDL_Rect area)
+doc_evento(DocState *s, TTF_Font *fuente, SDL_Event *e, SDL_FRect area)
 {
     /* Traducir coordenadas de mouse a espacio local del panel */
     int raw_mx = 0, raw_my = 0;
-    if (e->type == SDL_MOUSEBUTTONDOWN || e->type == SDL_MOUSEBUTTONUP) {
+    if (e->type == SDL_EVENT_MOUSE_BUTTON_DOWN || e->type == SDL_EVENT_MOUSE_BUTTON_UP) {
         raw_mx = e->button.x; raw_my = e->button.y;
         e->button.x -= area.x; e->button.y -= area.y;
-    } else if (e->type == SDL_MOUSEMOTION) {
+    } else if (e->type == SDL_EVENT_MOUSE_MOTION) {
         raw_mx = e->motion.x; raw_my = e->motion.y;
         e->motion.x -= area.x; e->motion.y -= area.y;
     }
@@ -939,8 +938,8 @@ doc_evento(DocState *s, TTF_Font *fuente, SDL_Event *e, SDL_Rect area)
 
     int ancho = area.w;
     int alto  = area.h;
-    int alto_linea = TTF_FontHeight(fuente) + 4;
-    int bar_h      = TTF_FontHeight(fuente) + 4;
+    int alto_linea = TTF_GetFontHeight(fuente) + 4;
+    int bar_h      = TTF_GetFontHeight(fuente) + 4;
 
     /* Recalcular contexto de episodios (igual que en el loop original) */
     int ep_base = -1, ep_count = 0;
@@ -985,7 +984,7 @@ doc_evento(DocState *s, TTF_Font *fuente, SDL_Event *e, SDL_Rect area)
         int _px = (mx) - texto_real_x; if (_px < 0) _px = 0;              \
         pixel_a_char(fuente, _tmp, _px); })
 
-    if (e->type == SDL_MOUSEBUTTONDOWN && e->button.button == SDL_BUTTON_LEFT) {
+    if (e->type == SDL_EVENT_MOUSE_BUTTON_DOWN && e->button.button == SDL_BUTTON_LEFT) {
         int cx = e->button.x, cy = e->button.y;
         s->clicked = 1; s->click_x = cx; s->click_y = cy;
 
@@ -1022,7 +1021,7 @@ doc_evento(DocState *s, TTF_Font *fuente, SDL_Event *e, SDL_Rect area)
         }
     }
 
-    if (e->type == SDL_MOUSEMOTION && s->sel_arrastrando) {
+    if (e->type == SDL_EVENT_MOUSE_MOTION && s->sel_arrastrando) {
         int mx = e->motion.x, my = e->motion.y;
         if (mx >= contenido_x && mx < contenido_x + contenido_w && my >= 0 && my < alto - bar_h) {
             s->sel_lin_fin  = MY_A_LINEA(my);
@@ -1032,7 +1031,7 @@ doc_evento(DocState *s, TTF_Font *fuente, SDL_Event *e, SDL_Rect area)
         }
     }
 
-    if (e->type == SDL_MOUSEBUTTONUP && e->button.button == SDL_BUTTON_LEFT) {
+    if (e->type == SDL_EVENT_MOUSE_BUTTON_UP && e->button.button == SDL_BUTTON_LEFT) {
         s->sel_arrastrando = 0;
         s->sel_activa = (s->sel_lin_ini != s->sel_lin_fin ||
                          s->sel_char_ini != s->sel_char_fin);
@@ -1057,8 +1056,8 @@ doc_evento(DocState *s, TTF_Font *fuente, SDL_Event *e, SDL_Rect area)
         }
     }
 
-    if (e->type == SDL_KEYDOWN) {
-        SDL_Keycode k = e->key.keysym.sym;
+    if (e->type == SDL_EVENT_KEY_DOWN) {
+        SDL_Keycode k = e->key.key;
         if (s->vista == 1) {
             if (k == SDLK_ESCAPE) {
                 if (s->popup_visible) { s->popup_visible = 0; s->sel_activa = 0; }
@@ -1082,7 +1081,7 @@ doc_evento(DocState *s, TTF_Font *fuente, SDL_Event *e, SDL_Rect area)
         if (ep_count > 0 && s->episodio_sel >= ep_count) s->episodio_sel = ep_count - 1;
     }
 
-    if (e->type == SDL_MOUSEWHEEL) {
+    if (e->type == SDL_EVENT_MOUSE_WHEEL) {
         int cx = s->click_x;
         if (s->vista == 1) {
             s->scroll -= e->wheel.y * 3;
@@ -1108,15 +1107,15 @@ doc_evento(DocState *s, TTF_Font *fuente, SDL_Event *e, SDL_Rect area)
 
 /* ── doc_dibujar ───────────────────────────────────────────────────────────── */
 void
-doc_dibujar(DocState *s, SDL_Renderer *renderer, TTF_Font *fuente, SDL_Rect area)
+doc_dibujar(DocState *s, SDL_Renderer *renderer, TTF_Font *fuente, SDL_FRect area)
 {
     /* Resetear estado de click al inicio del frame */
     s->clicked = 0; s->click_x = 0; s->click_y = 0;
 
     /* Viewport: todo el código de render existente usa coords desde (0,0),
        el viewport los desplaza automáticamente al area del panel. */
-    SDL_RenderSetViewport(renderer, &area);
-    SDL_RenderSetClipRect(renderer, NULL);
+    ui_viewport(renderer, &area);
+    ui_clip(renderer, NULL);
 
     int ancho = area.w;
     int alto  = area.h;
@@ -1125,8 +1124,8 @@ doc_dibujar(DocState *s, SDL_Renderer *renderer, TTF_Font *fuente, SDL_Rect area
     int scrollbar_w  = 14;
     int contenido_x  = panel_izq_w + 1;
     int contenido_w  = ancho - panel_izq_w - scrollbar_w - 4;
-    int alto_linea   = TTF_FontHeight(fuente) + 4;
-    int bar_h        = TTF_FontHeight(fuente) + 4;
+    int alto_linea   = TTF_GetFontHeight(fuente) + 4;
+    int bar_h        = TTF_GetFontHeight(fuente) + 4;
     int lineas_visibles = (alto - bar_h) / alto_linea;
 
     int texto_param_x = contenido_x + 6;
@@ -1171,19 +1170,19 @@ doc_dibujar(DocState *s, SDL_Renderer *renderer, TTF_Font *fuente, SDL_Rect area
     /* ──── RENDER (igual que screenDoc, sin SDL_RenderClear ni presente) ──── */
 
     SDL_SetRenderDrawColor(renderer, 14, 14, 24, 255);
-    SDL_RenderFillRect(renderer, &(SDL_Rect){0, 0, ancho, alto});
+    SDL_RenderFillRect(renderer, &(SDL_FRect){0, 0, ancho, alto});
 
-    SDL_Rect panel_izq = {0, 0, panel_izq_w, alto};
+    SDL_FRect panel_izq = {0, 0, panel_izq_w, alto};
     SDL_SetRenderDrawColor(renderer, 22, 22, 40, 255);
     SDL_RenderFillRect(renderer, &panel_izq);
-    SDL_Rect panel_der = {contenido_x, 0, contenido_w + scrollbar_w + 4, alto};
+    SDL_FRect panel_der = {contenido_x, 0, contenido_w + scrollbar_w + 4, alto};
     SDL_SetRenderDrawColor(renderer, 14, 14, 24, 255);
     SDL_RenderFillRect(renderer, &panel_der);
     SDL_SetRenderDrawColor(renderer, s->foco==1?120:60, 60, s->foco==1?200:100, 255);
-    SDL_RenderDrawLine(renderer, panel_izq_w, 0, panel_izq_w, alto);
+    SDL_RenderLine(renderer, panel_izq_w, 0, panel_izq_w, alto);
 
     /* Panel izquierdo */
-    SDL_RenderSetClipRect(renderer, &(SDL_Rect){0, 0, panel_izq_w, alto});
+    ui_clip(renderer, &(SDL_FRect){0, 0, panel_izq_w, alto});
     int item_y = 10;
     for (int i = 0; i < s->total_capitulos; i++) {
         int imw = panel_izq_w - 20;
@@ -1192,10 +1191,10 @@ doc_dibujar(DocState *s, SDL_Renderer *renderer, TTF_Font *fuente, SDL_Rect area
         int sel = (i == s->capitulo_sel);
         if (sel) {
             SDL_SetRenderDrawColor(renderer, s->foco==0?50:35, 35, s->foco==0?110:75, 255);
-            SDL_Rect hl = {4, item_y-2, panel_izq_w-8, ih+4};
+            SDL_FRect hl = {4, item_y-2, panel_izq_w-8, ih+4};
             SDL_RenderFillRect(renderer, &hl);
             SDL_SetRenderDrawColor(renderer, s->foco==0?120:80, 80, s->foco==0?220:140, 255);
-            SDL_RenderDrawRect(renderer, &hl);
+            SDL_RenderRect(renderer, &hl);
         }
         SDL_Color ci = sel ? (SDL_Color){210,210,255,255} : (SDL_Color){110,110,160,255};
         dibujadoTextoMultilineaColor(renderer, fuente, s->capitulos[i].titulo,
@@ -1208,14 +1207,14 @@ doc_dibujar(DocState *s, SDL_Renderer *renderer, TTF_Font *fuente, SDL_Rect area
     }
 
     /* Panel derecho */
-    SDL_RenderSetClipRect(renderer, &(SDL_Rect){contenido_x, 0, contenido_w, alto});
+    ui_clip(renderer, &(SDL_FRect){contenido_x, 0, contenido_w, alto});
 
     if (s->vista == 0) {
         int cy  = 20;
         int ch  = altura_wrap(fuente, s->capitulos[s->capitulo_sel].titulo, contenido_w-30) + 20;
-        SDL_Rect caja = {contenido_x+10, cy, contenido_w-20, ch};
+        SDL_FRect caja = {contenido_x+10, cy, contenido_w-20, ch};
         SDL_SetRenderDrawColor(renderer, 30,30,60,255); SDL_RenderFillRect(renderer, &caja);
-        SDL_SetRenderDrawColor(renderer, 100,100,200,255); SDL_RenderDrawRect(renderer, &caja);
+        SDL_SetRenderDrawColor(renderer, 100,100,200,255); SDL_RenderRect(renderer, &caja);
         dibujadoTextoMultilineaColor(renderer, fuente, s->capitulos[s->capitulo_sel].titulo,
                                      contenido_x+14, cy+2, contenido_w-30,
                                      (SDL_Color){180,180,255,255});
@@ -1223,7 +1222,7 @@ doc_dibujar(DocState *s, SDL_Renderer *renderer, TTF_Font *fuente, SDL_Rect area
         dibujadoTextoColor(renderer, fuente, "Episodios:",
                            contenido_x+6, ey-12, (SDL_Color){80,160,100,255});
         SDL_SetRenderDrawColor(renderer, 50,100,70,255);
-        SDL_RenderDrawLine(renderer, contenido_x+10, ey+22, contenido_x+contenido_w-10, ey+22);
+        SDL_RenderLine(renderer, contenido_x+10, ey+22, contenido_x+contenido_w-10, ey+22);
         ey += 30;
         for (int i = 0; i < ep_count; i++) {
             int ei  = ep_base + i;
@@ -1231,9 +1230,9 @@ doc_dibujar(DocState *s, SDL_Renderer *renderer, TTF_Font *fuente, SDL_Rect area
             int eph = altura_wrap(fuente, s->episodios[ei].titulo, contenido_w-40);
             if (eph < alto_linea) eph = alto_linea;
             if (sp) {
-                SDL_Rect hl = {contenido_x+8, ey-2, contenido_w-16, eph+6};
+                SDL_FRect hl = {contenido_x+8, ey-2, contenido_w-16, eph+6};
                 SDL_SetRenderDrawColor(renderer,30,60,50,255); SDL_RenderFillRect(renderer,&hl);
-                SDL_SetRenderDrawColor(renderer,60,180,100,255); SDL_RenderDrawRect(renderer,&hl);
+                SDL_SetRenderDrawColor(renderer,60,180,100,255); SDL_RenderRect(renderer,&hl);
             }
             dibujadoTextoColor(renderer, fuente, sp?">":" ", contenido_x+10, ey-12,
                                sp?(SDL_Color){80,255,130,255}:(SDL_Color){50,130,80,255});
@@ -1272,9 +1271,9 @@ doc_dibujar(DocState *s, SDL_Renderer *renderer, TTF_Font *fuente, SDL_Rect area
                 int cs = highlights[h].char_ini, ce = highlights[h].char_fin;
                 SDL_Color hc = paleta[highlights[h].color_idx];
                 int x1 = 0, x2 = 0;
-                if (cs > 0) { char part[512]; strncpy(part,lin,cs); part[cs]='\0'; TTF_SizeUTF8(fuente,part,&x1,NULL); }
-                if (ce > 0) { char part[512]; strncpy(part,lin,ce); part[ce]='\0'; TTF_SizeUTF8(fuente,part,&x2,NULL); }
-                SDL_Rect hr = {texto_real_x+x1-2, y_txt-2, x2-x1+4, alto_linea+2};
+                if (cs > 0) { char part[512]; strncpy(part,lin,cs); part[cs]='\0'; TTF_GetStringSize(fuente,part, 0, &x1, NULL); }
+                if (ce > 0) { char part[512]; strncpy(part,lin,ce); part[ce]='\0'; TTF_GetStringSize(fuente,part, 0, &x2, NULL); }
+                SDL_FRect hr = {texto_real_x+x1-2, y_txt-2, x2-x1+4, alto_linea+2};
                 SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
                 SDL_SetRenderDrawColor(renderer, hc.r, hc.g, hc.b, hc.a);
                 SDL_RenderFillRect(renderer, &hr);
@@ -1288,12 +1287,12 @@ doc_dibujar(DocState *s, SDL_Renderer *renderer, TTF_Font *fuente, SDL_Rect area
                 else if (i == lin_hi)         { cs = 0;      ce = chr_hi; }
                 else                          { cs = 0;      ce = ll;    }
                 int x1 = 0, x2 = 0;
-                if (cs > 0) { char part[512]; strncpy(part,lin,cs); part[cs]='\0'; TTF_SizeUTF8(fuente,part,&x1,NULL); }
-                if (ce > 0) { char part[512]; strncpy(part,lin,ce); part[ce]='\0'; TTF_SizeUTF8(fuente,part,&x2,NULL); }
+                if (cs > 0) { char part[512]; strncpy(part,lin,cs); part[cs]='\0'; TTF_GetStringSize(fuente,part, 0, &x1, NULL); }
+                if (ce > 0) { char part[512]; strncpy(part,lin,ce); part[ce]='\0'; TTF_GetStringSize(fuente,part, 0, &x2, NULL); }
                 if (x2 - x1 < 2 && ce > cs) x2 = x1 + 2;
                 SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
                 SDL_SetRenderDrawColor(renderer, 70, 130, 200, 130);
-                SDL_RenderFillRect(renderer, &(SDL_Rect){texto_real_x+x1, y_txt, x2-x1, alto_linea-2});
+                SDL_RenderFillRect(renderer, &(SDL_FRect){texto_real_x+x1, y_txt, x2-x1, alto_linea-2});
                 SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_NONE);
             }
 
@@ -1312,8 +1311,8 @@ doc_dibujar(DocState *s, SDL_Renderer *renderer, TTF_Font *fuente, SDL_Rect area
                 int ll = (int)strlen(lin);
                 SDL_Color negro = {15,15,15,255};
                 int x1 = 0, x2 = 0;
-                if (cs > 0) { char p[512]; strncpy(p,lin,cs); p[cs]='\0'; TTF_SizeUTF8(fuente,p,&x1,NULL); }
-                if (ce > 0) { char p[512]; strncpy(p,lin,ce); p[ce]='\0'; TTF_SizeUTF8(fuente,p,&x2,NULL); }
+                if (cs > 0) { char p[512]; strncpy(p,lin,cs); p[cs]='\0'; TTF_GetStringSize(fuente,p, 0, &x1, NULL); }
+                if (ce > 0) { char p[512]; strncpy(p,lin,ce); p[ce]='\0'; TTF_GetStringSize(fuente,p, 0, &x2, NULL); }
                 if (cs > 0) { char seg[512]; strncpy(seg,lin,cs); seg[cs]='\0'; render_texto_xy(renderer,fuente,seg,texto_real_x,y_txt,c); }
                 if (ce > cs) { char seg[512]; int slen=ce-cs; if(slen>511)slen=511; strncpy(seg,lin+cs,slen); seg[slen]='\0'; render_texto_xy(renderer,fuente,seg,texto_real_x+x1,y_txt,negro); }
                 if (ce < ll) { char seg[512]; int slen=ll-ce; if(slen>511)slen=511; strncpy(seg,lin+ce,slen); seg[slen]='\0'; render_texto_xy(renderer,fuente,seg,texto_real_x+x2,y_txt,c); }
@@ -1321,17 +1320,17 @@ doc_dibujar(DocState *s, SDL_Renderer *renderer, TTF_Font *fuente, SDL_Rect area
         }
 
         /* Scrollbar */
-        SDL_RenderSetClipRect(renderer, NULL);
+        ui_clip(renderer, NULL);
         int sb_x = ancho - scrollbar_w - 2;
-        SDL_Rect track = {sb_x, 4, scrollbar_w, alto-8};
+        SDL_FRect track = {sb_x, 4, scrollbar_w, alto-8};
         SDL_SetRenderDrawColor(renderer,30,30,50,255); SDL_RenderFillRect(renderer,&track);
-        SDL_SetRenderDrawColor(renderer,55,55,85,255); SDL_RenderDrawRect(renderer,&track);
+        SDL_SetRenderDrawColor(renderer,55,55,85,255); SDL_RenderRect(renderer,&track);
         if (total_ep_lineas > 0) {
             float ratio = (float)lineas_visibles / total_ep_lineas;
             if (ratio > 1.0f) ratio = 1.0f;
             int th = (int)((alto-8)*ratio); if (th < 20) th = 20;
             int ty = 4 + (max_scroll > 0 ? (int)((float)s->scroll/max_scroll*(alto-8-th)) : 0);
-            SDL_Rect thumb = {sb_x+2, ty, scrollbar_w-4, th};
+            SDL_FRect thumb = {sb_x+2, ty, scrollbar_w-4, th};
             SDL_SetRenderDrawColor(renderer,90,90,170,255); SDL_RenderFillRect(renderer,&thumb);
             if (s->clicked && s->click_x >= sb_x && s->click_x <= sb_x+scrollbar_w &&
                 s->click_y >= 4 && s->click_y <= alto-4 && max_scroll > 0) {
@@ -1342,65 +1341,65 @@ doc_dibujar(DocState *s, SDL_Renderer *renderer, TTF_Font *fuente, SDL_Rect area
 
         /* Popup de colores */
         if (s->popup_visible) {
-            SDL_RenderSetClipRect(renderer, NULL);
-            SDL_Rect pop = {s->popup_x, s->popup_y, s->popup_w, s->popup_h};
+            ui_clip(renderer, NULL);
+            SDL_FRect pop = {s->popup_x, s->popup_y, s->popup_w, s->popup_h};
             SDL_SetRenderDrawColor(renderer,20,20,35,245); SDL_RenderFillRect(renderer,&pop);
-            SDL_SetRenderDrawColor(renderer,100,100,160,255); SDL_RenderDrawRect(renderer,&pop);
+            SDL_SetRenderDrawColor(renderer,100,100,160,255); SDL_RenderRect(renderer,&pop);
 
-            int mx, my; SDL_GetMouseState(&mx, &my);
+            int mx, my; ui_mouse(&mx, &my);
             mx -= area.x; my -= area.y;  /* traducir al espacio local */
 
             for (int ci = 0; ci < NUM_COLORES; ci++) {
-                SDL_Rect sq_r = {s->popup_x+s->pad+ci*(s->sq+s->gap), s->popup_y+s->pad, s->sq, s->sq};
+                SDL_FRect sq_r = {s->popup_x+s->pad+ci*(s->sq+s->gap), s->popup_y+s->pad, s->sq, s->sq};
                 SDL_Color c = paleta[ci];
                 SDL_SetRenderDrawColor(renderer,c.r,c.g,c.b,255); SDL_RenderFillRect(renderer,&sq_r);
-                SDL_SetRenderDrawColor(renderer,200,200,200,80);   SDL_RenderDrawRect(renderer,&sq_r);
+                SDL_SetRenderDrawColor(renderer,200,200,200,80);   SDL_RenderRect(renderer,&sq_r);
                 if (mx>=sq_r.x && mx<sq_r.x+s->sq && my>=sq_r.y && my<sq_r.y+s->sq) {
                     SDL_SetRenderDrawColor(renderer,255,255,255,255);
-                    SDL_RenderDrawRect(renderer,&(SDL_Rect){sq_r.x-1,sq_r.y-1,sq_r.w+2,sq_r.h+2});
+                    SDL_RenderRect(renderer,&(SDL_FRect){sq_r.x-1,sq_r.y-1,sq_r.w+2,sq_r.h+2});
                 }
             }
             int del_x = s->popup_x+s->pad+NUM_COLORES*(s->sq+s->gap);
             int del_y = s->popup_y+s->pad;
-            SDL_Rect del_r = {del_x,del_y,s->sq,s->sq};
+            SDL_FRect del_r = {del_x,del_y,s->sq,s->sq};
             SDL_SetRenderDrawColor(renderer,80,25,25,255); SDL_RenderFillRect(renderer,&del_r);
-            SDL_SetRenderDrawColor(renderer,200,60,60,255); SDL_RenderDrawRect(renderer,&del_r);
+            SDL_SetRenderDrawColor(renderer,200,60,60,255); SDL_RenderRect(renderer,&del_r);
             if (mx>=del_x && mx<del_x+s->sq && my>=del_y && my<del_y+s->sq) {
                 SDL_SetRenderDrawColor(renderer,255,100,100,255);
-                SDL_RenderDrawRect(renderer,&(SDL_Rect){del_r.x-1,del_r.y-1,del_r.w+2,del_r.h+2});
+                SDL_RenderRect(renderer,&(SDL_FRect){del_r.x-1,del_r.y-1,del_r.w+2,del_r.h+2});
             }
-            SDL_Surface *xs = TTF_RenderUTF8_Blended(fuente,"X",(SDL_Color){220,80,80,255});
+            SDL_Surface *xs = TTF_RenderText_Blended(fuente,"X", 0, (SDL_Color){220,80,80,255});
             if (xs) {
                 SDL_Texture *xt = SDL_CreateTextureFromSurface(renderer,xs);
-                SDL_RenderCopy(renderer,xt,NULL,&(SDL_Rect){del_x+(s->sq-xs->w)/2,del_y+(s->sq-xs->h)/2,xs->w,xs->h});
-                SDL_FreeSurface(xs); SDL_DestroyTexture(xt);
+                SDL_RenderTexture(renderer,xt,NULL,&(SDL_FRect){del_x+(s->sq-xs->w)/2,del_y+(s->sq-xs->h)/2,xs->w,xs->h});
+                SDL_DestroySurface(xs); SDL_DestroyTexture(xt);
             }
         }
     }
 
-    SDL_RenderSetClipRect(renderer, NULL);
+    ui_clip(renderer, NULL);
 
     /* Barra de atajos */
     {
         int by = alto - bar_h;
-        SDL_Rect bar = {0, by, ancho, bar_h};
+        SDL_FRect bar = {0, by, ancho, bar_h};
         SDL_SetRenderDrawColor(renderer,15,15,28,255); SDL_RenderFillRect(renderer,&bar);
         SDL_SetRenderDrawColor(renderer,50,50,80,255);
-        SDL_RenderDrawLine(renderer, 0, by, ancho, by);
+        SDL_RenderLine(renderer, 0, by, ancho, by);
         const char *hint = (s->vista == 0)
             ? (s->foco==0 ? "[ENTER/→] entrar  [ESC] volver al menu"
                           : "[↑↓] navegar  [ENTER] abrir  [←/ESC] volver")
             : "[drag] seleccionar → elegir color  [PgUp/Dn] scroll  [ESC] volver";
         SDL_Color ch = {100,100,160,255};
-        SDL_Surface *hs = TTF_RenderUTF8_Blended(fuente, hint, ch);
+        SDL_Surface *hs = TTF_RenderText_Blended(fuente, hint, 0, ch);
         if (hs) {
             SDL_Texture *ht = SDL_CreateTextureFromSurface(renderer, hs);
-            SDL_RenderCopy(renderer, ht, NULL, &(SDL_Rect){10, by+2, hs->w, hs->h});
-            SDL_FreeSurface(hs); SDL_DestroyTexture(ht);
+            SDL_RenderTexture(renderer, ht, NULL, &(SDL_FRect){10, by+2, hs->w, hs->h});
+            SDL_DestroySurface(hs); SDL_DestroyTexture(ht);
         }
     }
 
     /* Restaurar viewport y clip */
-    SDL_RenderSetViewport(renderer, NULL);
-    SDL_RenderSetClipRect(renderer, NULL);
+    ui_viewport(renderer, NULL);
+    ui_clip(renderer, NULL);
 }

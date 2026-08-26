@@ -311,49 +311,51 @@ void screenPJ_intro(SDL_Renderer *renderer, SDL_Window *ventana, int ancho, int 
     /* ── notificacion "UsuarioAnonimo Conectado" ── */
     TTF_Font *fnt = TTF_OpenFont("assets/fonts/main.ttf", 14);
     SDL_Texture *notif_tex = NULL;
-    SDL_Rect notif_rect = {0,0,0,0};
+    SDL_FRect notif_rect = {0,0,0,0};
     int notif_frames = 120;   /* 2 seg a 60fps */
     if (fnt) {
         SDL_Color verde = {80, 220, 80, 255};
-        SDL_Surface *surf = TTF_RenderUTF8_Blended(fnt, "● UsuarioAnonimo Conectado", verde);
+        SDL_Surface *surf = TTF_RenderText_Blended(fnt, "● UsuarioAnonimo Conectado", 0, verde);
         if (surf) {
             notif_tex = SDL_CreateTextureFromSurface(renderer, surf);
             notif_rect.w = surf->w;
             notif_rect.h = surf->h;
             notif_rect.x = 18;
             notif_rect.y = alto - surf->h - 14;
-            SDL_FreeSurface(surf);
+            SDL_DestroySurface(surf);
         }
         TTF_CloseFont(fnt);
     }
 
     /* mouse */
-    SDL_SetHint(SDL_HINT_MOUSE_RELATIVE_MODE_WARP, "1");
+    /* SDL3 elimino SDL_HINT_MOUSE_RELATIVE_MODE_WARP; el equivalente
+       es centrar el puntero en vez de teletransportarlo al borde. */
+    SDL_SetHint(SDL_HINT_MOUSE_RELATIVE_MODE_CENTER, "1");
     Uint8 cdata[1]={0}, cmask[1]={0};
     SDL_Cursor *cur = SDL_CreateCursor(cdata, cmask, 8, 1, 0, 0);
     SDL_SetCursor(cur);
-    SDL_ShowCursor(SDL_DISABLE);
-    SDL_SetWindowGrab(ventana, SDL_TRUE);
-    SDL_CaptureMouse(SDL_TRUE);
+    SDL_HideCursor();
+    SDL_SetWindowMouseGrab(ventana, true);
+    SDL_CaptureMouse(true);
     SDL_WarpMouseInWindow(ventana, ancho/2, alto/2);
-    SDL_SetRelativeMouseMode(SDL_TRUE);
+    SDL_SetWindowRelativeMouseMode(ventana, true);
 
     PJ_Jugador p = { 3.5, 3.5, 0.0 };
     SDL_Event ev;
-    const Uint8 *keys;
+    const bool *keys;
     int corriendo = 1;
     int fade = 0;          /* 0 = jugando, 1..255 = fade a negro */
     int triggered = 0;
 
     /* rect destino: escala el buffer 800x600 a la ventana real */
-    SDL_Rect dest = { 0, 0, ancho, alto };
+    SDL_FRect dest = { 0, 0, ancho, alto };
 
     while (corriendo) {
         while (SDL_PollEvent(&ev)) {
-            if (ev.type == SDL_QUIT) { corriendo = 0; fade = 255; }
-            if (ev.type == SDL_KEYDOWN && ev.key.keysym.sym == SDLK_ESCAPE)
+            if (ev.type == SDL_EVENT_QUIT) { corriendo = 0; fade = 255; }
+            if (ev.type == SDL_EVENT_KEY_DOWN && ev.key.key == SDLK_ESCAPE)
                 corriendo = 0;
-            if (ev.type == SDL_MOUSEMOTION && !triggered)
+            if (ev.type == SDL_EVENT_MOUSE_MOTION && !triggered)
                 p.ang += ev.motion.xrel * PJ_MSENS;
         }
         SDL_WarpMouseInWindow(ventana, ancho/2, alto/2);
@@ -404,7 +406,7 @@ void screenPJ_intro(SDL_Renderer *renderer, SDL_Window *ventana, int ancho, int 
 
         SDL_UpdateTexture(screen, NULL, pj_fb, PJ_W * sizeof(Uint32));
         SDL_RenderClear(renderer);
-        SDL_RenderCopy(renderer, screen, NULL, &dest);
+        SDL_RenderTexture(renderer, screen, NULL, &dest);
 
         /* ── notificacion servidor ── */
         if (notif_tex && notif_frames > 0) {
@@ -413,12 +415,12 @@ void screenPJ_intro(SDL_Renderer *renderer, SDL_Window *ventana, int ancho, int 
             SDL_SetTextureAlphaMod(notif_tex, alpha);
             SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
             /* fondo semitransparente detras del texto */
-            SDL_Rect fondo = { notif_rect.x - 8, notif_rect.y - 4,
+            SDL_FRect fondo = { notif_rect.x - 8, notif_rect.y - 4,
                                notif_rect.w + 16, notif_rect.h + 8 };
             SDL_SetRenderDrawColor(renderer, 0, 0, 0, (Uint8)(alpha * 0.6));
             SDL_RenderFillRect(renderer, &fondo);
             SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_NONE);
-            SDL_RenderCopy(renderer, notif_tex, NULL, &notif_rect);
+            SDL_RenderTexture(renderer, notif_tex, NULL, &notif_rect);
             notif_frames--;
         }
 
@@ -435,10 +437,10 @@ void screenPJ_intro(SDL_Renderer *renderer, SDL_Window *ventana, int ancho, int 
     }
 
     /* liberar mouse */
-    SDL_SetRelativeMouseMode(SDL_FALSE);
-    SDL_SetWindowGrab(ventana, SDL_FALSE);
-    SDL_ShowCursor(SDL_ENABLE);
-    SDL_FreeCursor(cur);
+    SDL_SetWindowRelativeMouseMode(ventana, false);
+    SDL_SetWindowMouseGrab(ventana, false);
+    SDL_ShowCursor();
+    SDL_DestroyCursor(cur);
     if (notif_tex) SDL_DestroyTexture(notif_tex);
     SDL_DestroyTexture(screen);
 }

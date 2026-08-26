@@ -1,6 +1,6 @@
 #pragma once
-#include <SDL2/SDL.h>
-#include <SDL2/SDL_ttf.h>
+#include <SDL3/SDL.h>
+#include <SDL3_ttf/SDL_ttf.h>
 
 /* Intro cinemática: mazmorra 3D con raycasting.
    Corre una sola vez. Retorna cuando el jugador

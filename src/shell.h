@@ -1,7 +1,7 @@
 #ifndef SHELL_H
 #define SHELL_H
-#include <SDL2/SDL.h>
-#include <SDL2/SDL_ttf.h>
+#include <SDL3/SDL.h>
+#include <SDL3_ttf/SDL_ttf.h>
 
 /* ── Dimensiones del layout ──────────────────────────────────────────────── */
 #define SIDEBAR_W           180   /* ancho del sidebar expandido             */
@@ -60,8 +60,8 @@ typedef struct {
     void (*handle_event)(ShellCtx *ctx, Tab *tab, SDL_Event *e);
 
     /* Se llama cada frame. Debe dibujar SOLO dentro del rect `area`.
-       Usar SDL_RenderSetClipRect al inicio y al final.                 */
-    void (*draw)        (ShellCtx *ctx, Tab *tab, SDL_Rect area);
+       Usar SDL_SetRenderClipRect al inicio y al final.                 */
+    void (*draw)        (ShellCtx *ctx, Tab *tab, SDL_FRect area);
 
     /* Se llama cuando el tab se cierra. Liberar state y texturas.      */
     void (*cleanup)     (ShellCtx *ctx, Tab *tab);

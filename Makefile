@@ -5,13 +5,13 @@
 # arrancar cualquier otro editor (VIMMON_IDE=/usr/bin/vim). La dependencia va en
 # una sola direccion: el editor usa PAED, PAED no sabe que el editor existe.
 #
-#   make           el editor (`aed`)      necesita SDL2, SDL2_ttf, mixer, image
+#   make           el editor (`aed`)      necesita SDL3, SDL3_ttf, mixer, image
 #   make windows   PseudoGames.exe        cross-compile con mingw-w64
 # ═══════════════════════════════════════════════════════════════════════════
 
 CC     = clang
-CFLAGS = -Wall -Wextra -I src
-LDFLAGS = -lSDL2 -lSDL2_ttf -lSDL2_mixer -lSDL2_image -lm -lutil
+CFLAGS = -Wall -Wextra -I src $(shell pkg-config --cflags sdl3 sdl3-ttf sdl3-mixer sdl3-image) -Werror=incompatible-pointer-types -Werror=implicit-function-declaration
+LDFLAGS = $(shell pkg-config --libs sdl3 sdl3-ttf sdl3-mixer sdl3-image) -lm -lutil
 
 BUILDDIR = build
 
@@ -41,7 +41,7 @@ $(BUILDDIR):
 # ── Windows cross-compile (mingw-w64) ──────────────────────────────────────
 WIN_CC     = x86_64-w64-mingw32-gcc
 WIN_LIBS   = win-libs
-WIN_CFLAGS = -Wall -Wextra -I src -I $(WIN_LIBS)/include -DSIN_AUDIO
+WIN_CFLAGS = -Wall -Wextra -I src $(shell pkg-config --cflags sdl3 sdl3-ttf sdl3-mixer sdl3-image) -Werror=incompatible-pointer-types -Werror=implicit-function-declaration -I $(WIN_LIBS)/include -DSIN_AUDIO
 WIN_LDFLAGS = -L $(WIN_LIBS)/lib \
               -lmingw32 -lSDL2main \
               -lSDL2 -lSDL2_ttf -lm \
