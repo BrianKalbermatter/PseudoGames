@@ -65,14 +65,44 @@ main(int argc, char *argv[]) {
     }
 
     /* SDL3: CreateWindow ya no recibe posicion, y SDL_WINDOW_SHOWN no existe
-       porque las ventanas nacen visibles. */
+       porque las ventanas nacen visibles.
+     *
+     * Que no reciba posicion es lo que rompia la ventana: se pedia una
+     * BORDERLESS del tamaño exacto del display, pero quien decidia DONDE
+     * ponerla era el gestor de ventanas. Si la corria aunque sea un poco, la
+     * parte derecha quedaba fuera de la pantalla — y a la derecha esta el
+     * panel, asi que el sidebar se veia y el contenido no.
+     *
+     * El arreglo son tres cosas, y las tres hacen falta:
+     *
+     *   1. La ventana se pide un poco mas CHICA que el display (90%), para
+     *      que entre aunque el escritorio tenga barras arriba o al costado.
+     *   2. Se la POSICIONA a mano despues de crearla, centrada en el display
+     *      que se detecto.
+     *   3. Lleva borde y es RESIZABLE, asi el que la usa puede moverla y
+     *      agrandarla. Una borderless que ademas no se puede mover no deja
+     *      ninguna salida cuando queda mal ubicada.
+     *
+     * Para volver a pantalla completa de verdad, la linea es
+     * SDL_SetWindowFullscreen(ventana, true) — y no una borderless del
+     * tamaño del display, que es lo que se estaba intentando aca.
+     */
+    int win_w = display.w * 9 / 10;
+    int win_h = display.h * 9 / 10;
+    if (win_w < 960) win_w = display.w < 960 ? display.w : 960;
+    if (win_h < 600) win_h = display.h < 600 ? display.h : 600;
+
     SDL_Window *ventana = SDL_CreateWindow("PseudoGames",
-        display.w, display.h,
-        SDL_WINDOW_BORDERLESS);
+        win_w, win_h,
+        SDL_WINDOW_RESIZABLE);
     if (!ventana) {
         fatal("Error ventana", SDL_GetError());
         return 1;
     }
+
+    SDL_SetWindowPosition(ventana,
+                          display.x + (display.w - win_w) / 2,
+                          display.y + (display.h - win_h) / 2);
 
     /* WSL2/XWayland usa visual ARGB — SDL_RenderPresent deja alpha=0 (transparente).
        Solución: renderizar sobre la window surface directamente con SDL_CreateSoftwareRenderer,
