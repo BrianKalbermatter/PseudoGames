@@ -1167,29 +1167,53 @@ screenShell(SDL_Renderer *renderer, TTF_Font *fuente,
     int esperando_surface = 0;
     const int MAX_ESPERA  = 30;   /* ~medio segundo a 60 fps */
 
+    /* LA surface sobre la que dibuja `renderer`. Se guarda, y NO se vuelve a
+       pedir con SDL_GetWindowSurface en cada frame.
+     *
+     * Ese era el bug: SDL_GetWindowSurface() no es una consulta inocente —
+     * si la surface fue invalidada por un resize, la RECREA. Llamarla cada
+     * frame devolvia una surface nueva del tamano correcto mientras el
+     * renderer seguia dibujando sobre la vieja, asi que el shell calculaba el
+     * layout para una ventana grande y lo pintaba en un lienzo chico.
+     *
+     * La unica que puede pedirla es el bloque de resize, que ahi mismo crea
+     * el renderer que le corresponde. Las dos cosas van juntas o no van. */
+    SDL_Surface *superficie = SDL_GetWindowSurface(ventana);
+
     while (!ctx.salir) {
 
         /* ── Recrear renderer si hubo resize (diferido para evitar dangling ptr) ── */
         if (pending_resize) {
             pending_resize = 0;
 
-            /* SDL_GetWindowSurface() devuelve la surface CACHEADA. Al maximizar
-             * en WSL2 eso rompia la ventana: SDL_GetWindowSize ya reportaba el
-             * tamano nuevo, pero la surface seguia siendo la vieja, asi que el
-             * shell dibujaba una ventana grande sobre un lienzo chico. Se veia
-             * recortado y con basura, y no se recuperaba solo porque el
-             * siguiente frame repetia exactamente lo mismo.
+            /* Aca se recrean la surface Y el renderer, juntos. Es el UNICO
+             * lugar del loop que puede hacerlo: SDL_GetWindowSurface() recrea
+             * la surface si fue invalidada, asi que llamarla en cualquier otro
+             * lado deja al renderer dibujando sobre una que ya no es la de la
+             * ventana. Ver el comentario de `superficie`, mas arriba.
              *
-             * SDL_DestroyWindowSurface la tira, y el GetWindowSurface de abajo
-             * crea una nueva del tamano que la ventana tiene AHORA. */
+             * EL ORDEN DE ESTAS LINEAS NO ES OPCIONAL:
+             *
+             *   1. las texturas, que viven adentro del renderer
+             *   2. el renderer, que dibuja sobre la surface
+             *   3. la surface, recien cuando nadie la esta usando
+             *   4. la nueva, que SDL crea del tamano que la ventana tiene AHORA
+             *
+             * Al reves — tirando la surface primero — el renderer viejo queda
+             * apuntando a memoria liberada, y destruirlo despues (o destruirle
+             * una textura) toca esa memoria. No siempre revienta: lo comun es
+             * que dibuje basura, que es justo el sintoma que se estaba
+             * arreglando. Se destruye de afuera hacia adentro, como se apilo. */
+            if (ctx.logo) { SDL_DestroyTexture(ctx.logo); ctx.logo = NULL; }
+            if (renderer) { SDL_DestroyRenderer(renderer); }
+            renderer     = NULL;   /* evitar dangling ptr si algo falla mas abajo */
+            ctx.renderer = NULL;
+
             SDL_DestroyWindowSurface(ventana);
 
             SDL_Surface *ns = SDL_GetWindowSurface(ventana);
+            superficie = ns;
             if (ns) {
-                if (ctx.logo) { SDL_DestroyTexture(ctx.logo); ctx.logo = NULL; }
-                SDL_DestroyRenderer(renderer);
-                renderer     = NULL;   /* evitar dangling ptr si CreateSoftware falla */
-                ctx.renderer = NULL;
                 SDL_Renderer *nr = SDL_CreateSoftwareRenderer(ns);
                 if (nr) {
                     renderer     = nr;
@@ -1198,45 +1222,42 @@ screenShell(SDL_Renderer *renderer, TTF_Font *fuente,
                     ctx.logo = ls ? SDL_CreateTextureFromSurface(renderer, ls) : NULL;
                     if (ls) SDL_DestroySurface(ls);
                 } else {
-                    /* Surface existe pero renderer falló — reintentar */
+                    /* Surface existe pero renderer fallo — reintentar, con el
+                       mismo techo que el resto: un continue sin limite deja la
+                       app sin procesar eventos, ni siquiera el de cerrar. */
                     pending_resize = 1;
-                    SDL_Delay(16);
-                    continue;
+                    if (++esperando_surface < MAX_ESPERA) { SDL_Delay(16); continue; }
                 }
             } else {
-                /* Surface no disponible todavía — reintentar */
+                /* Surface no disponible todavia — reintentar */
                 pending_resize = 1;
-                SDL_Delay(16);
-                continue;
+                if (++esperando_surface < MAX_ESPERA) { SDL_Delay(16); continue; }
             }
         }
 
         /* Protección adicional: nunca renderizar sin renderer válido */
         if (!renderer) { SDL_Delay(16); continue; }
 
-        /* El tamano de dibujo sale de la SURFACE, no de la ventana.
+        /* El tamano de dibujo sale de LA SURFACE QUE TIENE EL RENDERER, no de
+         * la ventana y no de una surface recien pedida.
          *
-         * Son dos cosas distintas y durante un resize no coinciden: el gestor
-         * de ventanas ya cambio la ventana y la surface se recrea despues. Si
-         * se dibuja contra el tamano de la ventana, se dibuja fuera del lienzo
-         * — que es lo que rompia el maximizar en WSL2.
+         * La ventana y su surface son dos cosas distintas y durante un resize
+         * no coinciden: el gestor de ventanas cambia la ventana y la surface
+         * se recrea despues. Dibujar contra el tamano de la ventana es
+         * dibujar fuera del lienzo.
          *
-         * La surface es donde se dibuja de verdad, asi que es la que manda. Y
-         * si todavia no coincide con la ventana, se pide otro resize: el WM
-         * sigue acomodando y el proximo frame la encuentra ya cuadrada. */
-        SDL_Surface *cur = SDL_GetWindowSurface(ventana);
-        if (!cur) {
+         * Si no coinciden, se pide un resize — que es el unico lugar donde se
+         * recrean la surface Y el renderer juntos — y se saltea este frame. */
+        if (!superficie) {
             pending_resize = 1;
             if (++esperando_surface < MAX_ESPERA) { SDL_Delay(16); continue; }
-        }
-
-        if (cur) {
-            ctx.ancho = cur->w;
-            ctx.alto  = cur->h;
+        } else {
+            ctx.ancho = superficie->w;
+            ctx.alto  = superficie->h;
 
             int vw, vh;
             SDL_GetWindowSize(ventana, &vw, &vh);
-            if (vw != cur->w || vh != cur->h) {
+            if (vw != superficie->w || vh != superficie->h) {
                 pending_resize = 1;
                 if (++esperando_surface < MAX_ESPERA) { SDL_Delay(16); continue; }
             } else {
