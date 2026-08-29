@@ -24,6 +24,9 @@
 #include <string.h>
 #include <unistd.h>
 #include <dirent.h>
+#include <fcntl.h>
+#include <signal.h>
+#include <sys/wait.h>
 
 /* ═══════════════════════════════════════════════════════════════════════════
  *  1. EL ESTADO
@@ -109,6 +112,26 @@ typedef struct {
     int  consola_scroll;     /* primera linea visible de la salida           */
     int  consola_codigo;     /* con que termino el programa: 0 = bien        */
     int  corrio;             /* ya se corrio algo al menos una vez           */
+
+    /* ── El programa corriendo ──
+     *
+     * No se usa popen: popen LEE HASTA QUE EL PROCESO TERMINA, asi que un
+     * LEER esperando datos colgaria PseudoGames entero. Con un fork y dos
+     * pipes propios, la salida se lee de a poco en cada frame y la app nunca
+     * se detiene — ni siquiera si el programa no termina nunca. */
+    int   corriendo;
+    pid_t pid;
+    int   fd_out;            /* la salida del programa; NO bloqueante        */
+    int   fd_in;             /* por aca entra lo que se tipea                */
+
+    /* La linea de salida a medio recibir: los pipes traen bytes sueltos, no
+       lineas enteras. */
+    char  parcial[XASOL_CONSOLA_COL];
+    int   parcial_len;
+
+    /* Lo que estas tipeando ahora, antes del ENTER. */
+    char  tipeado[XASOL_CONSOLA_COL];
+    int   tipeado_len;
 
     /* Arrastre del divisor, igual que en VSCode: se agarra el borde de
        arriba de la consola y se estira. */
@@ -593,9 +616,37 @@ consola_linea(XasolState *s, const char *txt)
     snprintf(s->consola[s->consola_n++], XASOL_CONSOLA_COL, "%s", txt);
 }
 
+/* Corta el programa que este corriendo. */
+static void
+consola_cortar(XasolState *s)
+{
+    if (!s->corriendo) return;
+
+    kill(s->pid, SIGTERM);
+    waitpid(s->pid, NULL, 0);
+    close(s->fd_out); close(s->fd_in);
+    s->fd_out = s->fd_in = -1;
+    s->corriendo = 0;
+    s->consola_codigo = -1;
+    consola_linea(s, "-- cortado --");
+}
+
+/* Lanza el programa. No espera nada: deja el proceso corriendo y vuelve.
+ *
+ * Lo que hace que la consola sea INTERACTIVA es esto y no otra cosa. Con
+ * popen habria que esperar a que el proceso termine para leer su salida, y un
+ * LEER que espera a que alguien tipee no termina nunca: se colgaria la app.
+ * Con dos pipes propios y la lectura en O_NONBLOCK, cada frame se lee lo que
+ * haya y se sigue dibujando — el programa puede quedarse esperando todo el
+ * tiempo que quiera.
+ */
 static void
 consola_correr(XasolState *s)
 {
+    /* Si habia uno corriendo, se corta: F10 dos veces seguidas arranca de
+       nuevo, no deja dos programas peleandose por la consola. */
+    if (s->corriendo) consola_cortar(s);
+
     /* Guardar primero: paed lee del disco. Ver el comentario de xasol.h. */
     if (!buffer_guardar(s)) {
         s->consola_abierta = 1;
@@ -607,93 +658,141 @@ consola_correr(XasolState *s)
     s->consola_abierta = 1;
     s->corrio          = 1;
     consola_limpiar(s);
+    s->parcial_len = 0;
+    s->tipeado_len = 0;
+    s->tipeado[0]  = '\0';
 
-    /* ── De donde salen los datos de un LEER ──
-     *
-     * Del PROPIO .paed, de un bloque de comentarios al final:
-     *
-     *     // ── ENTRADA ──
-     *     // 7
-     *
-     * Una linea por cada LEER, en orden. Es la misma idea que el bloque
-     * SALIDA ESPERADA de los tests y que los datos de una SECUENCIA: un
-     * programa es UN archivo, y los datos del enunciado son parte de el.
-     *
-     * La alternativa seria dejar la entrada abierta y que escribas en la
-     * consola. No se hace, y no es por comodidad: la consola espera a que el
-     * proceso termine, asi que un LEER sin datos colgaria PseudoGames entero.
-     * Con los datos adentro del archivo, F10 sigue siendo un boton que
-     * siempre vuelve.
-     */
-    char entrada_path[80];
-    snprintf(entrada_path, sizeof(entrada_path), "/tmp/xasol_in_%d", (int)getpid());
-
-    FILE *ent = fopen(entrada_path, "w");
-    if (ent) {
-        int dentro = 0;
-        for (int i = 0; i < s->n_lineas; i++) {
-            const char *l = s->lineas[i];
-
-            /* Los datos viven en COMENTARIOS: no son codigo. */
-            const char *barra = strstr(l, "//");
-            if (!barra) { if (dentro) break; else continue; }
-
-            const char *cuerpo = barra + 2;
-            while (*cuerpo == ' ' || *cuerpo == '\t') cuerpo++;
-
-            /* Una marca '──' abre el bloque o cierra el que estaba abierto.
-               Asi el bloque de ENTRADA no se come al de SALIDA ESPERADA. */
-            if (strstr(cuerpo, "\xe2\x94\x80\xe2\x94\x80")) {
-                if (dentro) break;
-                if (strstr(cuerpo, "ENTRADA")) dentro = 1;
-                continue;
-            }
-
-            if (dentro) fprintf(ent, "%s\n", cuerpo);
-        }
-        fclose(ent);
-    }
-
-    /* Tres cosas del comando, y cada una ataja algo:
-     *
-     *   timeout N     corta un programa que no termina. Sin esto, un MIENTRAS
-     *                 infinito cuelga PseudoGames entero.
-     *   < entrada     los datos del bloque ENTRADA. Si no hay bloque el
-     *                 archivo queda vacio, que es lo mismo que /dev/null: el
-     *                 LEER falla en vez de esperar para siempre.
-     *   2>&1          los errores de paed salen por stderr, y son justamente
-     *                 lo que uno viene a leer aca.
-     */
-    char cmd[900];
-    snprintf(cmd, sizeof(cmd), "timeout %d paed '%s' < '%s' 2>&1",
-             XASOL_TIMEOUT_SEG, s->path, entrada_path);
-
-    FILE *p = popen(cmd, "r");
-    if (!p) {
-        consola_linea(s, "no se pudo lanzar paed");
+    int hacia_hijo[2], desde_hijo[2];
+    if (pipe(hacia_hijo) != 0 || pipe(desde_hijo) != 0) {
+        consola_linea(s, "no se pudieron abrir los pipes");
         s->consola_codigo = -1;
         return;
     }
 
-    char linea[XASOL_CONSOLA_COL];
-    while (fgets(linea, sizeof(linea), p)) {
-        linea[strcspn(linea, "\r\n")] = '\0';
-        consola_linea(s, linea);
+    pid_t pid = fork();
+    if (pid < 0) {
+        consola_linea(s, "no se pudo lanzar el programa");
+        s->consola_codigo = -1;
+        return;
     }
 
-    int st = pclose(p);
-    remove(entrada_path);
-    /* pclose devuelve el estado de wait(), no el codigo de salida: hay que
-       correrlo 8 bits. 124 es el que usa `timeout` cuando corta por tiempo. */
-    s->consola_codigo = (st == -1) ? -1 : ((st >> 8) & 0xff);
+    if (pid == 0) {
+        /* El hijo. Su entrada y su salida son los pipes; stderr va al mismo
+           lugar que stdout porque los errores de paed son justamente lo que
+           uno viene a leer aca. */
+        dup2(hacia_hijo[0], STDIN_FILENO);
+        dup2(desde_hijo[1], STDOUT_FILENO);
+        dup2(desde_hijo[1], STDERR_FILENO);
+        close(hacia_hijo[0]); close(hacia_hijo[1]);
+        close(desde_hijo[0]); close(desde_hijo[1]);
 
-    if (s->consola_codigo == 124)
-        consola_linea(s, "-- cortado: el programa paso los 5 segundos --");
-    if (s->consola_n == 0)
-        consola_linea(s, "(sin salida)");
+        execlp("paed", "paed", s->path, (char *)NULL);
+        _exit(127);   /* si execlp fallo, no hay paed en el PATH */
+    }
 
-    /* Mostrar el final, que es donde esta el error o el resultado. */
-    s->consola_scroll = 0;
+    close(hacia_hijo[0]);
+    close(desde_hijo[1]);
+
+    s->pid       = pid;
+    s->fd_in     = hacia_hijo[1];
+    s->fd_out    = desde_hijo[0];
+    s->corriendo = 1;
+
+    /* La lectura NO bloquea: es lo que permite mirar el pipe en cada frame
+       sin quedarse esperando cuando todavia no hay nada. */
+    fcntl(s->fd_out, F_SETFL, O_NONBLOCK);
+
+    /* Si el .paed trae un bloque ENTRADA, sus lineas entran ya mismo, como si
+       las hubieras tipeado. Asi las dos formas conviven: los datos fijos para
+       probar rapido, y el teclado para el resto. */
+    int dentro = 0;
+    for (int i = 0; i < s->n_lineas; i++) {
+        const char *l = s->lineas[i];
+        const char *barra = strstr(l, "//");
+        if (!barra) { if (dentro) break; else continue; }
+
+        const char *cuerpo = barra + 2;
+        while (*cuerpo == ' ' || *cuerpo == '\t') cuerpo++;
+
+        if (strstr(cuerpo, "\xe2\x94\x80\xe2\x94\x80")) {   /* ── */
+            if (dentro) break;
+            if (strstr(cuerpo, "ENTRADA")) dentro = 1;
+            continue;
+        }
+        if (dentro) {
+            (void)!write(s->fd_in, cuerpo, strlen(cuerpo));
+            (void)!write(s->fd_in, "\n", 1);
+        }
+    }
+}
+
+/* Trae lo que el programa haya escrito, sin esperar. Se llama en cada frame.
+ *
+ * Los pipes entregan BYTES, no lineas: una linea puede llegar partida en dos
+ * lecturas. Por eso lo que va llegando se acumula en `parcial` y recien se
+ * cierra cuando aparece el '\n'. */
+static void
+consola_leer(XasolState *s)
+{
+    if (!s->corriendo) return;
+
+    char buf[1024];
+    for (;;) {
+        ssize_t n = read(s->fd_out, buf, sizeof(buf));
+        if (n <= 0) break;              /* 0 = cerro, <0 = por ahora no hay mas */
+
+        for (ssize_t i = 0; i < n; i++) {
+            if (buf[i] == '\n') {
+                s->parcial[s->parcial_len] = '\0';
+                consola_linea(s, s->parcial);
+                s->parcial_len = 0;
+            } else if (buf[i] != '\r' &&
+                       s->parcial_len < XASOL_CONSOLA_COL - 1) {
+                s->parcial[s->parcial_len++] = buf[i];
+            }
+        }
+    }
+
+    /* ¿Termino? WNOHANG pregunta sin quedarse esperando. */
+    int st;
+    if (waitpid(s->pid, &st, WNOHANG) > 0) {
+        /* Lo que quedo sin '\n' al final tambien es una linea: el prompt de
+           un LEER no lleva salto, y es justo el que hay que mostrar. */
+        if (s->parcial_len > 0) {
+            s->parcial[s->parcial_len] = '\0';
+            consola_linea(s, s->parcial);
+            s->parcial_len = 0;
+        }
+
+        close(s->fd_out); close(s->fd_in);
+        s->fd_out = s->fd_in = -1;
+        s->corriendo = 0;
+        s->consola_codigo = WIFEXITED(st) ? WEXITSTATUS(st) : -1;
+
+        if (s->consola_codigo == 127)
+            consola_linea(s, "no se encontro 'paed' en el PATH");
+        if (s->consola_n == 0)
+            consola_linea(s, "(sin salida)");
+    }
+}
+
+/* Le manda al programa lo que se tipeo, con su ENTER. */
+static void
+consola_enviar(XasolState *s)
+{
+    if (!s->corriendo) return;
+
+    /* Se muestra lo que mandaste: si no, la consola queda con el prompt y sin
+       rastro de lo que contestaste, y no se entiende que paso. */
+    char eco[XASOL_CONSOLA_COL];
+    snprintf(eco, sizeof(eco), "> %s", s->tipeado);
+    consola_linea(s, eco);
+
+    (void)!write(s->fd_in, s->tipeado, (size_t)s->tipeado_len);
+    (void)!write(s->fd_in, "\n", 1);
+
+    s->tipeado_len = 0;
+    s->tipeado[0]  = '\0';
 }
 
 /* Cuanto alto le toca hoy a la consola, ya acotado al area que hay. Se
@@ -1023,15 +1122,17 @@ pintar_consola(XasolState *s, ShellCtx *ctx, SDL_FRect area)
     /* El prompt: '>' y '_' juntos, arriba del margen. Verde si el programa
        termino bien, rojo si no — el mismo simbolo dice como salio. */
     SDL_Color col_prompt = XA_VERDE;
-    if (s->corrio && s->consola_codigo != 0) col_prompt = XA_ROJO;
+    if (s->corriendo)                        col_prompt = XA_NARANJA;
+    else if (s->corrio && s->consola_codigo) col_prompt = XA_ROJO;
     xa_text(r, f, ">_", area.x + cw * 0.6f, y0 + 4, col_prompt);
 
     /* ── La salida ── */
     float x_txt    = area.x + margen_w + 8;
     int   visibles = (int)((h0 - 6) / lh);
+    if (s->corriendo) visibles--;      /* el ultimo renglon es el de tipeo */
     if (visibles < 1) visibles = 1;
 
-    if (s->consola_n == 0) {
+    if (s->consola_n == 0 && !s->corriendo) {
         xa_text(r, f, "F10 para compilar y correr", x_txt, y0 + 4, XA_TENUE);
         return;
     }
@@ -1096,6 +1197,24 @@ pintar_consola(XasolState *s, ShellCtx *ctx, SDL_FRect area)
            y no un error nuevo. */
         float x = x_txt + (v->desde > 0 ? cw * 2 : 0);
         xa_text(r, f, trozo, x, y0 + 4 + i * lh, col);
+    }
+
+    /* ── Lo que estas tipeando ──
+     *
+     * Mientras el programa corre, la ultima linea de la consola es tuya. El
+     * cursor parpadea para que se vea que ESTA ESPERANDO: una consola quieta
+     * con un prompt y sin cursor parece colgada. */
+    if (s->corriendo) {
+        float y = y0 + 4 + (n_vis < visibles ? n_vis : visibles - 1) * lh;
+
+        char linea[XASOL_CONSOLA_COL + 4];
+        snprintf(linea, sizeof(linea), "> %s", s->tipeado);
+        xa_text(r, f, linea, x_txt, y, XA_VERDE);
+
+        if ((SDL_GetTicks() / 500) % 2 == 0) {
+            int lw; TTF_GetStringSize(f, linea, 0, &lw, NULL);
+            xa_fill(r, (SDL_FRect){x_txt + lw + 1, y, cw, lh}, XA_VERDE);
+        }
     }
 
     /* Cuantas lineas quedaron arriba, cuando hay mas de las que entran. */
@@ -1442,6 +1561,18 @@ xasol_handle_event(ShellCtx *ctx, Tab *tab, SDL_Event *e)
             return;
         }
 
+        /* Con un programa corriendo, lo que tipeas es SU entrada, no codigo.
+           Es lo que hace que un LEER se pueda contestar. */
+        if (s->pantalla == XASOL_EDITANDO && s->corriendo) {
+            int n = (int)strlen(e->text.text);
+            if (s->tipeado_len + n < XASOL_CONSOLA_COL - 1) {
+                memcpy(s->tipeado + s->tipeado_len, e->text.text, (size_t)n);
+                s->tipeado_len += n;
+                s->tipeado[s->tipeado_len] = '\0';
+            }
+            return;
+        }
+
         if (s->pantalla == XASOL_EDITANDO && s->modo == XASOL_INSERT)
             editar_insertar_texto(s, e->text.text);
         return;
@@ -1462,6 +1593,20 @@ xasol_handle_event(ShellCtx *ctx, Tab *tab, SDL_Event *e)
            mientras escribis y mientras te movés. Un F10 que solo funciona en
            NORMAL obliga a salir de INSERT para probar lo que acabas de
            tipear, que es justo el momento en que querés probarlo. */
+        /* ── Con un programa corriendo, el teclado es suyo ──
+           Va ANTES que todo lo demas: mientras espera un dato, una 'j' es una
+           'j' y no un movimiento del cursor. */
+        if (s->corriendo) {
+            if ((mod & SDL_KMOD_CTRL) && k == SDLK_C) { consola_cortar(s); return; }
+            if (k == SDLK_RETURN || k == SDLK_KP_ENTER) { consola_enviar(s); return; }
+            if (k == SDLK_BACKSPACE) {
+                if (s->tipeado_len > 0) s->tipeado[--s->tipeado_len] = '\0';
+                return;
+            }
+            if (k == SDLK_ESCAPE) { consola_cortar(s); return; }
+            return;   /* el resto del teclado no toca el editor mientras corre */
+        }
+
         if (k == SDLK_F10) { consola_correr(s); return; }
 
         if ((mod & SDL_KMOD_CTRL) && k == SDLK_J) {
@@ -1510,6 +1655,11 @@ xasol_draw(ShellCtx *ctx, Tab *tab, SDL_FRect area)
     SDL_SetRenderClipRect(r, &clip);
     xa_fill(r, area, XA_FONDO);
 
+    /* Traer lo que el programa haya escrito. Va en el dibujo y no en los
+       eventos porque tiene que pasar en CADA frame, haya o no teclas: el
+       programa escribe cuando quiere, no cuando vos apretas algo. */
+    consola_leer(s);
+
     if (s->pantalla == XASOL_EDITANDO) pintar_editor(s, ctx, area);
     else                               pintar_picker(s, ctx, area);
 
@@ -1522,6 +1672,10 @@ xasol_cleanup(ShellCtx *ctx, Tab *tab)
     (void)ctx;
     XasolState *s = (XasolState *)tab->state;
     if (!s) return;
+
+    /* Un programa vivo despues de cerrar el tab quedaria huerfano, con sus
+       pipes colgando y nadie que los lea. */
+    if (s->corriendo) consola_cortar(s);
 
     if (s->tmp_path[0]) remove(s->tmp_path);
     free(s);
