@@ -1,4 +1,10 @@
 ================================================================================
+  NOTA (2026-08-26): este documento describe SDL2.
+  El proyecto migro a SDL3. Lo que cambio esta en migracion_sdl3.md.
+  Este archivo se conserva como referencia historica y material de estudio.
+================================================================================
+
+================================================================================
               DOCUMENTACION SDL2 - PSEUDOGAMES
               Todo lo que se hizo, como funciona, y por que
 ================================================================================
