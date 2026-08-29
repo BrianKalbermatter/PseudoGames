@@ -135,6 +135,93 @@ El cursor dice el modo sin mirar la barra: **bloque** en NORMAL (se para sobre
 un carácter, que es sobre el que actúan los comandos), **barra fina** en INSERT
 (se mete entre dos, que es donde va a entrar lo que escribas).
 
+### La terminal (bash de verdad)
+
+Abajo del editor corre **bash**, no un panel de salida. Se abre sola con el
+panel, en la raíz de PseudoGames — que es donde están `saves/`, el Makefile y
+todo lo demás, así que los comandos relativos funcionan.
+
+| | |
+|---|---|
+| `F12` | pasar el teclado del editor a la terminal y volver |
+| `F10` | guardar y escribirle `paed <archivo>` a la terminal |
+| arrastrar el divisor | cambiarle el alto |
+
+Con el foco en la terminal andan `Ctrl+C`, `Tab` para autocompletar, las
+flechas para el historial y todo lo demás: es una terminal.
+
+**Cómo se sabe dónde van a ir las teclas antes de apretarlas:** el divisor y
+el `>_` se ponen naranjas cuando la terminal tiene el foco, y el cursor pasa de
+hueco a lleno.
+
+**Por qué un PTY y no dos pipes.** Un programa como bash no escribe "texto":
+escribe texto mezclado con órdenes — "poné el cursor en 1,1", "de acá en
+adelante en verde". Con pipes, bash detecta que no hay terminal y se apaga: sin
+prompt, sin colores, sin edición de línea. El pseudo-terminal es lo que lo
+convence de que sí la hay.
+
+**Lo que se aprendió de editorBim.** Aquel también usaba un PTY, y su parser
+entendía siete códigos: mover el cursor y borrar. No entendía `m`, que es el
+del **color**, y eso fue lo que lo condenó. Acá cada celda del buffer guarda su
+carácter **y** su color, y el parser maneja SGR desde el principio.
+
+`F10` no lanza un proceso propio: le **escribe el comando** a bash, como si lo
+hubieras tipeado. Por eso un `LEER` se contesta escribiendo, igual que en una
+terminal normal.
+
+Verificado sin abrir la ventana, con un programa que usa el módulo suelto:
+bash arranca, `echo` y `pwd` corren, `paed saves/Cuadrado.paed` para en el
+`LEER`, se le escribe `7` y responde `El cuadrado de 7 es 49.` Con colores.
+
+### El dibujo, y por qué parpadeaba### El dibujo, y por qué parpadeaba
+
+El texto se dibuja **por tramos de un mismo color**, no carácter por carácter.
+Cada `xa_text()` crea una superficie, la sube a una textura y destruye las dos;
+hacerlo por carácter son unas **2400 texturas por frame** en una pantalla llena,
+y encima sobre un renderer por software. Por tramos son ~15 por línea: el mismo
+dibujo, dos órdenes de magnitud menos de trabajo. Se puede agrupar así porque la
+fuente es monoespaciada — la columna N siempre cae en el mismo x.
+
+La otra mitad era `xasol_token_en()`, que se consulta una vez por carácter de la
+pantalla y recorría los 4000 tokens del archivo en cada consulta. Ahora hay un
+**índice por línea** (`idx_desde` / `idx_cuantos` en `XasolResaltado`) armado de
+una pasada, aprovechando que paed emite los tokens en orden.
+
+Lo que **no** era el problema: correr `paed --tokens`. Medido, tarda 2 ms — nada
+frente a un frame de 16 ms. Por eso el debounce de 150 ms alcanza y sobra.
+
+**Lo que se conservó de bim**: el buffer como array de líneas, los dos modos,
+el cursor como par (fila, columna) acotado a lo que existe, y la barra de
+estado. Era la forma correcta y es la de vi.
+
+**Lo que se agregó**: guardar (bim cargaba el archivo y nunca lo escribía —
+editabas y perdías todo), resaltado, undo, scroll, y los movimientos de
+palabra, línea y archivo.
+
+### Teclas
+
+| NORMAL | |
+|---|---|
+| `h j k l` / flechas | mover |
+| `w` / `b` | palabra adelante / atrás |
+| `0` / `$` | principio / fin de línea |
+| `gg` / `G` | principio / fin del archivo |
+| `i` / `a` | insertar acá / después del cursor |
+| `o` / `O` | abrir línea debajo / arriba |
+| `x` / `dd` | borrar carácter / línea |
+| `u` | deshacer |
+| `Ctrl+S` | guardar |
+| `q` | volver al picker (`Shift+Q` sin guardar) |
+
+| INSERT | |
+|---|---|
+| `Esc` | volver a NORMAL |
+| texto, Enter, Backspace, Tab | escribir |
+
+El cursor dice el modo sin mirar la barra: **bloque** en NORMAL (se para sobre
+un carácter, que es sobre el que actúan los comandos), **barra fina** en INSERT
+(se mete entre dos, que es donde va a entrar lo que escribas).
+
 ### La consola (F10)
 
 Una barra abajo del editor, como la terminal de VSCode: se abre pegada al piso,

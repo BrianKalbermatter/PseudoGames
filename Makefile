@@ -21,7 +21,7 @@ SRC = src/main.c src/ui.c src/niveles.c src/progreso.c src/cJSON.c \
       src/screenSoluction.c src/screenPomodoro.c src/pomodoro_bg.c \
       src/screenConfig.c src/screenFeedback.c src/screenPJ.c \
       src/screenVerificador.c src/audio.c src/config.c \
-      src/screenTutorial.c src/shell.c src/xasol.c src/xasol_sintaxis.c \
+      src/screenTutorial.c src/shell.c src/xasol.c src/xasol_sintaxis.c src/xasol_term.c \
       src/screenCEditor.c
 
 OBJ     = $(addprefix $(BUILDDIR)/, $(notdir $(SRC:.c=.o)))
