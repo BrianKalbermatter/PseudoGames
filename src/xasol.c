@@ -614,6 +614,10 @@ term_asegurar(XasolState *s, ShellCtx *ctx, int rows, int cols)
 static void
 consola_correr(XasolState *s, ShellCtx *ctx)
 {
+    /* Si no se pudo guardar NO se corre, y se dice. Correr igual ejecutaria
+       la version anterior del archivo, que es peor que no correr: verias un
+       resultado que no corresponde a lo que tenes en pantalla.
+       buffer_guardar ya dejo el motivo en el aviso de la barra. */
     if (!buffer_guardar(s)) return;
 
     s->consola_abierta = 1;
@@ -1327,6 +1331,31 @@ xasol_handle_event(ShellCtx *ctx, Tab *tab, SDL_Event *e)
             sobre_el_divisor(s, e->button.x, e->button.y)) {
             s->arrastrando = 1;
             return;
+        }
+
+        /* ── El clic manda el foco ──
+         *
+         * Clic en la terminal, el teclado es de bash; clic en el codigo, es
+         * del editor. Es lo que hace cualquier editor con terminal integrada,
+         * y es la unica forma de cambiarlo que se descubre sin que nadie te
+         * la cuente.
+         *
+         * Hace falta de verdad: F10 deja el foco en la terminal — asi se
+         * puede contestar un LEER — y sin el mouse la unica salida era F12.
+         * Quien no lo supiera escribia en bash creyendo que escribia en el
+         * archivo, y perdia lo que tipeaba. Paso. */
+        if (e->type == SDL_EVENT_MOUSE_BUTTON_DOWN &&
+            e->button.button == SDL_BUTTON_LEFT) {
+            SDL_FRect a = s->ultima_area;
+            if (a.w > 0 && e->button.x >= a.x && e->button.x <= a.x + a.w &&
+                e->button.y >= a.y && e->button.y <= a.y + a.h) {
+
+                float y_term = a.y + a.h - consola_alto(s, a);
+                int   en_term = s->consola_abierta && e->button.y >= y_term;
+
+                s->term_foco = en_term;
+                SDL_StartTextInput(ctx->ventana);
+            }
         }
         if (e->type == SDL_EVENT_MOUSE_BUTTON_UP) {
             s->arrastrando = 0;
