@@ -618,7 +618,7 @@ consola_linea(XasolState *s, const char *txt)
 
 /* Corta el programa que este corriendo. */
 static void
-consola_cortar(XasolState *s)
+consola_cortar(XasolState *s, ShellCtx *ctx)
 {
     if (!s->corriendo) return;
 
@@ -629,6 +629,9 @@ consola_cortar(XasolState *s)
     s->corriendo = 0;
     s->consola_codigo = -1;
     consola_linea(s, "-- cortado --");
+
+    /* La entrada de texto vuelve a ser del editor. */
+    if (ctx && s->modo == XASOL_NORMAL) SDL_StopTextInput(ctx->ventana);
 }
 
 /* Lanza el programa. No espera nada: deja el proceso corriendo y vuelve.
@@ -641,11 +644,11 @@ consola_cortar(XasolState *s)
  * tiempo que quiera.
  */
 static void
-consola_correr(XasolState *s)
+consola_correr(XasolState *s, ShellCtx *ctx)
 {
     /* Si habia uno corriendo, se corta: F10 dos veces seguidas arranca de
        nuevo, no deja dos programas peleandose por la consola. */
-    if (s->corriendo) consola_cortar(s);
+    if (s->corriendo) consola_cortar(s, ctx);
 
     /* Guardar primero: paed lee del disco. Ver el comentario de xasol.h. */
     if (!buffer_guardar(s)) {
@@ -701,6 +704,15 @@ consola_correr(XasolState *s)
     /* La lectura NO bloquea: es lo que permite mirar el pipe en cada frame
        sin quedarse esperando cuando todavia no hay nada. */
     fcntl(s->fd_out, F_SETFL, O_NONBLOCK);
+
+    /* Prender la entrada de texto, SIEMPRE.
+     *
+     * Era el bug de "no puedo escribir nada en la consola": SDL solo manda
+     * SDL_EVENT_TEXT_INPUT cuando esta encendida, y en modo NORMAL esta
+     * apagada a proposito — si no, cada letra que se usa como comando se
+     * escribiria tambien en el buffer. Al correr un programa la consola pasa
+     * a ser quien recibe el teclado, asi que hay que encenderla. */
+    if (ctx) SDL_StartTextInput(ctx->ventana);
 
     /* Si el .paed trae un bloque ENTRADA, sus lineas entran ya mismo, como si
        las hubieras tipeado. Asi las dos formas conviven: los datos fijos para
@@ -774,6 +786,16 @@ consola_leer(XasolState *s)
         if (s->consola_n == 0)
             consola_linea(s, "(sin salida)");
     }
+}
+
+/* Apaga la entrada de texto cuando el programa termino SOLO (no cortado), y
+   el editor estaba en NORMAL. Se llama desde el dibujo, que es donde se
+   detecta el fin. */
+static void
+consola_devolver_teclado(XasolState *s, ShellCtx *ctx)
+{
+    if (!s->corriendo && s->modo == XASOL_NORMAL && ctx)
+        SDL_StopTextInput(ctx->ventana);
 }
 
 /* Le manda al programa lo que se tipeo, con su ENTER. */
@@ -1597,17 +1619,17 @@ xasol_handle_event(ShellCtx *ctx, Tab *tab, SDL_Event *e)
            Va ANTES que todo lo demas: mientras espera un dato, una 'j' es una
            'j' y no un movimiento del cursor. */
         if (s->corriendo) {
-            if ((mod & SDL_KMOD_CTRL) && k == SDLK_C) { consola_cortar(s); return; }
+            if ((mod & SDL_KMOD_CTRL) && k == SDLK_C) { consola_cortar(s, ctx); return; }
             if (k == SDLK_RETURN || k == SDLK_KP_ENTER) { consola_enviar(s); return; }
             if (k == SDLK_BACKSPACE) {
                 if (s->tipeado_len > 0) s->tipeado[--s->tipeado_len] = '\0';
                 return;
             }
-            if (k == SDLK_ESCAPE) { consola_cortar(s); return; }
+            if (k == SDLK_ESCAPE) { consola_cortar(s, ctx); return; }
             return;   /* el resto del teclado no toca el editor mientras corre */
         }
 
-        if (k == SDLK_F10) { consola_correr(s); return; }
+        if (k == SDLK_F10) { consola_correr(s, ctx); return; }
 
         if ((mod & SDL_KMOD_CTRL) && k == SDLK_J) {
             s->consola_abierta = !s->consola_abierta;
@@ -1658,7 +1680,9 @@ xasol_draw(ShellCtx *ctx, Tab *tab, SDL_FRect area)
     /* Traer lo que el programa haya escrito. Va en el dibujo y no en los
        eventos porque tiene que pasar en CADA frame, haya o no teclas: el
        programa escribe cuando quiere, no cuando vos apretas algo. */
+    int corria = s->corriendo;
     consola_leer(s);
+    if (corria && !s->corriendo) consola_devolver_teclado(s, ctx);
 
     if (s->pantalla == XASOL_EDITANDO) pintar_editor(s, ctx, area);
     else                               pintar_picker(s, ctx, area);
@@ -1675,7 +1699,7 @@ xasol_cleanup(ShellCtx *ctx, Tab *tab)
 
     /* Un programa vivo despues de cerrar el tab quedaria huerfano, con sus
        pipes colgando y nadie que los lea. */
-    if (s->corriendo) consola_cortar(s);
+    if (s->corriendo) consola_cortar(s, NULL);
 
     if (s->tmp_path[0]) remove(s->tmp_path);
     free(s);
