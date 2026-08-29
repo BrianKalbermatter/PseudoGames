@@ -1159,11 +1159,31 @@ screenShell(SDL_Renderer *renderer, TTF_Font *fuente,
     /* ── Loop principal ── */
     int pending_resize = 0;   /* 1 = recrear renderer al inicio del próximo frame */
 
+    /* Cuantos frames seguidos se salteo el dibujo esperando que la ventana y
+       su surface se pongan de acuerdo. Tiene techo porque saltear el frame
+       tambien saltea el procesamiento de eventos: sin limite, un WM que nunca
+       convergiera dejaria la app sin poder cerrarse ni con la X. Pasado el
+       techo se dibuja con lo que haya, aunque salga un frame torcido. */
+    int esperando_surface = 0;
+    const int MAX_ESPERA  = 30;   /* ~medio segundo a 60 fps */
+
     while (!ctx.salir) {
 
         /* ── Recrear renderer si hubo resize (diferido para evitar dangling ptr) ── */
         if (pending_resize) {
             pending_resize = 0;
+
+            /* SDL_GetWindowSurface() devuelve la surface CACHEADA. Al maximizar
+             * en WSL2 eso rompia la ventana: SDL_GetWindowSize ya reportaba el
+             * tamano nuevo, pero la surface seguia siendo la vieja, asi que el
+             * shell dibujaba una ventana grande sobre un lienzo chico. Se veia
+             * recortado y con basura, y no se recuperaba solo porque el
+             * siguiente frame repetia exactamente lo mismo.
+             *
+             * SDL_DestroyWindowSurface la tira, y el GetWindowSurface de abajo
+             * crea una nueva del tamano que la ventana tiene AHORA. */
+            SDL_DestroyWindowSurface(ventana);
+
             SDL_Surface *ns = SDL_GetWindowSurface(ventana);
             if (ns) {
                 if (ctx.logo) { SDL_DestroyTexture(ctx.logo); ctx.logo = NULL; }
@@ -1194,8 +1214,35 @@ screenShell(SDL_Renderer *renderer, TTF_Font *fuente,
         /* Protección adicional: nunca renderizar sin renderer válido */
         if (!renderer) { SDL_Delay(16); continue; }
 
-        /* Leer el tamaño real de la ventana (captura resize/fullscreen) */
-        SDL_GetWindowSize(ventana, &ctx.ancho, &ctx.alto);
+        /* El tamano de dibujo sale de la SURFACE, no de la ventana.
+         *
+         * Son dos cosas distintas y durante un resize no coinciden: el gestor
+         * de ventanas ya cambio la ventana y la surface se recrea despues. Si
+         * se dibuja contra el tamano de la ventana, se dibuja fuera del lienzo
+         * — que es lo que rompia el maximizar en WSL2.
+         *
+         * La surface es donde se dibuja de verdad, asi que es la que manda. Y
+         * si todavia no coincide con la ventana, se pide otro resize: el WM
+         * sigue acomodando y el proximo frame la encuentra ya cuadrada. */
+        SDL_Surface *cur = SDL_GetWindowSurface(ventana);
+        if (!cur) {
+            pending_resize = 1;
+            if (++esperando_surface < MAX_ESPERA) { SDL_Delay(16); continue; }
+        }
+
+        if (cur) {
+            ctx.ancho = cur->w;
+            ctx.alto  = cur->h;
+
+            int vw, vh;
+            SDL_GetWindowSize(ventana, &vw, &vh);
+            if (vw != cur->w || vh != cur->h) {
+                pending_resize = 1;
+                if (++esperando_surface < MAX_ESPERA) { SDL_Delay(16); continue; }
+            } else {
+                esperando_surface = 0;
+            }
+        }
 
         /* Ancho del sidebar segun estado */
         ctx.sidebar_w = ctx.sidebar_abierto ? SIDEBAR_W : SIDEBAR_COLLAPSED_W;
