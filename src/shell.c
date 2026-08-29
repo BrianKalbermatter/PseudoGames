@@ -2,7 +2,7 @@
 #include "ui.h"
 #include "audio.h"
 #include "config.h"
-#include "editorBim.h"
+#include "xasol.h"
 #include "screenCEditor.h"
 #include "screenPJ.h"
 #include "pomodoro_bg.h"
@@ -71,13 +71,25 @@ static const char *SIDEBAR_LABELS[PANEL_COUNT] = {
 static const int PANEL_HABILITADO[PANEL_COUNT] = {
     1,  /* DOC          */
     0,  /* Pomodoro     */
-    0,  /* Editor Libre */
+    1,  /* Editor Libre — xasol */
     0,  /* Niveles      */
     0,  /* Soluciones   */
     1,  /* Config       */
     0,  /* Mazmorra     */
     0,  /* Editor C     */
 };
+
+/* Geometria de los items del sidebar.
+ *
+ * Vive aca, en UN solo lugar, porque la usan dos funciones que tienen que
+ * coincidir exactamente: draw_sidebar() los dibuja y sidebar_hit() decide a
+ * cual le pegaste. Cuando cada una la calculaba por su cuenta se desfasaron
+ * 4 px, y el sintoma era que clickear el borde de arriba de un item activaba
+ * el de mas arriba — que si estaba en WIP, se comia el click sin avisar. */
+#define SIDEBAR_LOGO_Y   10
+#define SIDEBAR_SEP_Y    (SIDEBAR_LOGO_Y + 22)
+#define SIDEBAR_ITEMS_Y  (SIDEBAR_SEP_Y + 12)
+#define SIDEBAR_ITEM_H   30
 
 /* ════════════════════════════════════════════════════════════════════════════
  *  SIDEBAR
@@ -114,7 +126,7 @@ draw_sidebar(ShellCtx *ctx)
     /* ── Sidebar expandido ── */
 
     /* Logo en la parte superior — icono PNG (16x16) + texto */
-    int logo_y  = 10;
+    int logo_y  = SIDEBAR_LOGO_Y;
     int icon_sz = 16;
     if (ctx->logo) {
         SDL_FRect dst = {14, logo_y, icon_sz, icon_sz};
@@ -134,12 +146,12 @@ draw_sidebar(ShellCtx *ctx)
     }
 
     /* Separador bajo el logo */
-    int sep_y = logo_y + 22;
+    int sep_y = SIDEBAR_SEP_Y;
     sh_hline(r, 0, sep_y, sw, COL_SEP);
 
     /* Items de navegacion */
-    int item_h = 30;
-    int items_y = sep_y + 12;
+    int item_h  = SIDEBAR_ITEM_H;
+    int items_y = SIDEBAR_ITEMS_Y;
 
     for (int i = 0; i < PANEL_COUNT; i++) {
         int iy = items_y + i * item_h;
@@ -349,9 +361,10 @@ sidebar_hit(ShellCtx *ctx, int cx, int cy)
     if (cy >= 10 && cy <= 40 && cx >= sw - 34)
         return SHELL_TOGGLE;
 
-    /* Items de navegacion */
-    int item_h  = 30;
-    int items_y = 14 + 22 + 12;   /* logo_y + sep_offset + gap */
+    /* Items de navegacion. Las mismas constantes que usa draw_sidebar: si el
+       dibujo y el hit-test no coinciden, el click cae en otro item. */
+    int item_h  = SIDEBAR_ITEM_H;
+    int items_y = SIDEBAR_ITEMS_Y;
 
     for (int i = 0; i < PANEL_COUNT; i++) {
         int iy = items_y + i * item_h;
@@ -441,18 +454,6 @@ draw_welcome(ShellCtx *ctx, SDL_FRect area)
 static void panel_noop_init   (ShellCtx *ctx, Tab *tab)              { (void)ctx; (void)tab; }
 static void panel_noop_event  (ShellCtx *ctx, Tab *tab, SDL_Event *e){ (void)ctx; (void)tab; (void)e; }
 static void panel_noop_cleanup(ShellCtx *ctx, Tab *tab)              { (void)ctx; (void)tab; }
-
-/* Puente temporal al editorBim.
-   Ese archivo lo mantiene Brian y todavia dibuja con SDL_Rect (enteros).
-   El resto del shell ya pasó a SDL_FRect, que es lo que pide SDL3 para
-   dibujar. Cuando editorBim.c migre, se borra este wrapper y se vuelve a
-   asignar editor_bim_draw directo en la tabla de paneles. */
-static void
-editor_bim_draw_panel(ShellCtx *ctx, Tab *tab, SDL_FRect area)
-{
-    SDL_Rect ir = { (int)area.x, (int)area.y, (int)area.w, (int)area.h };
-    editor_bim_draw(ctx, tab, ir);
-}
 
 static void
 panel_placeholder_draw(ShellCtx *ctx, Tab *tab, SDL_FRect area)
@@ -996,9 +997,10 @@ config_cleanup(ShellCtx *ctx, Tab *tab)
 }
 
 /* ════════════════════════════════════════════════════════════════════════════
- *  PANEL: EDITOR LIBRE → editorBim (PTY)
- *  Lanza scripts/editorBim/bim.sh en un pseudo-terminal embebido en SDL.
- *  Ver src/editorBim.c para la implementacion completa.
+ *  PANEL: EDITOR LIBRE → xasol, el editorXL
+ *  Un editor modal de PAED dibujado directo con SDL, con la sintaxis
+ *  resaltada por el propio interprete (`paed --tokens`).
+ *  Ver src/xasol.c y src/xasol_sintaxis.c.
  * ════════════════════════════════════════════════════════════════════════════ */
 
 /* ════════════════════════════════════════════════════════════════════════════
@@ -1106,10 +1108,10 @@ registrar_paneles(ShellCtx *ctx)
     ctx->defs[PANEL_CONFIG].draw         = config_draw;
     ctx->defs[PANEL_CONFIG].cleanup      = config_cleanup;
 
-    ctx->defs[PANEL_EDITOR_LIBRE].init         = editor_bim_init;
-    ctx->defs[PANEL_EDITOR_LIBRE].handle_event = editor_bim_handle_event;
-    ctx->defs[PANEL_EDITOR_LIBRE].draw         = editor_bim_draw_panel;
-    ctx->defs[PANEL_EDITOR_LIBRE].cleanup      = editor_bim_cleanup;
+    ctx->defs[PANEL_EDITOR_LIBRE].init         = xasol_init;
+    ctx->defs[PANEL_EDITOR_LIBRE].handle_event = xasol_handle_event;
+    ctx->defs[PANEL_EDITOR_LIBRE].draw         = xasol_draw;
+    ctx->defs[PANEL_EDITOR_LIBRE].cleanup      = xasol_cleanup;
 
     ctx->defs[PANEL_MAZMORRA].init         = mazmorra_init;
     ctx->defs[PANEL_MAZMORRA].handle_event = mazmorra_event;

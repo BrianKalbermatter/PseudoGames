@@ -24,7 +24,7 @@ VimMon (el OS)  ──lanza──>  PseudoGames (este)  ──usa──>  PAED (
 ## Construir
 
 ```bash
-make            # el editor: build/*.o -> aed   (necesita SDL2, ttf, mixer, image)
+make            # el editor: build/*.o -> aed   (necesita SDL3, ttf, mixer, image)
 make windows    # PseudoGames.exe, cross-compile con mingw-w64
 make clean
 ```
@@ -40,7 +40,8 @@ cargan con rutas relativas.
 
 ```
 src/           el editor: pantallas, editor de texto, consola, audio, config
-  editorBim.c    el editor propiamente dicho
+  xasol.c        xasol, el editorXL: editor modal de PAED
+  xasol_sintaxis.c  sus colores, pedidos a `paed --tokens`
 assets/        fuentes, iconos, audio
 data/          niveles.json, wiki.txt y el material de estudio
 solutions/     soluciones de referencia de cada nivel
