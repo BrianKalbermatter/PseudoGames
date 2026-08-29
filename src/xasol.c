@@ -988,29 +988,73 @@ pintar_consola(XasolState *s, ShellCtx *ctx, SDL_FRect area)
         return;
     }
 
-    /* Se muestra el FINAL de la salida, que es donde esta el error o el
-       resultado; consola_scroll cuenta cuantas lineas subiste desde ahi. */
-    int desde = s->consola_n - visibles - s->consola_scroll;
-    if (desde < 0) desde = 0;
+    /* Cuantos caracteres entran a lo ancho. Las lineas de paed son largas
+     * — "archivo.paed:5: error: instruccion antes del PROCESO de la
+     * subaccion 'devolverCuadro'" pasa los 90 caracteres — asi que cortarlas
+     * es tapar justo la parte que dice QUE esta mal. Se parten en varias
+     * lineas visuales en vez de recortarse. */
+    int cols = (int)((area.w - margen_w - 16) / cw);
+    if (cols < 20) cols = 20;
 
-    for (int i = 0; i < visibles; i++) {
-        int idx = desde + i;
-        if (idx >= s->consola_n) break;
+    /* Se arman las lineas visuales DE ABAJO HACIA ARRIBA, porque lo que
+     * importa es el final de la salida: ahi esta el error o el resultado.
+     * Cada linea logica puede ocupar varias visuales, asi que no alcanza con
+     * contar lineas — hay que ir armandolas para saber cuantas entran. */
+    /* Una linea VISUAL: de que linea logica sale y desde que caracter. Una
+       linea larga da varias. El tipo lleva nombre porque se usa en dos
+       lugares, y dos `struct {...}` anonimos son dos tipos DISTINTOS en C
+       aunque tengan los mismos campos. */
+    typedef struct { int idx; int desde; } LineaVis;
+    LineaVis vis[128];
+    int n_vis = 0;
+    int tope  = visibles < 128 ? visibles : 128;
+
+    /* consola_scroll cuenta cuantas lineas logicas subiste desde el final. */
+    int ultima = s->consola_n - 1 - s->consola_scroll;
+    if (ultima >= s->consola_n) ultima = s->consola_n - 1;
+
+    for (int idx = ultima; idx >= 0 && n_vis < tope; idx--) {
+        int largo = (int)strlen(s->consola[idx]);
+        int trozos = largo <= cols ? 1 : (largo + cols - 1) / cols;
+
+        /* Los trozos de una misma linea, del ultimo al primero, para que al
+           dar vuelta el array queden en orden. */
+        for (int tr = trozos - 1; tr >= 0 && n_vis < tope; tr--) {
+            vis[n_vis].idx   = idx;
+            vis[n_vis].desde = tr * cols;
+            n_vis++;
+        }
+    }
+
+    /* vis[] quedo del final al principio: se dibuja al reves. */
+    for (int i = 0; i < n_vis; i++) {
+        const LineaVis *v = &vis[n_vis - 1 - i];
+        const char *l = s->consola[v->idx];
 
         /* Las lineas que hablan de un error van en rojo. Se reconoce por el
            texto porque paed no marca sus lineas de ninguna otra forma: la
            consola muestra su salida tal cual, sin un formato aparte. */
-        const char *l = s->consola[idx];
         SDL_Color col = XA_CLARO;
         if (strstr(l, "rror") || strstr(l, "cortado")) col = XA_ROJO;
 
-        xa_text(r, f, l, x_txt, y0 + 4 + i * lh, col);
+        char trozo[XASOL_CONSOLA_COL];
+        int  n = (int)strlen(l) - v->desde;
+        if (n > cols) n = cols;
+        if (n < 0)    n = 0;
+        memcpy(trozo, l + v->desde, (size_t)n);
+        trozo[n] = '\0';
+
+        /* La continuacion va sangrada, para que se lea que es la misma linea
+           y no un error nuevo. */
+        float x = x_txt + (v->desde > 0 ? cw * 2 : 0);
+        xa_text(r, f, trozo, x, y0 + 4 + i * lh, col);
     }
 
     /* Cuantas lineas quedaron arriba, cuando hay mas de las que entran. */
-    if (desde > 0) {
+    int arriba = n_vis > 0 ? vis[n_vis - 1].idx : 0;
+    if (arriba > 0) {
         char mas[48];
-        snprintf(mas, sizeof(mas), "^ %d lineas mas", desde);
+        snprintf(mas, sizeof(mas), "^ %d lineas mas", arriba);
         int mw; TTF_GetStringSize(f, mas, 0, &mw, NULL);
         xa_text(r, f, mas, area.x + area.w - mw - 10, y0 + 4, XA_TENUE);
     }
