@@ -608,18 +608,65 @@ consola_correr(XasolState *s)
     s->corrio          = 1;
     consola_limpiar(s);
 
+    /* ── De donde salen los datos de un LEER ──
+     *
+     * Del PROPIO .paed, de un bloque de comentarios al final:
+     *
+     *     // ── ENTRADA ──
+     *     // 7
+     *
+     * Una linea por cada LEER, en orden. Es la misma idea que el bloque
+     * SALIDA ESPERADA de los tests y que los datos de una SECUENCIA: un
+     * programa es UN archivo, y los datos del enunciado son parte de el.
+     *
+     * La alternativa seria dejar la entrada abierta y que escribas en la
+     * consola. No se hace, y no es por comodidad: la consola espera a que el
+     * proceso termine, asi que un LEER sin datos colgaria PseudoGames entero.
+     * Con los datos adentro del archivo, F10 sigue siendo un boton que
+     * siempre vuelve.
+     */
+    char entrada_path[80];
+    snprintf(entrada_path, sizeof(entrada_path), "/tmp/xasol_in_%d", (int)getpid());
+
+    FILE *ent = fopen(entrada_path, "w");
+    if (ent) {
+        int dentro = 0;
+        for (int i = 0; i < s->n_lineas; i++) {
+            const char *l = s->lineas[i];
+
+            /* Los datos viven en COMENTARIOS: no son codigo. */
+            const char *barra = strstr(l, "//");
+            if (!barra) { if (dentro) break; else continue; }
+
+            const char *cuerpo = barra + 2;
+            while (*cuerpo == ' ' || *cuerpo == '\t') cuerpo++;
+
+            /* Una marca '──' abre el bloque o cierra el que estaba abierto.
+               Asi el bloque de ENTRADA no se come al de SALIDA ESPERADA. */
+            if (strstr(cuerpo, "\xe2\x94\x80\xe2\x94\x80")) {
+                if (dentro) break;
+                if (strstr(cuerpo, "ENTRADA")) dentro = 1;
+                continue;
+            }
+
+            if (dentro) fprintf(ent, "%s\n", cuerpo);
+        }
+        fclose(ent);
+    }
+
     /* Tres cosas del comando, y cada una ataja algo:
      *
-     *   timeout N   corta un programa que no termina. Sin esto, un MIENTRAS
-     *               infinito cuelga PseudoGames entero.
-     *   < /dev/null un LEER sin nadie que tipee se queda esperando para
-     *               siempre. Con la entrada cerrada, falla y sigue.
-     *   2>&1        los errores de paed salen por stderr, y son justamente
-     *               lo que uno viene a leer aca.
+     *   timeout N     corta un programa que no termina. Sin esto, un MIENTRAS
+     *                 infinito cuelga PseudoGames entero.
+     *   < entrada     los datos del bloque ENTRADA. Si no hay bloque el
+     *                 archivo queda vacio, que es lo mismo que /dev/null: el
+     *                 LEER falla en vez de esperar para siempre.
+     *   2>&1          los errores de paed salen por stderr, y son justamente
+     *                 lo que uno viene a leer aca.
      */
-    char cmd[800];
-    snprintf(cmd, sizeof(cmd), "timeout %d paed '%s' < /dev/null 2>&1",
-             XASOL_TIMEOUT_SEG, s->path);
+    char cmd[900];
+    snprintf(cmd, sizeof(cmd), "timeout %d paed '%s' < '%s' 2>&1",
+             XASOL_TIMEOUT_SEG, s->path, entrada_path);
 
     FILE *p = popen(cmd, "r");
     if (!p) {
@@ -635,6 +682,7 @@ consola_correr(XasolState *s)
     }
 
     int st = pclose(p);
+    remove(entrada_path);
     /* pclose devuelve el estado de wait(), no el codigo de salida: hay que
        correrlo 8 bits. 124 es el que usa `timeout` cuando corta por tiempo. */
     s->consola_codigo = (st == -1) ? -1 : ((st >> 8) & 0xff);
