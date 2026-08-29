@@ -974,7 +974,7 @@ pintar_consola(XasolState *s, ShellCtx *ctx, SDL_FRect area)
     term_asegurar(s, ctx, filas, cols);
 
     if (!s->term.vivo) {
-        xa_text(r, f, "bash se cerro. F12 para volver al editor.",
+        xa_text(r, f, "bash se cerro",
                 x_txt, y0 + 4, XA_TENUE);
         return;
     }
@@ -1033,11 +1033,6 @@ pintar_consola(XasolState *s, ShellCtx *ctx, SDL_FRect area)
         }
     }
 
-    /* La ayuda, a la derecha del divisor. */
-    const char *ayuda = s->term_foco ? "F12 volver al editor"
-                                     : "F12 ir a la terminal   F10 correr";
-    int aw; TTF_GetStringSize(f, ayuda, 0, &aw, NULL);
-    xa_text(r, f, ayuda, area.x + area.w - aw - 10, y0 + 4, XA_TENUE);
 }
 
 static void
@@ -1178,10 +1173,6 @@ pintar_editor(XasolState *s, ShellCtx *ctx, SDL_FRect area)
         const char *msg = "sin resaltado (falta paed en el PATH)";
         int mw; TTF_GetStringSize(f, msg, 0, &mw, NULL);
         xa_text(r, f, msg, area.x + area.w - mw - 10, by + 4, XA_ROJO);
-    } else {
-        const char *msg = "F10 correr   Ctrl+S guardar   Ctrl+J consola";
-        int mw; TTF_GetStringSize(f, msg, 0, &mw, NULL);
-        xa_text(r, f, msg, area.x + area.w - mw - 10, by + 4, XA_TENUE);
     }
 
     /* La consola va ultima para quedar por encima de todo lo demas. */
