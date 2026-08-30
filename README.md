@@ -45,10 +45,33 @@ src/           el editor: pantallas, editor de texto, consola, audio, config
 assets/        fuentes, iconos, audio
 data/          niveles.json, wiki.txt y el material de estudio
 solutions/     soluciones de referencia de cada nivel
-saves/         progreso y configuracion del jugador
+saves/         progreso, configuracion y los .paed que escribis
+  secuencias_paed/<programa>/<variable>.txt   la cinta de cada SECUENCIA
 screenPJ/      subproyecto con su propio Makefile
 scripts/       launcher, empaquetado y release
 ```
+
+## Las secuencias: de donde salen sus datos
+
+Un programa con `sec: SECUENCIA DE CARACTERES;` necesita SUS DATOS para correr,
+y esos datos no estan en el codigo: son el enunciado. Al apretar **F10**, xasol
+le pregunta a paed que secuencias declara el programa y cuales todavia no tienen
+cinta, y te las pide una por una en una ventanita antes de correr.
+
+Lo que se tipea es la cinta entera, en una linea, con las celdas **una al lado
+de la otra y sin separadores**. `hola mundo` son DIEZ celdas y el espacio es una
+de ellas: `AVZ` la va a devolver como cualquier otra. La ventanita muestra abajo
+la cinta separada en celdas justamente para que eso se vea mientras se escribe.
+
+Se guarda en `saves/secuencias_paed/<programa>/<variable>.txt`. Son dos nombres
+y cada uno contesta una pregunta: el del ARCHIVO es el de la variable, y el de
+la CARPETA es el del programa — que es lo que ATA esa cinta a ese .paed. `sec`
+es el nombre mas comun que hay: puede haber ochenta sec.txt en el proyecto y
+ninguno se pisa con otro.
+
+La ruta no la inventa el editor: se la dice paed, en la cuarta columna de
+`paed --secuencias <archivo>`. Si el editor la armara por su cuenta, el dia que
+el lenguaje la cambie escribiria en un lugar donde nadie va a mirar.
 
 ## Dependencia con PAED
 

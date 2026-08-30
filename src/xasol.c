@@ -27,6 +27,7 @@
 #include <dirent.h>
 #include <fcntl.h>
 #include <signal.h>
+#include <sys/stat.h>
 #include <sys/wait.h>
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -714,11 +715,124 @@ term_asegurar(XasolState *s, ShellCtx *ctx, int rows, int cols)
     if (s->term_lista && ctx) SDL_StartTextInput(ctx->ventana);
 }
 
-/* F10: guarda y le pide a la terminal que lo corra.
+/* Le pide a la terminal que corra el programa. Asume que ya se guardo.
  *
  * No lanza un proceso propio. Le ESCRIBE el comando a bash, como si lo
  * hubieras tipeado — asi el programa corre en una terminal de verdad, con su
  * entrada y su salida, y un LEER se contesta escribiendo. */
+static void
+consola_lanzar(XasolState *s, ShellCtx *ctx)
+{
+    s->consola_abierta = 1;
+    s->corrio          = 1;
+
+    char cmd[700];
+    snprintf(cmd, sizeof(cmd), "paed '%s'", s->path);
+    xterm_comando(&s->term, cmd);
+
+    if (ctx) SDL_StartTextInput(ctx->ventana);
+}
+
+/* Le pregunta a paed que secuencias de ENTRADA declara el programa y cuales
+ * no tienen cinta todavia. Devuelve cuantas faltan.
+ *
+ * El editor no lee el .paed para averiguarlo, por lo mismo que no se arma su
+ * propio resaltador: quien sabe que es una SECUENCIA es el interprete. Aca
+ * solo se leen cuatro columnas separadas por tabs.
+ *
+ *     sec   CARACTERES   falta   saves/secuencias_paed/sec.txt
+ */
+static int
+secuencias_faltantes(XasolState *s)
+{
+    s->sec_n = 0;
+
+    char cmd[700];
+    snprintf(cmd, sizeof(cmd), "paed --secuencias '%s' 2>/dev/null", s->path);
+
+    FILE *p = popen(cmd, "r");
+    if (!p) return 0;
+
+    char linea[512];
+    while (fgets(linea, sizeof(linea), p) && s->sec_n < XASOL_SEC_MAX_PEND) {
+        linea[strcspn(linea, "\r\n")] = '\0';
+
+        char nombre[64], tipo[32], estado[16], ruta[320];
+        if (sscanf(linea, "%63[^\t]\t%31[^\t]\t%15[^\t]\t%319[^\t]",
+                   nombre, tipo, estado, ruta) != 4)
+            continue;
+        if (strcmp(estado, "falta") != 0) continue;   /* esa ya tiene cinta */
+
+        int i = s->sec_n++;
+        snprintf(s->sec_nombre[i], sizeof(s->sec_nombre[i]), "%s", nombre);
+        snprintf(s->sec_tipo[i],   sizeof(s->sec_tipo[i]),   "%s", tipo);
+        snprintf(s->sec_ruta[i],   sizeof(s->sec_ruta[i]),   "%s", ruta);
+    }
+
+    pclose(p);
+    return s->sec_n;
+}
+
+/* Guarda la cinta que se acaba de tipear, en la ruta que dijo paed. */
+static int
+secuencia_guardar(XasolState *s)
+{
+    const char *ruta = s->sec_ruta[s->sec_i];
+
+    /* Las carpetas que falten, de arriba para abajo.
+     *
+     * Son DOS niveles nuevos, no uno: la ruta es
+     * secuencias_paed/<programa>/<variable>.txt. Crear solo el ultimo tramo
+     * funcionaba de casualidad — mientras secuencias_paed/ ya existiera de
+     * antes. En un proyecto nuevo mkdir falla con ENOENT, y la primera cinta
+     * que alguien escribe no se guarda.
+     *
+     * Se recorre la ruta y se crea cada tramo: mkdir de uno que ya esta
+     * devuelve error y no importa, es justamente lo que se quiere. */
+    char dir[320];
+    snprintf(dir, sizeof(dir), "%s", ruta);
+
+    char *ultima = strrchr(dir, '/');
+    if (ultima) {
+        *ultima = '\0';                    /* sacar el nombre del archivo */
+        for (char *b = dir + 1; *b; b++) {
+            if (*b != '/') continue;
+            *b = '\0';
+            mkdir(dir, 0755);
+            *b = '/';
+        }
+        mkdir(dir, 0755);
+    }
+
+    FILE *f = fopen(ruta, "w");
+    if (!f) {
+        snprintf(s->aviso, sizeof(s->aviso), "NO SE PUDO ESCRIBIR %s", ruta);
+        return 0;
+    }
+    fprintf(f, "%s\n", s->sec_buf);
+    fclose(f);
+    return 1;
+}
+
+/* Enter en la ventanita: guarda esta cinta y pasa a la que sigue. Cuando no
+   queda ninguna, recien ahi corre el programa. */
+static void
+secuencia_siguiente(XasolState *s, ShellCtx *ctx)
+{
+    if (!secuencia_guardar(s)) { s->sec_pidiendo = 0; return; }
+
+    s->sec_i++;
+    s->sec_buf[0] = '\0';
+    s->sec_len    = 0;
+
+    if (s->sec_i < s->sec_n) return;   /* falta otra: la ventanita sigue */
+
+    s->sec_pidiendo = 0;
+    consola_lanzar(s, ctx);
+    s->term_foco = 1;
+}
+
+/* F10: guarda, se asegura de que las secuencias tengan datos, y corre. */
 static void
 consola_correr(XasolState *s, ShellCtx *ctx)
 {
@@ -728,14 +842,20 @@ consola_correr(XasolState *s, ShellCtx *ctx)
        buffer_guardar ya dejo el motivo en el aviso de la barra. */
     if (!buffer_guardar(s)) return;
 
-    s->consola_abierta = 1;
-    s->corrio          = 1;
+    /* Una secuencia sin cinta no es un error del programa: es un dato que
+       todavia no diste. Se pide antes de correr, y no despues con un error a
+       mitad de camino. */
+    if (secuencias_faltantes(s) > 0) {
+        s->sec_pidiendo = 1;
+        s->sec_i        = 0;
+        s->sec_buf[0]   = '\0';
+        s->sec_len      = 0;
+        s->term_foco    = 0;      /* el teclado es de la ventanita */
+        if (ctx) SDL_StartTextInput(ctx->ventana);
+        return;
+    }
 
-    char cmd[700];
-    snprintf(cmd, sizeof(cmd), "paed '%s'", s->path);
-    xterm_comando(&s->term, cmd);
-
-    if (ctx) SDL_StartTextInput(ctx->ventana);
+    consola_lanzar(s, ctx);
 }
 
 /* Cuanto alto le toca hoy a la consola, ya acotado al area que hay. Se
@@ -1155,6 +1275,113 @@ pintar_consola(XasolState *s, ShellCtx *ctx, SDL_FRect area)
 
 }
 
+/* ── La ventanita de la cinta ────────────────────────────────────────────────
+ *
+ * Chica y en el medio, con UNA linea para escribir:
+ *
+ *     ┌────────────────────────────────────────────┐
+ *     │ SECUENCIA sec — CARACTERES        (1 de 2) │
+ *     │ ┌────────────────────────────────────────┐ │
+ *     │ │ hola mundo_                            │ │
+ *     │ └────────────────────────────────────────┘ │
+ *     │ h o l a _ m u n d o          10 celdas     │
+ *     │ se guarda en saves/secuencias_paed/sec.txt │
+ *     └────────────────────────────────────────────┘
+ *
+ * Abajo del renglon va la cinta SEPARADA EN CELDAS, que es lo unico que hay
+ * que entender de una secuencia: 'hola mundo' no son dos palabras, son diez
+ * celdas y el espacio es una. Verlo mientras lo escribis evita la sorpresa de
+ * que AVZ devuelva un espacio.
+ */
+static void
+pintar_pedido_secuencia(XasolState *s, ShellCtx *ctx, SDL_FRect area)
+{
+    SDL_Renderer *r = ctx->renderer;
+    TTF_Font     *f = ctx->fuente;
+
+    float cw = xa_char_w(f);
+    float lh = xa_line_h(f);
+
+    float w = area.w * 0.7f;
+    if (w > 620) w = 620;
+    if (w > area.w - 40) w = area.w - 40;
+    float h = lh * 6 + 46;
+
+    SDL_FRect caja = {area.x + (area.w - w) / 2,
+                      area.y + (area.h - h) / 3, w, h};
+
+    /* Un velo sobre todo lo de atras: mientras esta abierta el teclado es de
+       la ventanita, y eso tiene que verse sin leer nada.
+     *
+     * El blend se prende A MANO y se apaga despues. SDL no mezcla el alfa si
+     * el renderer esta en BLENDMODE_NONE, que es como lo dejan las otras
+     * pantallas: sin esto el 170 se ignora y el "velo" tapa el editor con
+     * negro solido. Se apaga al salir para no cambiarle el modo a nadie. */
+    SDL_SetRenderDrawBlendMode(r, SDL_BLENDMODE_BLEND);
+    xa_fill(r, area, (SDL_Color){0, 0, 0, 170});
+    SDL_SetRenderDrawBlendMode(r, SDL_BLENDMODE_NONE);
+    xa_fill(r, caja, (SDL_Color){22, 22, 22, 255});
+    SDL_SetRenderDrawColor(r, XA_VERDE.r, XA_VERDE.g, XA_VERDE.b, 255);
+    SDL_RenderRect(r, &caja);
+
+    float pad = 12;
+    float cy  = caja.y + pad;
+
+    char titulo[140];
+    snprintf(titulo, sizeof(titulo), "SECUENCIA %s — %s",
+             s->sec_nombre[s->sec_i], s->sec_tipo[s->sec_i]);
+    xa_text(r, f, titulo, caja.x + pad, cy, XA_VERDE);
+
+    if (s->sec_n > 1) {
+        char cuenta[32];
+        snprintf(cuenta, sizeof(cuenta), "(%d de %d)", s->sec_i + 1, s->sec_n);
+        int aw; TTF_GetStringSize(f, cuenta, 0, &aw, NULL);
+        xa_text(r, f, cuenta, caja.x + caja.w - pad - aw, cy, XA_TENUE);
+    }
+    cy += lh + 8;
+
+    /* El renglon donde se tipea. */
+    SDL_FRect linea = {caja.x + pad, cy, caja.w - pad * 2, lh + 10};
+    xa_fill(r, linea, (SDL_Color){30, 30, 30, 255});
+    SDL_SetRenderDrawColor(r, 60, 60, 60, 255);
+    SDL_RenderRect(r, &linea);
+
+    /* Si la cinta no entra, se muestra la COLA: es donde esta el cursor. */
+    int visibles = (int)((linea.w - 16) / cw);
+    const char *desde = s->sec_buf;
+    if (visibles > 1 && s->sec_len > visibles - 1)
+        desde = s->sec_buf + (s->sec_len - (visibles - 1));
+
+    char eco[XASOL_SEC_LARGO + 2];
+    snprintf(eco, sizeof(eco), "%s_", desde);
+    xa_text(r, f, eco, linea.x + 8, cy + 5, XA_CLARO);
+    cy += lh + 18;
+
+    /* La misma cinta, celda por celda. El espacio se dibuja como '_' porque
+       un espacio no se ve, y justamente es la celda que sorprende. */
+    char celdas[XASOL_SEC_LARGO * 2 + 8];
+    int  cn = 0;
+    int  arranca = (int)(desde - s->sec_buf);
+    for (int i = arranca; i < s->sec_len && cn < (int)sizeof(celdas) - 3; i++) {
+        celdas[cn++] = s->sec_buf[i] == ' ' ? '_' : s->sec_buf[i];
+        celdas[cn++] = ' ';
+    }
+    celdas[cn] = '\0';
+    xa_text(r, f, celdas, caja.x + pad, cy, XA_NARANJA);
+
+    char cuantas[40];
+    snprintf(cuantas, sizeof(cuantas), "%d celda%s", s->sec_len,
+             s->sec_len == 1 ? "" : "s");
+    int nw; TTF_GetStringSize(f, cuantas, 0, &nw, NULL);
+    xa_text(r, f, cuantas, caja.x + caja.w - pad - nw, cy, XA_TENUE);
+    cy += lh + 6;
+
+    xa_text(r, f, s->sec_ruta[s->sec_i], caja.x + pad, cy, XA_TENUE);
+    cy += lh + 4;
+    xa_text(r, f, "[Enter] guardar y correr   [Esc] cancelar",
+            caja.x + pad, cy, XA_VERDE);
+}
+
 static void
 pintar_editor(XasolState *s, ShellCtx *ctx, SDL_FRect area)
 {
@@ -1163,6 +1390,10 @@ pintar_editor(XasolState *s, ShellCtx *ctx, SDL_FRect area)
 
     float cw = xa_char_w(f);
     float lh = xa_line_h(f);
+
+    /* El area entera, antes de que la consola se lleve su franja: la
+       ventanita de la cinta se dibuja sobre TODO, consola incluida. */
+    SDL_FRect area_toda = area;
 
     /* La consola se lleva su franja de abajo, y lo que queda es el editor.
        Se calcula antes que nada porque de esto depende cuantas lineas de
@@ -1311,6 +1542,10 @@ pintar_editor(XasolState *s, ShellCtx *ctx, SDL_FRect area)
 
     /* La consola va ultima para quedar por encima de todo lo demas. */
     if (con_h > 0) pintar_consola(s, ctx, area_con);
+
+    /* Menos la ventanita de la cinta, que va encima hasta de la consola:
+       mientras esta abierta, el teclado es suyo. */
+    if (s->sec_pidiendo) pintar_pedido_secuencia(s, ctx, area_toda);
 }
 
 static void
@@ -1518,6 +1753,18 @@ xasol_handle_event(ShellCtx *ctx, Tab *tab, SDL_Event *e)
     if (e->type == SDL_EVENT_TEXT_INPUT) {
         if (s->saltear_texto) { s->saltear_texto = 0; return; }
 
+        /* La ventanita de la cinta se queda con lo que tipeas, antes que la
+           terminal y antes que el editor. */
+        if (s->sec_pidiendo) {
+            int n = (int)strlen(e->text.text);
+            if (s->sec_len + n < XASOL_SEC_LARGO - 1) {
+                memcpy(s->sec_buf + s->sec_len, e->text.text, (size_t)n);
+                s->sec_len += n;
+                s->sec_buf[s->sec_len] = '\0';
+            }
+            return;
+        }
+
         if (s->term_foco && s->term.vivo) { xterm_texto(&s->term, e->text.text); return; }
 
         if (s->pantalla == XASOL_NUEVO) {
@@ -1548,6 +1795,23 @@ xasol_handle_event(ShellCtx *ctx, Tab *tab, SDL_Event *e)
     SDL_Keymod  mod = e->key.mod;
 
     if (s->pantalla == XASOL_EDITANDO) {
+        /* ── La ventanita de la cinta ──
+           Va PRIMERO que todo: mientras esta abierta el teclado es suyo, y
+           no del editor ni de la terminal. Una 'j' es una 'j'. */
+        if (s->sec_pidiendo) {
+            if (k == SDLK_ESCAPE) {
+                s->sec_pidiendo = 0;
+                snprintf(s->aviso, sizeof(s->aviso),
+                         "cancelado: '%s' se quedo sin datos",
+                         s->sec_nombre[s->sec_i]);
+            } else if (k == SDLK_BACKSPACE && s->sec_len > 0) {
+                s->sec_buf[--s->sec_len] = '\0';
+            } else if (k == SDLK_RETURN) {
+                secuencia_siguiente(s, ctx);
+            }
+            return;
+        }
+
         /* Cada tecla borra el aviso anterior: un "guardado" que se queda
            pegado tres minutos miente sobre lo que acaba de pasar. */
         if (k != SDLK_LCTRL && k != SDLK_RCTRL) s->aviso[0] = '\0';
@@ -1577,7 +1841,10 @@ xasol_handle_event(ShellCtx *ctx, Tab *tab, SDL_Event *e)
 
         if (k == SDLK_F10) {
             consola_correr(s, ctx);
-            s->term_foco = 1;      /* el foco se va con el programa */
+            /* El foco se va con el programa — salvo que antes haya que pedir
+               la cinta de alguna secuencia: ahi el teclado es de la
+               ventanita, y el programa todavia no arranco. */
+            if (!s->sec_pidiendo) s->term_foco = 1;
             return;
         }
 
