@@ -140,6 +140,11 @@ int  xasol_resaltar(const char *path, XasolResaltado *out);
    RGB, para que el mismo codigo se vea igual en los dos lados. */
 SDL_Color xasol_color_de_rol(const char *rol);
 
+/* El color de lo que TODAVIA no tiene token: los caracteres que acabas de
+   tipear y que paed no vio. No es un color aparte a proposito — el porque
+   esta arriba de su definicion, en xasol_sintaxis.c. */
+SDL_Color xasol_color_sin_token(void);
+
 /* El token que cubre esa posicion, o NULL. Es lo que consulta el dibujante
    caracter por caracter para saber de que color va. */
 const XasolToken *xasol_token_en(const XasolResaltado *r, int linea, int col);
@@ -171,5 +176,18 @@ void xasol_correr_lineas(XasolResaltado *r, int desde_linea, int delta);
    `desde_col` o mas a la derecha. Si la edicion cae ADENTRO de un token, a
    ese se le estira o encoge el largo en vez de moverlo. */
 void xasol_correr_columnas(XasolResaltado *r, int linea, int desde_col, int delta);
+
+/* Le da a los `n` caracteres recien insertados en `col` el color de la
+   palabra de al lado: la de la izquierda si `hacia_izq`, la de la derecha si
+   no. Se llama DESPUES de xasol_correr_columnas, que ya movio todo de lugar.
+ *
+ * Correr no alcanza: correr mueve los tokens que ya existian, pero la letra
+ * nueva no la cubre ninguno, y hasta que paed vuelva a mirar el archivo se
+ * pinta del color de "todavia no se". Tipear al final de una palabra —o sea,
+ * tipear— no la parte en dos: la hace mas larga. Eso es lo que esto anota.
+ *
+ * Devuelve 1 si habia una palabra a la que pegarse. */
+int xasol_absorber_insercion(XasolResaltado *r, int linea, int col, int n,
+                             int hacia_izq);
 
 #endif /* XASOL_H */

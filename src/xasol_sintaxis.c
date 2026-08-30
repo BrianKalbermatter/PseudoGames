@@ -54,12 +54,18 @@
  */
 typedef struct { const char *rol; SDL_Color color; } RolColor;
 
-/* Los cinco de tema.toml.ejemplo, en RGB. */
-#define XA_HX_VERDE   {  0, 255, 102, 255}   /* #00ff66 */
-#define XA_HX_ORO     {255, 215,   0, 255}   /* #ffd700 */
-#define XA_HX_AZUL    { 51, 119, 255, 255}   /* #3377ff */
-#define XA_HX_NARANJA {255, 136,   0, 255}   /* #ff8800 */
-#define XA_HX_MAGENTA {255,   0, 255, 255}   /* #ff00ff */
+/* Los cinco de tema.toml.ejemplo, en RGB.
+ *
+ * Son NEON: saturacion al mango sobre el fondo casi negro del editor. No es
+ * capricho — con el fondo en #101010 un color a media saturacion se lee
+ * apagado y todo el codigo tiende al gris. Los mismos hexadecimales estan en
+ * helix/tema.toml.ejemplo, y tienen que seguir siendo los mismos: el punto de
+ * esa tabla es que PAED se vea igual en Helix que en xasol. */
+#define XA_HX_VERDE   {  0, 255, 156, 255}   /* #00ff9c */
+#define XA_HX_ORO     {255, 230,   0, 255}   /* #ffe600 */
+#define XA_HX_AZUL    { 43, 107, 255, 255}   /* #2b6bff */
+#define XA_HX_NARANJA {255, 149,   0, 255}   /* #ff9500 */
+#define XA_HX_MAGENTA {255,  46, 240, 255}   /* #ff2ef0 */
 
 static const RolColor PALETA[] = {
     /* Los cinco que tema.toml.ejemplo nombra explicitamente. */
@@ -75,21 +81,38 @@ static const RolColor PALETA[] = {
     { "procedimientos", XA_HX_MAGENTA },
 
     /* Los que highlights.scm delega al tema base de Helix con un scope
-       estandar. Se eligen para que no choquen con los cinco de arriba y
-       para dejar el rojo libre. */
-    { "tipos",          {102, 204, 255, 255} },  /* @type.builtin            */
-    { "tipos_usuario",  {102, 204, 255, 255} },  /* @type.builtin            */
-    { "entrada",        {255, 221,  85, 255} },  /* @function.builtin        */
-    { "salida",         {255, 221,  85, 255} },  /* @function.builtin        */
-    { "funciones_builtin", {255, 221, 85, 255} },/* @function.builtin        */
-    { "secuencias",     {255, 221,  85, 255} },  /* @function.builtin        */
-    { "archivos",       {255, 221,  85, 255} },  /* @function.builtin        */
-    { "booleanos",      {197, 134, 192, 255} },  /* @constant.builtin.boolean*/
-    { "numeros",        {197, 134, 192, 255} },  /* @constant.numeric        */
-    { "strings",        {206, 145, 120, 255} },  /* @constant.character      */
-    { "strings_simples",{206, 145, 120, 255} },  /* @constant.character      */
-    { "comentario",     {106, 115, 125, 255} },  /* comentario, apagado      */
-    { "variables",      {212, 212, 212, 255} },  /* @variable                */
+       estandar. Se eligen SEPARADOS EN TONO de los cinco de arriba y entre
+       si: el reparto de arriba usa verde, amarillo, azul, naranja y magenta,
+       asi que a estos les quedan el cian, el violeta, el rosa y el verde
+       lima. Dos roles distintos con el mismo color no informan nada, y era
+       lo que pasaba antes con el oro de los condicionales (#ffd700) y el
+       amarillo de ESCRIBIR/LEER (#ffdd55): a ojo eran el mismo.
+
+       El rojo sigue LIBRE. Es el color del error — lo que subraya paed-lsp y
+       lo que sale en la consola. Si el codigo tuviera rojo, competirian. */
+    { "tipos",          { 47, 240, 255, 255} },  /* #2ff0ff cian             */
+    { "tipos_usuario",  { 47, 240, 255, 255} },  /* #2ff0ff cian             */
+    { "entrada",        {164,  92, 255, 255} },  /* #a45cff violeta          */
+    { "salida",         {164,  92, 255, 255} },  /* #a45cff violeta          */
+    { "funciones_builtin", {164, 92, 255, 255} },/* #a45cff violeta          */
+    { "secuencias",     {164,  92, 255, 255} },  /* #a45cff violeta          */
+    { "archivos",       {164,  92, 255, 255} },  /* #a45cff violeta          */
+    { "booleanos",      {198, 255,  77, 255} },  /* #c6ff4d verde lima       */
+    { "numeros",        {198, 255,  77, 255} },  /* #c6ff4d verde lima       */
+    { "strings",        {255, 184, 108, 255} },  /* #ffb86c durazno          */
+    { "strings_simples",{255, 184, 108, 255} },  /* #ffb86c durazno          */
+
+    /* Los dos que a proposito NO son neon.
+
+       El comentario tiene que HUNDIRSE: lo que esta apagado se saltea al leer,
+       que es justo lo que uno quiere de un comentario cuando busca codigo.
+
+       Y las variables van en gris claro porque son la MAYORIA del texto. Si
+       lo mas comun brillara, no brillaria nada: el neon informa por contraste
+       contra un fondo tranquilo. Ademas este es el color de lo que todavia no
+       tiene token — ver xasol_color_sin_token. */
+    { "comentario",     {106, 115, 125, 255} },  /* #6a737d apagado          */
+    { "variables",      {212, 212, 212, 255} },  /* #d4d4d4 gris claro       */
 };
 
 /* El texto normal: lo que no es ningun rol conocido, y tambien la puntuacion,
@@ -109,6 +132,31 @@ xasol_color_de_rol(const char *rol)
        se ve plano y se sigue. Que agregar una categoria al lenguaje no pueda
        romper el editor es medio el punto de que la definicion viva alla. */
     return COL_PLANO;
+}
+
+/* El color de lo que NO tiene token.
+ *
+ * Es el mismo que el de una variable, y eso no es un detalle de gusto: es el
+ * arreglo del parpadeo al escribir.
+ *
+ * Cuando apretas una tecla, paed todavia no vio esa letra — la ve 150 ms
+ * despues, cuando parás. En ese rato no hay ningun token que la cubra, y el
+ * dibujante tiene que pintarla de ALGO. Si ese algo no es el color que la
+ * letra va a tener despues, cada letra que tipeas aparece de un color y
+ * cambia sola un momento mas tarde. Antes ese "algo" era un gris casi blanco
+ * (225) y el destino casi siempre el gris de las variables (212): de ahi el
+ * "se escribe en blanco y despues se pone gris".
+ *
+ * Una palabra que paed no reconoce es una variable. Entonces ese es el color
+ * al que va a parar lo recien tipeado casi siempre, y empezar ahi es no
+ * cambiar nada. Lo que sí cambia —de gris a verde cuando terminas de
+ * escribir MIENTRAS— cambia porque la palabra cambio de significado, que es
+ * informacion, no parpadeo.
+ */
+SDL_Color
+xasol_color_sin_token(void)
+{
+    return xasol_color_de_rol("variables");
 }
 
 /* Arma el indice por linea. Se hace de una pasada porque los tokens estan
@@ -131,13 +179,23 @@ reindexar(XasolResaltado *r)
 
 /* ── Correr paed y leer lo que dice ─────────────────────────────────────── */
 
+/* Donde se arma la tanda nueva antes de reemplazar a la vieja.
+ *
+ * Es static y no una variable local porque son 144 KB: en la pila del hilo
+ * no entran. Y es una tanda aparte, y no el `out` de una vez, porque hasta
+ * que no se sabe que paed devolvio algo NO hay que tocar lo que ya se estaba
+ * pintando: si se limpiara primero y la corrida saliera vacia, el archivo
+ * entero quedaria sin color hasta la proxima. */
+static XasolResaltado ACOPIO;
+
 int
 xasol_resaltar(const char *path, XasolResaltado *out)
 {
     if (!out) return 0;
-    out->count  = 0;
-    out->valido = 0;
     if (!path || !path[0]) return 0;
+
+    ACOPIO.count  = 0;
+    ACOPIO.valido = 0;
 
     /* 2>/dev/null: si el programa tiene un error de sintaxis, paed lo escribe
        por stderr. Aca no interesa — el editor no es el que reporta errores,
@@ -146,10 +204,10 @@ xasol_resaltar(const char *path, XasolResaltado *out)
     snprintf(cmd, sizeof(cmd), "paed --tokens '%s' 2>/dev/null", path);
 
     FILE *p = popen(cmd, "r");
-    if (!p) return 0;
+    if (!p) return out->valido;
 
     char linea[512];
-    while (fgets(linea, sizeof(linea), p) && out->count < XASOL_MAX_TOKENS) {
+    while (fgets(linea, sizeof(linea), p) && ACOPIO.count < XASOL_MAX_TOKENS) {
         int  l = 0, c = 0, largo = 0;
         char rol[24] = {0};
 
@@ -160,7 +218,7 @@ xasol_resaltar(const char *path, XasolResaltado *out)
             continue;
         if (l <= 0 || c <= 0 || largo <= 0) continue;
 
-        XasolToken *t = &out->tokens[out->count++];
+        XasolToken *t = &ACOPIO.tokens[ACOPIO.count++];
         t->linea = l;
         t->col   = c;
         t->largo = largo;
@@ -169,12 +227,16 @@ xasol_resaltar(const char *path, XasolResaltado *out)
 
     pclose(p);
 
-    reindexar(out);
-
     /* Cero tokens es "no se pudo": o no hay paed instalado, o el archivo esta
-       vacio. En los dos casos el editor sigue, en gris. */
-    out->valido = out->count > 0;
-    return out->valido;
+       vacio. Se deja lo que ya habia — en la primera corrida eso es nada, y
+       el editor sigue en gris; de ahi en adelante es el resaltado de recien,
+       que es viejo pero no miente tanto como no tener ninguno. */
+    if (ACOPIO.count == 0) return out->valido;
+
+    reindexar(&ACOPIO);
+    ACOPIO.valido = 1;
+    *out = ACOPIO;
+    return 1;
 }
 
 const XasolToken *
@@ -215,6 +277,34 @@ xasol_correr_lineas(XasolResaltado *r, int desde_linea, int delta)
        unos miles de enteros y pasa solo al insertar o borrar una linea
        entera, no en cada tecla. */
     reindexar(r);
+}
+
+int
+xasol_absorber_insercion(XasolResaltado *r, int linea, int col, int n,
+                         int hacia_izq)
+{
+    if (!r || !r->valido || n <= 0) return 0;
+    if (linea < 1 || linea > XASOL_MAX_LINEAS) return 0;
+
+    /* Los tokens siguen en su linea, asi que el indice todavia sirve. */
+    int desde  = r->idx_desde[linea];
+    int cuenta = r->idx_cuantos[linea];
+
+    for (int i = desde; i < desde + cuenta && i < r->count; i++) {
+        XasolToken *t = &r->tokens[i];
+
+        if (hacia_izq) {
+            /* El que termina justo donde empezo lo tipeado: la palabra
+               crecio por la derecha. Es el caso de siempre. */
+            if (t->col + t->largo == col) { t->largo += n; return 1; }
+        } else {
+            /* El que empieza justo despues: tipeaste delante de la palabra,
+               asi que crecio por la izquierda. Ya la habian corrido n
+               lugares a la derecha; se la devuelve y se le suma el largo. */
+            if (t->col == col + n) { t->col = col; t->largo += n; return 1; }
+        }
+    }
+    return 0;
 }
 
 void

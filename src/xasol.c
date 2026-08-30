@@ -37,15 +37,47 @@
 #define XASOL_PICKER_VIS   12    /* cuantos archivos se ven a la vez         */
 #define XASOL_GUTTER        5    /* ancho del margen de numeros, en columnas */
 
-/* Cuanto se espera despues de la ultima tecla antes de volver a pedirle los
-   colores a paed. Sin esto se lanzaria un proceso por cada letra tipeada;
-   con esto, uno recien cuando parás de escribir. 150 ms es mas rapido de lo
-   que se nota y mas lento de lo que se tarda entre dos teclas seguidas. */
-#define XASOL_DEBOUNCE_MS 150
+/* ── Cada cuanto se le vuelven a pedir los colores a paed ──────────────────
+ *
+ * Pedirlos cuesta un proceso: volcar el buffer a un temporal y correr
+ * `paed --tokens`. MEDIDO en esta maquina, por ese mismo camino:
+ *
+ *      13 lineas ....  4,5 ms
+ *      65 lineas ....  6,7 ms
+ *     605 lineas ... 27,0 ms
+ *
+ * Antes se esperaban 150 ms desde la ultima tecla. Para un archivo de los que
+ * se escriben en la catedra, eso es TREINTA VECES lo que cuesta el trabajo que
+ * evita — y era la demora que se veia: escribias una palabra de corrido y
+ * quedaba gris hasta que parabas.
+ *
+ * Ahora son tres reglas, y las tres hacen falta:
+ *
+ *   QUIETO      30 ms sin teclas y se pide. Entre dos teclas de alguien
+ *               tipeando rapido hay mas que eso, asi que en la practica el
+ *               color llega entre letra y letra.
+ *   FIN_PALABRA un espacio, un ';' o un '(' CIERRAN la palabra de atras: es
+ *               el instante en que se sabe que era, y se pide en el acto.
+ *               Lo hace editar_insertar_texto poniendo ultimo_cambio en 0.
+ *   ESPERA_MAX  y si aun asi no se pidio —tecleo continuo, sin pausas— se
+ *               pide igual. El tope sale de lo que TARDO la ultima vez, x4,
+ *               con piso de 60 ms: en un archivo chico da el piso, y en uno
+ *               de 600 lineas da 108 ms. Asi el resaltado nunca se lleva mas
+ *               de un cuarto del tiempo, sea cual sea el archivo o la
+ *               maquina. Medirlo es lo que hace que no haya que adivinarlo.
+ */
+#define XASOL_QUIETO_MS      30
+#define XASOL_ESPERA_MIN_MS  60
+#define XASOL_ESPERA_MAX_MS 250
 
 /* El divisor: la franja de arriba de la consola, de la que se agarra para
    estirarla. Se le dan unos pixeles de gracia para arriba y para abajo, o
    habria que apuntarle a una linea de 4 px. */
+/* Cuantas secuencias sin datos se piden de una: el limite del interprete son
+   ocho secuencias abiertas, asi que mas que eso no puede haber. */
+#define XASOL_SEC_MAX_PEND  8
+#define XASOL_SEC_LARGO  1024   /* largo maximo de una cinta tipeada        */
+
 #define XASOL_DIVISOR_H    4
 #define XASOL_DIVISOR_GRIP 4
 
@@ -102,8 +134,29 @@ typedef struct {
     /* ── Resaltado ── */
     XasolResaltado resaltado;
     Uint64 ultimo_cambio;    /* cuando se toco el buffer por ultima vez      */
+    Uint64 sucio_desde;      /* cuando se toco la PRIMERA vez sin repintar   */
+    Uint32 costo_resaltado;  /* cuanto tardo el ultimo pedido, en ms         */
     int    resaltado_sucio;  /* hay cambios que todavia no se pintaron       */
     char   tmp_path[64];     /* el archivo temporal que lee paed             */
+
+    /* ── La cinta de una SECUENCIA ──
+     *
+     * Un programa con `sec: SECUENCIA DE CARACTERES` necesita SUS DATOS para
+     * correr, y esos datos no estan en el codigo: son el enunciado. Antes de
+     * correr, F10 le pregunta a paed cuales secuencias no tienen cinta y te
+     * las pide una por una en una ventanita.
+     *
+     * Donde va el archivo NO lo decide el editor: se lo dice paed en la
+     * cuarta columna de `--secuencias`. Es a proposito — si el editor armara
+     * la ruta por su cuenta, el dia que el lenguaje la cambie el editor
+     * escribiria en un lugar donde nadie va a mirar. */
+    int  sec_pidiendo;        /* la ventanita esta abierta                  */
+    int  sec_n, sec_i;        /* cuantas faltan, y en cual vas              */
+    char sec_nombre[XASOL_SEC_MAX_PEND][64];
+    char sec_tipo[XASOL_SEC_MAX_PEND][32];
+    char sec_ruta[XASOL_SEC_MAX_PEND][320];
+    char sec_buf[XASOL_SEC_LARGO];   /* la cinta que estas tipeando         */
+    int  sec_len;
 
     /* ── La consola (F10) ── */
     int  consola_abierta;
@@ -265,9 +318,14 @@ buffer_guardar(XasolState *s)
 static void
 buffer_toco(XasolState *s)
 {
-    s->modificado      = 1;
+    s->modificado    = 1;
+    s->ultimo_cambio = SDL_GetTicks();
+
+    /* El PRIMER cambio desde el ultimo repintado arranca el reloj del tope.
+       Los que vienen despues no lo reinician: la idea es justamente medir
+       cuanto hace que se esta mostrando algo viejo. */
+    if (!s->resaltado_sucio) s->sucio_desde = s->ultimo_cambio;
     s->resaltado_sucio = 1;
-    s->ultimo_cambio   = SDL_GetTicks();
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -423,6 +481,30 @@ mover_palabra_atras(XasolState *s)
  *  Todo lo que cambia el texto son estas cuatro, y todas sacan foto antes.
  * ═══════════════════════════════════════════════════════════════════════════ */
 
+/* Un caracter "de palabra": de los que pueden formar parte de un nombre.
+ *
+ * Es lo UNICO que xasol sabe del lenguaje, y a proposito: no alcanza para
+ * decidir de que color va nada — eso lo sigue diciendo paed — solo para
+ * saber si la letra que acabas de tipear continua la palabra de al lado o
+ * empieza una nueva. Un espacio o un ';' empiezan una nueva; una letra, un
+ * numero o un '_' no. */
+static int
+es_de_palabra(char c)
+{
+    return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') ||
+           (c >= '0' && c <= '9') || c == '_';
+}
+
+/* Si todo lo que se inserto son caracteres de palabra. Al tipear es una sola
+   letra, pero por aca tambien pasa el pegado. */
+static int
+todo_de_palabra(const char *txt, int n)
+{
+    for (int i = 0; i < n; i++)
+        if (!es_de_palabra(txt[i])) return 0;
+    return n > 0;
+}
+
 static void
 editar_insertar_texto(XasolState *s, const char *txt)
 {
@@ -441,8 +523,34 @@ editar_insertar_texto(XasolState *s, const char *txt)
     /* El texto de la derecha se corrio n lugares: el resaltado tambien. */
     xasol_correr_columnas(&s->resaltado, s->cur_fila + 1, s->cur_col + 1, n);
 
+    /* Y ademas: si lo tipeado se pego a una palabra, esa palabra CRECIO.
+     *
+     * Correr no alcanzaba. Correr mueve los tokens que ya existian, pero la
+     * letra recien tipeada no la cubre ninguno — paed la ve 150 ms mas
+     * tarde — asi que hasta entonces se pintaba del color de "todavia no
+     * se" y despues saltaba al de la palabra. Eso es el parpadeo que se ve
+     * al escribir. Tipear al final de una palabra no la parte en dos: la
+     * hace mas larga, y del mismo color. */
+    if (todo_de_palabra(txt, n)) {
+        int izq = s->cur_col - 1;      /* el caracter de antes de lo tipeado */
+        int der = s->cur_col + n;      /* el de despues                      */
+
+        if (izq >= 0 && es_de_palabra(l[izq]))
+            xasol_absorber_insercion(&s->resaltado, s->cur_fila + 1,
+                                     s->cur_col + 1, n, 1);
+        else if (es_de_palabra(l[der]))
+            xasol_absorber_insercion(&s->resaltado, s->cur_fila + 1,
+                                     s->cur_col + 1, n, 0);
+    }
+
     s->cur_col += n;
     buffer_toco(s);
+
+    /* Lo que NO es de palabra —un espacio, un ';', un '('— CIERRA la palabra
+       de atras. Es justo el instante en que se sabe que era: recien ahi
+       'MIENTRAS' es la palabra MIENTRAS y no siete letras sueltas. Entonces
+       se piden los colores en el acto, sin esperar nada. */
+    if (!todo_de_palabra(txt, n)) s->ultimo_cambio = 0;
 }
 
 /* Enter: parte la linea en dos por donde esta el cursor. Lo de la izquierda
@@ -907,6 +1015,8 @@ picker_tecla(XasolState *s, ShellCtx *ctx, Tab *tab, SDL_Keycode k)
 static void
 refrescar_resaltado(XasolState *s)
 {
+    Uint64 t0 = SDL_GetTicks();
+
     FILE *f = fopen(s->tmp_path, "w");
     if (!f) return;
     for (int i = 0; i < s->n_lineas; i++)
@@ -914,6 +1024,12 @@ refrescar_resaltado(XasolState *s)
     fclose(f);
 
     xasol_resaltar(s->tmp_path, &s->resaltado);
+
+    /* Lo que tardo decide cada cuanto se puede volver a pedir. Un archivo
+       chico contesta en 4 ms y se puede pedir seguido; uno de 600 lineas
+       tarda 14 y conviene espaciarlo. Medirlo en vez de suponerlo hace que
+       esto siga andando en una maquina mas lenta que esta. */
+    s->costo_resaltado = (Uint32)(SDL_GetTicks() - t0);
     s->resaltado_sucio = 0;
 }
 
@@ -1062,15 +1178,29 @@ pintar_editor(XasolState *s, ShellCtx *ctx, SDL_FRect area)
 
     scroll_seguir_cursor(s, visibles);
 
-    /* El resaltado se recalcula recien cuando dejaste de tipear. Ver
-       XASOL_DEBOUNCE_MS. */
-    if (s->resaltado_sucio &&
-        (s->ultimo_cambio == 0 ||
-         SDL_GetTicks() - s->ultimo_cambio > XASOL_DEBOUNCE_MS))
-        refrescar_resaltado(s);
+    /* Las tres reglas de arriba de todo, en una sola pregunta. */
+    if (s->resaltado_sucio) {
+        Uint64 ahora = SDL_GetTicks();
+
+        /* El tope se estira segun lo que costo la ultima vez, x4, para que
+           el resaltado nunca se coma mas de un cuarto del tiempo. */
+        Uint32 tope = s->costo_resaltado * 4;
+        if (tope < XASOL_ESPERA_MIN_MS) tope = XASOL_ESPERA_MIN_MS;
+        if (tope > XASOL_ESPERA_MAX_MS) tope = XASOL_ESPERA_MAX_MS;
+
+        if (s->ultimo_cambio == 0 ||                          /* ya mismo   */
+            ahora - s->ultimo_cambio >= XASOL_QUIETO_MS ||    /* paraste    */
+            ahora - s->sucio_desde   >= tope)                 /* hace rato  */
+            refrescar_resaltado(s);
+    }
 
     float x_gutter = area.x + 8;
     float x_texto  = x_gutter + cw * XASOL_GUTTER;
+
+    /* De que color va lo que todavia no tiene token. Se pide una sola vez
+       por cuadro y no una por caracter: la busqueda del rol es una tabla de
+       strcmp, y por caracter serian decenas de miles por cuadro. */
+    const SDL_Color sin_token = xasol_color_sin_token();
 
     /* ── Las lineas ── */
     for (int i = 0; i < visibles; i++) {
@@ -1110,7 +1240,7 @@ pintar_editor(XasolState *s, ShellCtx *ctx, SDL_FRect area)
         while (c < largo) {
             /* paed cuenta lineas y columnas desde 1; el buffer desde 0. */
             const XasolToken *t = xasol_token_en(&s->resaltado, fila + 1, c + 1);
-            SDL_Color col = t ? xasol_color_de_rol(t->rol) : XA_CLARO;
+            SDL_Color col = t ? xasol_color_de_rol(t->rol) : sin_token;
 
             /* Estirar el tramo mientras el color no cambie. Comparar el
                COLOR y no el token junta los espacios entre dos palabras del
@@ -1118,7 +1248,7 @@ pintar_editor(XasolState *s, ShellCtx *ctx, SDL_FRect area)
             int fin = c + 1;
             while (fin < largo) {
                 const XasolToken *t2 = xasol_token_en(&s->resaltado, fila + 1, fin + 1);
-                SDL_Color c2 = t2 ? xasol_color_de_rol(t2->rol) : XA_CLARO;
+                SDL_Color c2 = t2 ? xasol_color_de_rol(t2->rol) : sin_token;
                 if (c2.r != col.r || c2.g != col.g || c2.b != col.b) break;
                 fin++;
             }
