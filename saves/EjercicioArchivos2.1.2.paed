@@ -1,0 +1,24 @@
+ACCION 2_1_2 ES
+    AMBIENTE
+        // Secuencial de Datos Elementales:
+        // Dada una secuencia de letras del alfabeto que finaliza con la letra Z, contar cuantas consonantes hay en la secuencia.
+        sec: SECUENCIA DE CARACTER; 
+        // Leer la secuencia de un archivo de texto aparte dentro contenia la secuencia que yo queria que tuviera escrita a mano
+        v: VENTANA DE CARACTER;
+        cant_const: AN(20);
+        vocales = {"A", "E", "I", "O", "U"}; // Esto es un conjunto
+        
+        
+    PROCESO
+        ARR(sec);
+        AVZ(sec,v);
+        cant_cons:= 0;
+        REPETIR
+            SI(v NO en vocales)ENTONCES
+                cant_cons := cant_cons + 1;
+            FIN_SI
+            AVZ(sec,v);
+        HASTA (v = "Z")
+        ESCRIBIR("En la secuencia hay una cantidad de", cant_cons, "constantes.");
+        CERRAR(sec);
+FIN_ACCION

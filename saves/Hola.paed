@@ -1,0 +1,13 @@
+ACCION paed ES
+    AMBIENTE
+        num: ENTERO;
+        FUNCION devolverCuadro(number: ENTERO): ENTERO ES
+            PROCESO
+                devolverCuadro := num ** 2; 
+        FIN_FUNCION
+    PROCESO
+        ESCRIBIR("Introduzca un numero: ");
+        LEER(num);
+        cuadrado := devolverCuadro(number);
+        ESCRIBIR("El cuadrado de ", number, "es", cuadrado, ".");
+FIN_ACCION

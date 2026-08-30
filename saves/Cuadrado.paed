@@ -3,7 +3,7 @@ ACCION cuadrado ES
         num: ENTERO;
         cuad: ENTERO;
 
-        FUNCION devolverCuadro(E number: ENTERO): ENTERO
+        FUNCION devolverCuadro(number: ENTERO): ENTERO
             PROCESO
                 devolverCuadro := number ** 2;
         FIN_FUNCION
